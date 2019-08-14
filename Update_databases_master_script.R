@@ -5,10 +5,10 @@ rm(list = ls()) # command to clear all variables from R environment
 # things to check and may need to modify before running -------------------
 
 # dates
-todays_date_formatted <- as.Date("2019-08-13")
+todays_date_formatted <- as.Date("2019-08-14")
 
 # what device are you running this script on? 
-computer = 'mac' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
+computer = 'pc' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
 
 # task related 
 max_tasks = 5 # maximum total number of tasks done in a single week 
@@ -18,7 +18,7 @@ max_MMI = 1 # maximum times a single person has done the MMI
 # database related - update with names of latest pulls (without file extension)
 latest_ctdb_pull = "SDAN_and_BSD_MBDU.08.12.2019" # change to name of excel file you want to use 
 latest_dawba_pull = "DAWBA.92200052_08122019" # will be a cvs file 
-latest_sdq_pull = "Total.2019-08-12T13_47_52" # will be a text file 
+latest_sdq_pull = "Total.2019-08-14T18_41_07" # will be a text file 
 
 # check list of current IRTAs is correct
 current_IRTAs_full <- c("Kenzie Jackson", "Katy Chang", "Christine Wei", "Stuart Kirwan", "Lisa Gorham", "Kate Haynes", "Chris Camp")
@@ -32,7 +32,7 @@ report_type <- c("progress") # enter either "progress" (if still in treatment) o
 # modules to run ----------------------------------------------------------
 
 # enter number below that you want to run - reference the list below 
-modules2run <- c(8)
+modules2run <- c(2)
 
 # description of modules: 
 # 0 = none
@@ -61,10 +61,10 @@ if (computer=="pc") {
 }
 
 # main folders needed
-georgia = paste0(string, "Georgia/Analysis_Georgia/Database/") # temp useful directory while scripts are still under development 
+scripts = paste0(string, "Database/Scripts_Github/") # temp useful directory while scripts are still under development 
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here 
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
-weekly_numbers_location = paste0(georgia, "IRTA tracker merge/creating weekly meeting sheet/") # to change with server restructuring 
+# weekly_numbers_location = paste0(georgia, "IRTA tracker merge/creating weekly meeting sheet/") # to change with server restructuring 
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring 
 graphs_location = paste0(database_location, "graphs/")
 
@@ -123,7 +123,7 @@ suppressPackageStartupMessages(library(knitr))
 
 if (modules2run==1 | modules2run==5 | modules2run==6) {
   
-  suppressWarnings(source(paste0(georgia, 'IRTA tracker merge/IRTA_Merge_Code_Georgia_08082019.R')))
+  suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
 
 } else {
   
@@ -135,7 +135,7 @@ if (modules2run==1 | modules2run==5 | modules2run==6) {
 
 if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
 
-  suppressWarnings(source(paste0(georgia, 'Database code_08122019.R')))
+  suppressWarnings(source(paste0(scripts, 'Database_code.R')))
 
 } else {
 
