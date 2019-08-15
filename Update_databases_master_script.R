@@ -5,7 +5,7 @@ rm(list = ls()) # command to clear all variables from R environment
 # things to check and may need to modify before running -------------------
 
 # dates
-todays_date_formatted <- as.Date("2019-08-14")
+todays_date_formatted <- as.Date("2019-08-15")
 
 # what device are you running this script on? 
 computer = 'pc' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
@@ -16,23 +16,23 @@ max_MID = 13 # maximum times a single person has done the MID
 max_MMI = 1 # maximum times a single person has done the MMI
 
 # database related - update with names of latest pulls (without file extension)
-latest_ctdb_pull = "SDAN_and_BSD_MBDU.08.12.2019" # change to name of excel file you want to use 
+latest_ctdb_pull = "SDAN_and_BSD_MBDU.08.15.2019" # change to name of excel file you want to use 
 latest_dawba_pull = "DAWBA.92200052_08122019" # will be a cvs file 
-latest_sdq_pull = "Total.2019-08-14T18_41_07" # will be a text file 
+latest_sdq_pull = "Total.2019-08-15T15_24_22" # will be a text file 
 
 # check list of current IRTAs is correct
 current_IRTAs_full <- c("Kenzie Jackson", "Katy Chang", "Christine Wei", "Stuart Kirwan", "Lisa Gorham", "Kate Haynes", "Chris Camp")
 current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
 
 # If CBT report, enter participant's initials below & into the 
-Participant <- c("ANEN") # enter the initials of the participant you want to produce a summary report for 
-Clinician <- c("Kathryn") # enter either "Kathryn", "Ken", "Argyris", "Chana", "Jeasmine"
+Participant <- c("ARMY") # enter the initials of the participant you want to produce a summary report for 
+Clinician <- c("Chana") # enter either "Kathryn", "Ken", "Argyris", "Chana", "Jeasmine"
 report_type <- c("progress") # enter either "progress" (if still in treatment) or "final" (if you want final summary of their treatment)
 
 # modules to run ----------------------------------------------------------
 
 # enter number below that you want to run - reference the list below 
-modules2run <- c(2)
+modules2run <- c(1)
 
 # description of modules: 
 # 0 = none
@@ -56,12 +56,12 @@ if (computer=="pc") {
   string = '/Volumes/string-mbd/'
   sdan1 = '/Volumes/sdan1/'
 } else { # if using a PC and your drives aren't mounted as specified above, enter what letter your drives are mounted under here... 
-  string = 'W:/'
+  string = 'K:/'
   sdan1 = 'Y:/'
 }
 
 # main folders needed
-scripts = paste0(string, "Database/Scripts_Github/") # temp useful directory while scripts are still under development 
+scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful directory while scripts are still under development 
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here 
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
 # weekly_numbers_location = paste0(georgia, "IRTA tracker merge/creating weekly meeting sheet/") # to change with server restructuring 
@@ -145,28 +145,28 @@ if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
 
 # update DAWBA database & deletion list -----------------------------------
 
-if (modules2run==3 | modules2run==5) {
-  
-  suppressWarnings(source(paste0(georgia, 'DAWBA_database_and_deletions_06192019.R')))
-
-} else {
-  
-  print("DAWBA database & deletion list not updated - NA")
-  
-}
+# if (modules2run==3 | modules2run==5) {
+#   
+#   suppressWarnings(source(paste0(georgia, 'DAWBA_database_and_deletions_06192019.R')))
+# 
+# } else {
+#   
+#   print("DAWBA database & deletion list not updated - NA")
+#   
+# }
 
 # produce weekly numbers --------------------------------------------------
 
-if (modules2run==4 | modules2run==5) {
-
-  suppressWarnings(source(paste0(weekly_numbers_location, 'rough work extracted from IRTA master tracker code_04182019.R')))
-  render(paste0(weekly_numbers_location, "attempt1_04182019.Rmd"))
-
-} else {
-
-  print("weekly numbers not produced - NA")
-
-}
+# if (modules2run==4 | modules2run==5) {
+# 
+#   suppressWarnings(source(paste0(weekly_numbers_location, 'rough work extracted from IRTA master tracker code_04182019.R')))
+#   render(paste0(weekly_numbers_location, "attempt1_04182019.Rmd"))
+# 
+# } else {
+# 
+#   print("weekly numbers not produced - NA")
+# 
+# }
 
 # Produce CBT report ------------------------------------------------------
 
@@ -184,10 +184,10 @@ if (modules2run==7 | modules2run==8) {
   }
   
   if (report_type=="progress") {
-    render(paste0(CBT_location, "Produce_CBT_progress_report_08092019.Rmd"), output_format = "word_document", 
+    render(paste0(CBT_location, "Produce_CBT_progress_report_08152019.Rmd"), output_format = "word_document", 
            output_file = paste0(Participant, "_", todays_date_formatted), output_dir = out_file)
   } else {
-    render(paste0(CBT_location, "Produce_CBT_final_report_08092019.Rmd"), output_format = "word_document", 
+    render(paste0(scripts, "CBT_scripts/Produce_CBT_final_report.Rmd"), output_format = "word_document", 
            output_file = paste0(Participant, "_final_", todays_date_formatted), output_dir = out_file)
     render(paste0(CBT_location, "Produce_CBT_final_report_provider_08092019.Rmd"), output_format = "word_document", 
            output_file = paste0(Participant, "_final_provider_", todays_date_formatted), output_dir = out_file)

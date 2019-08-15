@@ -619,9 +619,6 @@
                "c_ksadsdx_epset_current_mdd", "c_ksadsdx_epset_current_submdd", "c_ksadsdx_epset_current_mddsympt", 
                "c_ksadsdx_epset_current_mania", "c_ksadsdx_epset_current_hypomania")
   
-  # 'c_ksadsdx_', 
-  # "c_ksadsdx_specific_phob_descrip",  "c_ksadsdx_other_comorbid_dx",  "c_ksadsdx_comorbid_dx", 
-  
   diagnosis_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('c_ksadsdx')) 
   diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], as.character)
   diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], na_if, '')
@@ -659,11 +656,6 @@
     arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, c_ksadsdx_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, c_ksadsdx_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
-    ungroup() %>% 
-    filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
   
   diagnosis_subset_clinical <- merge.default(clinical_DB_date, diagnosis_subset_sdq, all=TRUE) %>% 
@@ -680,15 +672,10 @@
     arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, c_ksadsdx_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_ksadsdx_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_ksadsdx_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
-    ungroup() %>% 
-    filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
 
 # IQ, handedness, tanner -------------------------------------------
-
+  
 #####
 # IQ:
   
@@ -757,11 +744,6 @@
     arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_tanner_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_tanner_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
-    ungroup() %>% 
-    filter(measurement_TDiff_abs<=90) %>% 
     select(-measurement_TDiff_abs)
   
   s_tanner_subset_task <- merge.default(task_DB_date, s_tanner_subset, all=TRUE) %>% 
@@ -774,11 +756,6 @@
     arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, s_tanner_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, s_tanner_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
-    ungroup() %>% 
-    filter(measurement_TDiff_abs<=90) %>% 
     select(-measurement_TDiff_abs)
   
 #####
@@ -1936,8 +1913,8 @@
 # Measures where no scoring is necessary ----------------------------------
   
   variables_no_scoring <- c('c_family_hist_', 'p_demo_eval_', 'p_demo_screen_', 'c_blood_', 's_menstruation_', 
-                            's_middebrief_', 's_mar_', 's_rsdebrief_', 's_mmidebrief_', 's_medsscan_', 's_after_ba_', 
-                            's_before_ba_', 's_srsors_', 'c_inpatient_ratings_', 'c_cgas_', 'c_cgi_', 's_fua_', 'p_fua_', 
+                            's_middebrief_', 's_mar_', 's_rsdebrief_', 's_mmidebrief_', 's_medsscan_', 's_after_ba', 
+                            's_before_ba', 's_srsors_', 'c_inpatient_ratings_', 'c_cgas_', 'c_cgi_', 's_fua_', 'p_fua_', 
                             'ksads_', 'p_dawba_bdd_', 's_dawba_bdd_', 's_medsctdb_')
   
   for(i in seq_along(variables_no_scoring)) {
@@ -2004,9 +1981,9 @@
       measure_temp$tempcomplete[measure_temp$tempcomplete=="TRUE"] <- "1"
     }
 
-    if (measure_name=="s_after_ba_" | measure_name=="s_before_ba_" | measure_name=="s_srsors_" | 
+    if (measure_name=="s_after_ba" | measure_name=="s_before_ba" | measure_name=="s_srsors_" | 
         measure_name=="c_inpatient_" | measure_name=="c_cgi_" | measure_name=="s_fua_" | measure_name=="p_fua_" |
-        measure_name=="c_ksadsdx_" | measure_name=="ksads_") {
+        measure_name=="p_dawba_bdd_" | measure_name=="s_dawba_bdd_") {
       
       print("clinical measure only - not for tasks database")
       
@@ -2040,7 +2017,39 @@
       names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0(measure_name, "source"))
       assign(paste0(measure_name, "subset_task"), measure_temp_task)
       
-    } else {
+    } else if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
+               measure_name=="c_ksadsdx_" | measure_name=="ksads_") {
+      
+      print("creating tasks subset")
+      
+      measure_temp_task <- merge.default(task_DB_date, measure_temp, all=TRUE) %>% 
+        rename(measure_temp_source = source) %>% 
+        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, date_temp) %>%
+        ungroup() %>% 
+        select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
+      
+      measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
+      measure_temp_task <- measure_temp_task %>% 
+        mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
+        group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+        filter(1:n() == 1) %>%
+        ungroup() %>% 
+        select(-measurement_TDiff_abs)
+      
+      names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
+      names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
+      names(measure_temp_task)[names(measure_temp_task) == "date_temp"] <- (paste0(measure_name, "date"))
+      names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0(measure_name, "source"))
+      
+      if (measure_name=="ksads_") {
+        assign(paste0("c_", measure_name, "subset_task"), measure_temp_task)
+      } else {
+        assign(paste0(measure_name, "subset_task"), measure_temp_task)
+      }
+    
+      } else {
       
       print("creating tasks subset")
       
@@ -2107,6 +2116,38 @@
       names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0(measure_name, "source"))
       assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
       
+    } else if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
+      measure_name=="c_ksadsdx_" | measure_name=="ksads_") {
+      
+      print("creating clinical subset")
+      
+      measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp, all=TRUE) %>% 
+        rename(measure_temp_source = source) %>% 
+        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, date_temp) %>%
+        ungroup() %>% 
+        select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
+      
+      measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
+      measure_temp_clinical <- measure_temp_clinical %>% 
+        mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
+        group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+        filter(1:n() == 1) %>%
+        ungroup() %>% 
+        select(-measurement_TDiff_abs)
+      
+      names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0("c_", measure_name, "complete"))
+      names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0("c_", measure_name, "TDiff"))
+      names(measure_temp_clinical)[names(measure_temp_clinical) == "date_temp"] <- (paste0("c_", measure_name, "date"))
+      names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0("c_", measure_name, "source"))
+      
+      if (measure_name=="ksads_") {
+        assign(paste0("c_", measure_name, "subset_clinical"), measure_temp_clinical)
+      } else {
+        assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
+      }
+      
     } else {
       
       print("creating clinical subset")
@@ -2132,13 +2173,6 @@
         filter(measurement_TDiff_abs<=60) %>% 
         select(-measurement_TDiff_abs)
       
-      if (measure_name=="ksads_") {
-        names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0("c_", measure_name, "complete"))
-        names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0("c_", measure_name, "TDiff"))
-        names(measure_temp_clinical)[names(measure_temp_clinical) == "date_temp"] <- (paste0("c_", measure_name, "date"))
-        names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0("c_", measure_name, "source"))
-        assign(paste0("c_", measure_name, "subset_clinical"), measure_temp_clinical)
-      } else {
         names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
         names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
         names(measure_temp_clinical)[names(measure_temp_clinical) == "date_temp"] <- (paste0(measure_name, "date"))
@@ -2146,8 +2180,8 @@
         assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
       
       }
-    } 
-  }
+  } 
+
   
 # Merging the questionnaire data together --------------------------------
 
@@ -2163,6 +2197,12 @@ Psychometrics_treatment <- Psychometrics_treatment %>%
   fill(., names(Psychometrics_treatment), .direction = "down") %>%
   fill(., names(Psychometrics_treatment), .direction = "up") %>%
   ungroup() %>%
+  group_by(FIRST_NAME, LAST_NAME) %>%
+  fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
+       matches("c_ksadsdx_"), matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
+  fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
+       matches("c_ksadsdx_"), matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "up") %>%
+  ungroup() %>% 
   distinct(., .keep_all = TRUE)
 
 rm(max_tasks, measure_temp_task)
@@ -2176,16 +2216,22 @@ Psychometrics_behav <- Psychometrics_behav %>%
   group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, Task_Number) %>%
   fill(., names(Psychometrics_behav), .direction = c("down", "up")) %>%
   ungroup() %>%
+  group_by(FIRST_NAME, LAST_NAME) %>%
+  fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
+       matches("c_ksadsdx_"), matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
+  fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
+       matches("c_ksadsdx_"), matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "up") %>%
+  ungroup() %>% 
   distinct(., .keep_all = TRUE)
 
 # CBT database for Kathryn ------------------------------------------------
 
 cbt_columns <- read_excel(paste0(database_location, "other_data_never_delete/names_cbt_datebase.xlsx"))
-CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba_"),
-                                                 matches("s_after_ba_"), matches("s_baexpout_"), matches("s_menstruation_"),
+CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba"),
+                                                 matches("s_after_ba"), matches("s_baexpout_"), matches("s_menstruation_"),
                                                  matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
                                                  -matches("_source")) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>%
-  filter(Clinical_Visit_Code=="o") %>% select(-s_fua_date, -p_fua_date, -s_before_ba_date, -s_after_ba_date,
+  filter(Clinical_Visit_Code=="o") %>% select(-s_fua_date, -p_fua_date, -s_before_badate, -s_after_badate,
                                               -s_baexpout_date, -s_menstruation_date, -c_medsclin_date)
 
 CBT_report$Eligible <- recode(CBT_report$Eligible, "0"="Include", "5"="Excluded: does not meet criteria",
@@ -2194,6 +2240,14 @@ CBT_report$Eligible <- recode(CBT_report$Eligible, "0"="Include", "5"="Excluded:
                               "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
                               "11"="Completed treatment", .missing = NULL)
 
+ba_rating_columns <- CBT_report %>% select(matches("s_before_ba"), matches("s_after_ba")) %>% colnames()
+
+CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_bamood - s_after_bamood), s_ba_sess_difficulty_diff = (s_before_ba1_diff - s_after_ba1_diff), 
+                                    s_ba_sess_enjoy_diff = (s_before_ba2_enjoy - s_after_ba2_enjoy), s_ba_sess_anxiety_diff = (s_before_ba3_anx - s_after_ba3_anx), 
+                                    s_ba_sess_satisfaction_diff = (s_before_ba4_sat - s_after_b4_sat)
+                                    # s_ba_week_enjoy_diff = (s_after_baweek_expected_enjoyment - s_before_baweek_actual_enjoyment), # cannot include this until I resolve how I will have to 
+                                    # take the expected weekly enjoyment from the previous week from the actual enjoyment of the present week - i.e. 1 row previous 
+                                         )
 
 # Identifying missing cases -----------------------------------------------
 
