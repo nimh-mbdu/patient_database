@@ -22,7 +22,8 @@
     print("master IRTA tracker + QC info already imported")
   }
   
-  #******Master IRTA tracker
+  
+#******Master IRTA tracker
   
   if (exists("master_IRTA_latest")==FALSE) {
         master_IRTA_latest <- read_excel(paste0(IRTA_tracker_location, "MASTER_IRTA_DATABASE.xlsx"))
@@ -1913,8 +1914,8 @@
 # Measures where no scoring is necessary ----------------------------------
   
   variables_no_scoring <- c('c_family_hist_', 'p_demo_eval_', 'p_demo_screen_', 'c_blood_', 's_menstruation_', 
-                            's_middebrief_', 's_mar_', 's_rsdebrief_', 's_mmidebrief_', 's_medsscan_', 's_after_ba', 
-                            's_before_ba', 's_srsors_', 'c_inpatient_ratings_', 'c_cgas_', 'c_cgi_', 's_fua_', 'p_fua_', 
+                            's_middebrief_', 's_mar_', 's_rsdebrief_', 's_mmidebrief_', 's_medsscan_', 's_after_ba_', 
+                            's_before_ba_', 's_srsors_', 'c_inpatient_ratings_', 'c_cgas_', 'c_cgi_', 's_fua_', 'p_fua_', 
                             'ksads_', 'p_dawba_bdd_', 's_dawba_bdd_', 's_medsctdb_')
   
   for(i in seq_along(variables_no_scoring)) {
@@ -1981,7 +1982,7 @@
       measure_temp$tempcomplete[measure_temp$tempcomplete=="TRUE"] <- "1"
     }
 
-    if (measure_name=="s_after_ba" | measure_name=="s_before_ba" | measure_name=="s_srsors_" | 
+    if (measure_name=="s_after_ba_" | measure_name=="s_before_ba_" | measure_name=="s_srsors_" | 
         measure_name=="c_inpatient_" | measure_name=="c_cgi_" | measure_name=="s_fua_" | measure_name=="p_fua_" |
         measure_name=="p_dawba_bdd_" | measure_name=="s_dawba_bdd_") {
       
@@ -2182,13 +2183,14 @@
       }
   } 
 
-  
-# Merging the questionnaire data together --------------------------------
+# Creating clical and CBT databases & exporting --------------------------
 
 rm(measure_temp_clinical)
 clinic_sets <- ls(pattern="_clinical")
 clinic_sets <- c("clinical_DB", clinic_sets)
 clinic_sets <- mget(clinic_sets)
+
+# merge & tidy up
 
 Psychometrics_treatment <- reduce(clinic_sets, full_join) 
 # str(Psychometrics_treatment, list.len=ncol(Psychometrics_treatment))
@@ -2205,10 +2207,47 @@ Psychometrics_treatment <- Psychometrics_treatment %>%
   ungroup() %>% 
   distinct(., .keep_all = TRUE)
 
+# CBT subset
+
+cbt_columns <- read_excel(paste0(database_location, "other_data_never_delete/names_cbt_datebase.xlsx"))
+CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba_"),
+                                                 matches("s_after_ba_"), matches("s_baexpout_"), matches("s_menstruation_"),
+                                                 matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
+                                                 -matches("_source")) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>%
+  filter(Clinical_Visit_Code=="o") %>% select(-s_fua_date, -p_fua_date, -s_before_ba_date, -s_after_ba_date,
+                                              -s_baexpout_date, -s_menstruation_date, -c_medsclin_date)
+
+CBT_report$Eligible <- recode(CBT_report$Eligible, "0"="Include", "5"="Excluded: does not meet criteria",
+                              "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+                              "7"="Did not or withdrew assent/consent", "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
+                              "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
+                              "11"="Completed treatment", .missing = NULL)
+
+ba_rating_columns <- CBT_report %>% select(matches("s_before_ba_"), matches("s_after_ba_")) %>% colnames()
+
+CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_ba_mood - s_after_ba_mood), s_ba_sess_difficulty_diff = (s_before_ba_diff - s_after_ba_diff), 
+                                    s_ba_sess_enjoy_diff = (s_before_ba_enjoy - s_after_ba_enjoy), s_ba_sess_anxiety_diff = (s_before_ba_anx - s_after_ba_anx), 
+                                    s_ba_sess_satisfaction_diff = (s_before_ba_sat - s_after_ba_sat)
+                                    # s_ba_week_enjoy_diff = (s_after_ba_week_expected_enjoyment - s_before_ba_week_actual_enjoyment), # cannot include this until I resolve how I will have to 
+                                    # take the expected weekly enjoyment from the previous week from the actual enjoyment of the present week - i.e. 1 row previous 
+                                )
+
+# exporting
+
+Psychometrics_treatment %>% write.xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))
+Psychometrics_treatment %>% write.xlsx(paste0(folder_backup, "MASTER_DATABASE_CLINICAL_", todays_date_formatted, ".xlsx"))
+
+CBT_report %>% write.xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT.xlsx"))
+CBT_report %>% write.xlsx(paste0(database_location, "CBT/Backup/MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
+
+# Creating tasks database & exporting ------------------------------------
+
 rm(max_tasks, measure_temp_task)
 task_sets <- ls(pattern="_task")
 task_sets <- c("task_DB", task_sets)
 task_sets <- mget(task_sets)
+
+# merge & tidy up
 
 Psychometrics_behav <- reduce(task_sets, full_join) 
 # str(Psychometrics_behav, list.len=ncol(Psychometrics_behav))
@@ -2224,34 +2263,14 @@ Psychometrics_behav <- Psychometrics_behav %>%
   ungroup() %>% 
   distinct(., .keep_all = TRUE)
 
-# CBT database for Kathryn ------------------------------------------------
+# exporting
 
-cbt_columns <- read_excel(paste0(database_location, "other_data_never_delete/names_cbt_datebase.xlsx"))
-CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba"),
-                                                 matches("s_after_ba"), matches("s_baexpout_"), matches("s_menstruation_"),
-                                                 matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
-                                                 -matches("_source")) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>%
-  filter(Clinical_Visit_Code=="o") %>% select(-s_fua_date, -p_fua_date, -s_before_badate, -s_after_badate,
-                                              -s_baexpout_date, -s_menstruation_date, -c_medsclin_date)
-
-CBT_report$Eligible <- recode(CBT_report$Eligible, "0"="Include", "5"="Excluded: does not meet criteria",
-                              "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
-                              "7"="Did not or withdrew assent/consent", "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
-                              "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
-                              "11"="Completed treatment", .missing = NULL)
-
-ba_rating_columns <- CBT_report %>% select(matches("s_before_ba"), matches("s_after_ba")) %>% colnames()
-
-CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_bamood - s_after_bamood), s_ba_sess_difficulty_diff = (s_before_ba1_diff - s_after_ba1_diff), 
-                                    s_ba_sess_enjoy_diff = (s_before_ba2_enjoy - s_after_ba2_enjoy), s_ba_sess_anxiety_diff = (s_before_ba3_anx - s_after_ba3_anx), 
-                                    s_ba_sess_satisfaction_diff = (s_before_ba4_sat - s_after_b4_sat)
-                                    # s_ba_week_enjoy_diff = (s_after_baweek_expected_enjoyment - s_before_baweek_actual_enjoyment), # cannot include this until I resolve how I will have to 
-                                    # take the expected weekly enjoyment from the previous week from the actual enjoyment of the present week - i.e. 1 row previous 
-                                         )
+Psychometrics_behav %>% write.xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL.xlsx"))
+Psychometrics_behav %>% write.xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_", todays_date_formatted, ".xlsx"))
 
 # Identifying missing cases -----------------------------------------------
 
-# check <- Psychometrics_task %>% 
+# check <- Psychometrics_behav %>% 
 #   filter((is.na(s_mfq_tot) & is.na(s_mfq1w_tot)) | (is.na(p_mfq_tot) & is.na(p_mfq1w_tot)) | 
 #     (is.na(s_ari1w_tot) & is.na(s_ari6m_tot)) | (is.na(p_ari1w_tot) & is.na(p_ari6m_tot)) |
 #            is.na(s_scared_tot) |is.na(p_scared_tot) |is.na(s_shaps_tot) |is.na(s_lsas_tot)) %>% 
@@ -2263,20 +2282,6 @@ CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_bamood - s_a
 # list_names$assigned_irta <- c(as.character(rep("SK", 101)), as.character(rep("LG", 101)))
 # check <- merge.default(check, list_names, all=TRUE)
 # check %>% write.xlsx(paste0(database_location, "MASTER_DATABASE_task_missing.xlsx"))
-
-# Psychometrics_clinic <- Psychometrics %>% filter(str_detect(Clinical_Visit_Type, 'o')) 
-
-# Exporting the database --------------------------------------------------
-
-Psychometrics_treatment %>% write.xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))
-Psychometrics_treatment %>% write.xlsx(paste0(folder_backup, "MASTER_DATABASE_CLINICAL_", todays_date_formatted, ".xlsx"))
-
-Psychometrics_behav %>% write.xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL.xlsx"))
-Psychometrics_behav %>% write.xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_", todays_date_formatted, ".xlsx"))
-
-CBT_report %>% write.xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT.xlsx"))
-CBT_report %>% write.xlsx(paste0(database_location, "CBT/Backup/MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
-
 
 # Removing unnecessary variables ------------------------------------------
 
