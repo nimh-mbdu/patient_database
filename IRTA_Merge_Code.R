@@ -3,8 +3,6 @@
 
 # to do: ------------------------------------------------------------------
 
-# merge data sharing and handedness information 
-
 # script begins here:  ----------------------------------------------------
 
 master_IRTA_template <- read_excel(paste0(IRTA_tracker_location, "MASTER_IRTA_DATABASE_blank.xlsx")) #96 variables 
@@ -122,8 +120,21 @@ master_IRTA_latest <- master_IRTA_reordered %>%
 
 ####################Chris's here..... 
 
+suppressWarnings(source(paste0(scripts,"Schedule_script_functions.R")))
+for (row in c(1:nrow(master_IRTA_latest))) {
+  #print(paste0("Row: ",row))
+  
+  if (!is.na(master_IRTA_latest[row,"IRTA_tracker"]) & master_IRTA_latest[row, "IRTA_tracker"] != "REMOVED") {
+    print_dates(row,master_IRTA_latest)
+    
+  }
+  #print("completed")
+  
+}
 
-
+master_IRTA_latest$Clinical_Visit_Date <- as.Date(master_IRTA_latest$Clinical_Visit_Date, origin = "1899-12-30")
+master_IRTA_latest$Task1_Date <- as.Date(master_IRTA_latest$Task1_Date, origin = "1899-12-30")
+master_IRTA_latest$Next_FU_date <- as.Date(master_IRTA_latest$Next_FU_date, origin = "1899-12-30")
 
 ######################################################################################
 #######Creating tasks database
@@ -229,7 +240,7 @@ MMI_missing <- MMI_missing %>% filter(Eligible<4 | Eligible>7) %>%
   arrange(SDAN, Task_Date)
 MMI_missing[of_interest] <- lapply(MMI_missing[of_interest], na_if, '666')
 
-MMI_missing %>% write.xlsx(paste0(IRTA_tracker_location,"MMI_check.xlsx")) # if file empty, everything is perfect 
+MMI_missing %>% write_xlsx(paste0(IRTA_tracker_location,"MMI_check.xlsx")) # if file empty, everything is perfect 
 
 ##### MID
 
@@ -287,7 +298,7 @@ MID_missing <- merge.default(missing_date, missing_number, all=TRUE) %>%
   merge.default(., missing_qc, all=TRUE)
 MID_missing[of_interest] <- lapply(MID_missing[of_interest], na_if, '666')
 
-MID_missing %>% write.xlsx(paste0(IRTA_tracker_location,"MID_check.xlsx")) # if file empty, everything is perfect 
+MID_missing %>% write_xlsx(paste0(IRTA_tracker_location,"MID_check.xlsx")) # if file empty, everything is perfect 
 
 #####Merge of QC information with main task tracker, drops inconsistencies, hence why accuracy is so important 
 
@@ -297,15 +308,15 @@ task_reshape_master_QC <- left_join(task_reshape_master, task_QC, all=TRUE)
 ######################################################################################
 #######Saving Master IRTA sheet in typical format
 
-master_IRTA_latest %>% write.xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE.xlsx")) # will not save if someone else has this dataset open 
-master_IRTA_latest %>% write.xlsx(paste0(backup_location,"MASTER_IRTA_DATABASE","_",todays_date_formatted,".xlsx"))
+master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE.xlsx")) # will not save if someone else has this dataset open 
+master_IRTA_latest %>% write_xlsx(paste0(backup_location,"MASTER_IRTA_DATABASE","_",todays_date_formatted,".xlsx"))
 # also an option to add a password to a saved excel, e.g. = password = "string"
 
 ######################################################################################
 #######Saving Tasks Dataset
 
-task_reshape_master_QC %>% write.xlsx(paste0(IRTA_tracker_location,"TASKS_DATABASE_QC.xlsx"))
-task_reshape_master_QC %>% write.xlsx(paste0(backup_location,"TASKS_DATABASE_QC","_",todays_date_formatted,".xlsx"))
+task_reshape_master_QC %>% write_xlsx(paste0(IRTA_tracker_location,"TASKS_DATABASE_QC.xlsx"))
+task_reshape_master_QC %>% write_xlsx(paste0(backup_location,"TASKS_DATABASE_QC","_",todays_date_formatted,".xlsx"))
 
 #####Removing unnecessary variables
 

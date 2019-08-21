@@ -2,52 +2,10 @@
 
 rm(list = ls()) # command to clear all variables from R environment
 
-# things to check and may need to modify before running -------------------
-
-# dates
-todays_date_formatted <- as.Date("2019-08-15")
+# directories -------------------------------------------------------------
 
 # what device are you running this script on? 
 computer = 'pc' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
-
-# task related 
-max_tasks = 5 # maximum total number of tasks done in a single week 
-max_MID = 13 # maximum times a single person has done the MID
-max_MMI = 1 # maximum times a single person has done the MMI
-
-# database related - update with names of latest pulls (without file extension)
-latest_ctdb_pull = "SDAN_and_BSD_MBDU.08.15.2019" # change to name of excel file you want to use 
-latest_dawba_pull = "DAWBA.92200052_08122019" # will be a cvs file 
-latest_sdq_pull = "Total.2019-08-15T15_24_22" # will be a text file 
-
-# check list of current IRTAs is correct
-current_IRTAs_full <- c("Kenzie Jackson", "Katy Chang", "Christine Wei", "Stuart Kirwan", "Lisa Gorham", "Kate Haynes", "Chris Camp")
-current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
-
-# If CBT report, enter participant's initials below & into the 
-Participant <- c("ARMY") # enter the initials of the participant you want to produce a summary report for 
-Clinician <- c("Chana") # enter either "Kathryn", "Ken", "Argyris", "Chana", "Jeasmine"
-report_type <- c("progress") # enter either "progress" (if still in treatment) or "final" (if you want final summary of their treatment)
-
-# modules to run ----------------------------------------------------------
-
-# enter number below that you want to run - reference the list below 
-modules2run <- c(1)
-
-# description of modules: 
-# 0 = none
-# 1 = "update master IRTA tracker and tasks database" = W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/IRTA_Merge_Code_Georgia_06102019.R    ***UPDATE!!!
-# 2 = "update master database" = W:/Georgia/Analysis_Georgia/Database/Database code_06192019.R       ***UPDATE!!!
-# 3 = "update DAWBA database & deletion list" = W:/Georgia/Analysis_Georgia/Database/DAWBA_database_and_deletions_06192019.R     ***UPDATE!!!
-# 4 = "produce weekly numbers" 
-#         updates the dataset for this = W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/rough work extracted from IRTA master tracker code_04182019.R
-#         updates the webpage for this = W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/attempt1.Rmd
-# 5 = all of the above
-# 6 = modules 1 & 2
-# 7 = update master database & create CBT progress report - remember to change input the initials of the participant above & specify whether you want a progress or final report 
-# 8 = create CBT report only (master database already updated)
-
-# directories -------------------------------------------------------------
 
 if (computer=="pc") {
   string = 'W:/'
@@ -56,7 +14,7 @@ if (computer=="pc") {
   string = '/Volumes/string-mbd/'
   sdan1 = '/Volumes/sdan1/'
 } else { # if using a PC and your drives aren't mounted as specified above, enter what letter your drives are mounted under here... 
-  string = 'K:/'
+  string = 'Z:/'
   sdan1 = 'Y:/'
 }
 
@@ -101,7 +59,8 @@ MMI_tracker_location = paste0(sdan1, "Data/MMI/")
 
 suppressPackageStartupMessages(library(readxl))
 # suppressPackageStartupMessages(library(rJava))
-suppressPackageStartupMessages(library(xlsx))
+# suppressPackageStartupMessages(library(xlsx))
+suppressPackageStartupMessages(library(writexl)) # new, testing as an alternativce to the xlsx package 
 suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(dplyr)) 
 suppressPackageStartupMessages(library(summarytools)) 
@@ -118,6 +77,50 @@ suppressPackageStartupMessages(library(purrr))
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(shiny))
 suppressPackageStartupMessages(library(knitr))
+
+# things to check and may need to modify before running -------------------
+
+to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.xlsx"))
+
+# date
+todays_date_formatted <- c(to_change$todays_date_formatted)
+
+# task related 
+max_tasks <- c(to_change$max_tasks)
+max_MID <- c(to_change$max_MID)
+max_MMI <- c(to_change$max_MMI)
+
+# database related - update with names of latest pulls (without file extension)
+latest_ctdb_pull <- c(to_change$latest_ctdb_pull)
+latest_dawba_pull <- c(to_change$latest_dawba_pull)
+latest_sdq_pull <- c(to_change$latest_sdq_pull)
+
+# check list of current IRTAs is correct
+current_IRTAs_full <- c("Kenzie Jackson", "Katy Chang", "Christine Wei", "Stuart Kirwan", "Lisa Gorham", "Kate Haynes", "Chris Camp")
+current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
+
+# If CBT report, enter participant's initials below & into the 
+Participant <- c(to_change$Participant)
+Clinician <- c(to_change$Clinician)
+report_type <- c(to_change$report_type)
+
+# modules to run ----------------------------------------------------------
+
+# enter number below that you want to run - reference the list below 
+# modules2run <- c(1)
+
+# description of modules: 
+# 0 = none
+# 1 = "update master IRTA tracker and tasks database" = string-mbd/Database/Database_Scripts_Github/IRTA_Merge_Code.R
+# 2 = "update master database" = string-mbd/Database/Database_Scripts_Github/Database code.R
+# 3 = "update DAWBA database & deletion list" = W:/Georgia/Analysis_Georgia/Database/DAWBA_database_and_deletions_06192019.R     ***UPDATE!!!
+# 4 = "produce weekly numbers" 
+#         updates the dataset for this = W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/rough work extracted from IRTA master tracker code_04182019.R
+#         updates the webpage for this = W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/attempt1.Rmd
+# 5 = all of the above
+# 6 = modules 1 & 2
+# 7 = update master database & create CBT progress report - remember to change input the initials of the participant above & specify whether you want a progress or final report 
+# 8 = create CBT report only (master database already updated)
 
 # update master IRTA tracker and tasks database ---------------------------
 
@@ -184,6 +187,7 @@ if (modules2run==7 | modules2run==8) {
   }
   
   if (report_type=="progress") {
+    print(string)
     render(paste0(CBT_location, "Produce_CBT_progress_report_08152019.Rmd"), output_format = "word_document", 
            output_file = paste0(Participant, "_", todays_date_formatted), output_dir = out_file)
   } else {

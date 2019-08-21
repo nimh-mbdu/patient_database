@@ -2234,11 +2234,11 @@ CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_ba_mood - s_
 
 # exporting
 
-Psychometrics_treatment %>% write.xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))
-Psychometrics_treatment %>% write.xlsx(paste0(folder_backup, "MASTER_DATABASE_CLINICAL_", todays_date_formatted, ".xlsx"))
+Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))
+Psychometrics_treatment %>% write_xlsx(paste0(folder_backup, "MASTER_DATABASE_CLINICAL_", todays_date_formatted, ".xlsx"))
 
-CBT_report %>% write.xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT.xlsx"))
-CBT_report %>% write.xlsx(paste0(database_location, "CBT/Backup/MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
+CBT_report %>% write_xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT.xlsx"))
+CBT_report %>% write_xlsx(paste0(database_location, "CBT/Backup/MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
 
 # Creating tasks database & exporting ------------------------------------
 
@@ -2265,8 +2265,8 @@ Psychometrics_behav <- Psychometrics_behav %>%
 
 # exporting
 
-Psychometrics_behav %>% write.xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL.xlsx"))
-Psychometrics_behav %>% write.xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_", todays_date_formatted, ".xlsx"))
+Psychometrics_behav %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL.xlsx"))
+Psychometrics_behav %>% write_xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_", todays_date_formatted, ".xlsx"))
 
 # Identifying missing cases -----------------------------------------------
 
@@ -2281,7 +2281,7 @@ Psychometrics_behav %>% write.xlsx(paste0(database_location, "Backup/MASTER_DATA
 # list_names <- check %>% select(FIRST_NAME, LAST_NAME, Initials) %>% distinct(., .keep_all = TRUE)
 # list_names$assigned_irta <- c(as.character(rep("SK", 101)), as.character(rep("LG", 101)))
 # check <- merge.default(check, list_names, all=TRUE)
-# check %>% write.xlsx(paste0(database_location, "MASTER_DATABASE_task_missing.xlsx"))
+# check %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_task_missing.xlsx"))
 
 # Removing unnecessary variables ------------------------------------------
 
