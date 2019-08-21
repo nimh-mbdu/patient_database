@@ -173,7 +173,7 @@ if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
 
 if (modules2run==7 | modules2run==8) {
   
-  cbt_participants <- read_excel(paste0(scripts, "cbt_reports_to_produce.xlsx"))
+  cbt_participants <- read_excel(paste0(scripts, "CBT_scripts/cbt_reports_to_produce.xlsx"))
   
   for(a in seq_len(nrow(cbt_participants))) {
     iter9 <- as.numeric(a)
