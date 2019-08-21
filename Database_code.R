@@ -100,9 +100,9 @@
   for(e in seq_len(nrow(ctdb_names))) {
     iter4 <- as.numeric(e)
     # e = 1
-    column <- as.character(ctdb_names[e,3])
-    incorrect <- as.character(ctdb_names[e,1])
-    correct <- as.character(ctdb_names[e,2])
+    column <- as.character(ctdb_names[iter4,3])
+    incorrect <- as.character(ctdb_names[iter4,1])
+    correct <- as.character(ctdb_names[iter4,2])
     if (column=="LAST_NAME") {
       print("Fixing LAST_NAME")
       CTDB_Data_Download$LAST_NAME <- gsub(eval(incorrect), eval(correct), CTDB_Data_Download$LAST_NAME, fixed=TRUE)

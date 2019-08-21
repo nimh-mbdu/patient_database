@@ -99,14 +99,10 @@ latest_sdq_pull <- c(to_change$latest_sdq_pull)
 current_IRTAs_full <- c("Kenzie Jackson", "Katy Chang", "Christine Wei", "Stuart Kirwan", "Lisa Gorham", "Kate Haynes", "Chris Camp")
 current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
 
-# If CBT report, enter participant's initials below & into the 
-Participant <- c(to_change$Participant)
-Clinician <- c(to_change$Clinician)
-report_type <- c(to_change$report_type)
-
 # modules to run ----------------------------------------------------------
 
-# enter number below that you want to run - reference the list below 
+modules2run <- c(to_change$modules2run)
+# to overwrite the above, uncomment the below and enter number that you want to run isntead - reference the list below
 # modules2run <- c(1)
 
 # description of modules: 
@@ -177,25 +173,37 @@ if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
 
 if (modules2run==7 | modules2run==8) {
   
-  out_file <- paste0(saving_reports, Participant)
+  cbt_participants <- read_excel(paste0(scripts, "cbt_reports_to_produce.xlsx"))
   
-  if (file.exists(out_file)){
-    print("file exists")
-  } else {
-    print("doesn't exist, creating directory")
-    dir.create(file.path(saving_reports, Participant))
-  }
-  
-  if (report_type=="progress") {
-    print(string)
-    render(paste0(CBT_location, "Produce_CBT_progress_report_08152019.Rmd"), output_format = "word_document", 
-           output_file = paste0(Participant, "_", todays_date_formatted), output_dir = out_file)
-  } else {
-    render(paste0(scripts, "CBT_scripts/Produce_CBT_final_report.Rmd"), output_format = "word_document", 
-           output_file = paste0(Participant, "_final_", todays_date_formatted), output_dir = out_file)
-    render(paste0(CBT_location, "Produce_CBT_final_report_provider_08092019.Rmd"), output_format = "word_document", 
-           output_file = paste0(Participant, "_final_provider_", todays_date_formatted), output_dir = out_file)
+  for(a in seq_len(nrow(cbt_participants))) {
+    iter9 <- as.numeric(a)
+    # iter9 = 1
+    
+    # If CBT report, enter participant's initials below & into the 
+    Participant <- as.character(cbt_participants[iter9, 1])
+    Clinician <- as.character(cbt_participants[iter9, 2])
+    report_type <- as.character(cbt_participants[iter9, 3])
+    
+    out_file <- paste0(saving_reports, Participant)
+    
+    if (file.exists(out_file)){
+      print("file exists")
+    } else {
+      print("doesn't exist, creating directory")
+      dir.create(file.path(saving_reports, Participant))
     }
+    
+    if (report_type=="progress") {
+      print(string)
+      render(paste0(CBT_location, "Produce_CBT_progress_report_08152019.Rmd"), output_format = "word_document", 
+             output_file = paste0(Participant, "_", todays_date_formatted), output_dir = out_file)
+    } else {
+      render(paste0(scripts, "CBT_scripts/Produce_CBT_final_report.Rmd"), output_format = "word_document", 
+             output_file = paste0(Participant, "_final_", todays_date_formatted), output_dir = out_file)
+      render(paste0(CBT_location, "Produce_CBT_final_report_provider_08092019.Rmd"), output_format = "word_document", 
+             output_file = paste0(Participant, "_final_provider_", todays_date_formatted), output_dir = out_file)
+    }
+  }
 
 } else {
 
