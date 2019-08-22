@@ -22,7 +22,6 @@
     print("master IRTA tracker + QC info already imported")
   }
   
-  
 #******Master IRTA tracker
   
   if (exists("master_IRTA_latest")==FALSE) {
@@ -1273,24 +1272,24 @@
   
   for(i in seq_along(FAD)) {
     iter <- as.numeric(i)
-    # iter=1
+    # iter=2
     measure_name <- FAD[iter]
     
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches(measure_name)) %>% 
       distinct(., .keep_all = TRUE)
   
-    measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric) 
-    
-    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
-    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(fad_normal), matches(fad_reverse)) %>% ncol() %>% as.numeric()
+    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(fad_normal), matches(fad_reverse)) %>% apply(., 1, count_na)
     measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
     measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
 
     if (measure_name == "p_fad_") {
+      measure_temp_sdq[,8:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,8:ncol(measure_temp_sdq)], as.numeric) 
       measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, p_fad_parent, p_fad_parent_other, matches(fad_normal), matches(fad_reverse))
       measure_temp_sdq[,33:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,33:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
       measure_temp_sdq[,33:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,33:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
     } else {
+      measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric) 
       measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, matches(fad_normal), matches(fad_reverse))
       measure_temp_sdq[,31:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,31:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
       measure_temp_sdq[,31:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,31:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
@@ -1334,7 +1333,7 @@
       arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      filter(measurement_TDiff_abs<=60) %>% 
+      filter(measurement_TDiff_abs<=60) %>%
       select(-measurement_TDiff_abs)
     
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
@@ -2216,7 +2215,9 @@ Psychometrics_treatment <- Psychometrics_treatment %>%
 
 cbt_columns <- read_excel(paste0(database_location, "other_data_never_delete/names_cbt_datebase.xlsx"))
 CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba_"),
-                                                 matches("s_after_ba_"), matches("s_baexpout_"), s_ba_sess_come_again, matches("s_menstruation_"),
+                                                 matches("s_after_ba_"), matches("s_baexpout_"), 
+                                                 s_after_ba_sess_come_again,
+                                                 matches("s_menstruation_"),
                                                  matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
                                                  -matches("_source")) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>%
   filter(Clinical_Visit_Code=="o") %>% select(-s_fua_date, -p_fua_date, -s_before_ba_date, -s_after_ba_date,

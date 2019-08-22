@@ -58,9 +58,7 @@ MMI_tracker_location = paste0(sdan1, "Data/MMI/")
 # packages ----------------------------------------------------------------
 
 suppressPackageStartupMessages(library(readxl))
-# suppressPackageStartupMessages(library(rJava))
-# suppressPackageStartupMessages(library(xlsx))
-suppressPackageStartupMessages(library(writexl)) # new, testing as an alternativce to the xlsx package 
+suppressPackageStartupMessages(library(writexl)) 
 suppressPackageStartupMessages(library(tidyr))
 suppressPackageStartupMessages(library(dplyr)) 
 suppressPackageStartupMessages(library(summarytools)) 
@@ -103,7 +101,7 @@ current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
 
 modules2run <- c(to_change$modules2run)
 # to overwrite the above, uncomment the below and enter number that you want to run isntead - reference the list below
-# modules2run <- c(1)
+modules2run <- c(6)
 
 # description of modules: 
 # 0 = none
@@ -173,17 +171,16 @@ if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
 
 if (modules2run==7 | modules2run==8) {
   
-  cbt_participants <- read_excel(paste0(scripts, "CBT_scripts/cbt_reports_to_produce.xlsx"))
+  # make sure this file has been updated with all the patients you want to create reports for: 
+  cbt_participants <- read_excel(paste0(scripts, "CBT_scripts/cbt_reports_to_produce.xlsx")) 
   
   for(a in seq_len(nrow(cbt_participants))) {
     iter9 <- as.numeric(a)
     # iter9 = 1
     
-    # If CBT report, enter participant's initials below & into the 
     Participant <- as.character(cbt_participants[iter9, 1])
     Clinician <- as.character(cbt_participants[iter9, 2])
     report_type <- as.character(cbt_participants[iter9, 3])
-    
     out_file <- paste0(saving_reports, Participant)
     
     if (file.exists(out_file)){
@@ -197,14 +194,24 @@ if (modules2run==7 | modules2run==8) {
       print(string)
       render(paste0(CBT_location, "Produce_CBT_progress_report_08152019.Rmd"), output_format = "word_document", 
              output_file = paste0(Participant, "_", todays_date_formatted), output_dir = out_file)
-      measures_summary %>% write_xlsx(paste0(out_file, "/", Participant, "_BA_TRACKER.xlsx"))
     } else {
       render(paste0(scripts, "CBT_scripts/Produce_CBT_final_report.Rmd"), output_format = "word_document", 
              output_file = paste0(Participant, "_final_", todays_date_formatted), output_dir = out_file)
       render(paste0(CBT_location, "Produce_CBT_final_report_provider_08092019.Rmd"), output_format = "word_document", 
              output_file = paste0(Participant, "_final_provider_", todays_date_formatted), output_dir = out_file)
-      measures_summary %>% write_xlsx(paste0(out_file, "/", Participant, "_BA_TRACKER.xlsx"))
     }
+    
+    # creating individual patient BA tracker:
+    CBT_report %>% filter(Initials==Participant) %>% 
+      select(FIRST_NAME:DOB, Age_at_visit:Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed,
+             s_mfq1w_tot, p_mfq1w_tot, s_ari1w_tot, p_ari1w_tot, s_scared_tot, p_scared_tot, s_shaps_tot,
+             s_lsas_tot, c_cadam_tot, s_vadis_tot, c_cgi_severity, c_cgi_global, c_cdrs_tot, matches("s_fua_"),
+             matches("p_fua_"), s_ba_sess_mood_diff, s_ba_sess_difficulty_diff, s_ba_sess_enjoy_diff,
+             s_ba_sess_anxiety_diff, s_ba_sess_satisfaction_diff, s_after_ba_sess_come_again, 
+             # matches("c_medsclin_"),
+             matches("s_baexpout_act_1_")) %>% 
+      write_xlsx(paste0(out_file, "/", Participant, "_BA_TRACKER.xlsx"))
+      
   }
 
 } else {
