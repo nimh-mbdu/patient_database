@@ -1286,10 +1286,15 @@
     measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
     measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
 
-    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, matches(fad_normal), matches(fad_reverse))
-    
-    measure_temp_sdq[,31:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,31:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
-    measure_temp_sdq[,31:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,31:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
+    if (measure_name == "p_fad_") {
+      measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, p_fad_parent, p_fad_parent_other, matches(fad_normal), matches(fad_reverse))
+      measure_temp_sdq[,33:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,33:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
+      measure_temp_sdq[,33:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,33:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
+    } else {
+      measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, matches(fad_normal), matches(fad_reverse))
+      measure_temp_sdq[,31:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,31:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
+      measure_temp_sdq[,31:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,31:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
+    }
     
     problem_solving <- c("_2_|_12_|_24_|_38_|_50_|_60_")
     measure_temp_sdq$temp_problem_solving_tot <- measure_temp_sdq %>% select(matches(problem_solving)) %>% rowSums(na.rm=TRUE)
@@ -1304,7 +1309,7 @@
     gen_functioning <- c("_1_|_6_|_11_|_16_|_21_|_26_|_31_|_36_|_41_|_46_|_51_|_56_")
     measure_temp_sdq$temp_gen_functioning_tot <- measure_temp_sdq %>% select(matches(gen_functioning)) %>% rowSums(na.rm=TRUE)
     
-    measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
+    measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(fad_normal), matches(fad_reverse)) %>% complete.cases(.)
     measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
     measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
     
@@ -2211,7 +2216,7 @@ Psychometrics_treatment <- Psychometrics_treatment %>%
 
 cbt_columns <- read_excel(paste0(database_location, "other_data_never_delete/names_cbt_datebase.xlsx"))
 CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba_"),
-                                                 matches("s_after_ba_"), matches("s_baexpout_"), matches("s_menstruation_"),
+                                                 matches("s_after_ba_"), matches("s_baexpout_"), s_ba_sess_come_again, matches("s_menstruation_"),
                                                  matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
                                                  -matches("_source")) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>%
   filter(Clinical_Visit_Code=="o") %>% select(-s_fua_date, -p_fua_date, -s_before_ba_date, -s_after_ba_date,
@@ -2224,13 +2229,15 @@ CBT_report$Eligible <- recode(CBT_report$Eligible, "0"="Include", "5"="Excluded:
                               "11"="Completed treatment", .missing = NULL)
 
 ba_rating_columns <- CBT_report %>% select(matches("s_before_ba_"), matches("s_after_ba_")) %>% colnames()
+ba_rating_columns <- ba_rating_columns[c(-1,-8)]
+CBT_report[ba_rating_columns] <- lapply(CBT_report[ba_rating_columns], as.numeric)
 
-CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_ba_mood - s_after_ba_mood), s_ba_sess_difficulty_diff = (s_before_ba_diff - s_after_ba_diff), 
+CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_ba_mood - s_after_ba_mood), s_ba_sess_difficulty_diff = (s_before_ba_difficult - s_after_ba_difficult), 
                                     s_ba_sess_enjoy_diff = (s_before_ba_enjoy - s_after_ba_enjoy), s_ba_sess_anxiety_diff = (s_before_ba_anx - s_after_ba_anx), 
                                     s_ba_sess_satisfaction_diff = (s_before_ba_sat - s_after_ba_sat)
                                     # s_ba_week_enjoy_diff = (s_after_ba_week_expected_enjoyment - s_before_ba_week_actual_enjoyment), # cannot include this until I resolve how I will have to 
                                     # take the expected weekly enjoyment from the previous week from the actual enjoyment of the present week - i.e. 1 row previous 
-                                )
+                                ) 
 
 # exporting
 
