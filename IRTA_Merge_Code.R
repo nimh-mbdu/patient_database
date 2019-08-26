@@ -33,15 +33,16 @@ master_IRTA_template <- merge.default(master_IRTA_template, temp, all=TRUE) %>% 
 
 master_IRTA_template <- master_IRTA_template %>% 
                         select(FIRST_NAME, LAST_NAME, Initials, SDAN, MRN, DAWBA_ID, PLUSID, IRTA_tracker,
-                              SEX, DOB, Handedness, Current, 
+                              SEX, DOB, Handedness, Age_at_visit,	Overall_date, Current, 
                               Eligible, Eligibility_notes, Scheduling_status, Scheduling_status_notes, 
-                              Participant_Type, Participant_Type2, Treatment_Notes, DAWBA_completed, Screening_Start_Date, DAWBA_MFQ, 
-                              Consent_Date, Protocol, Data_sharing, 
+                              Participant_Type, Participant_Type2, Treatment_Notes, Consent_Date, Protocol, Data_sharing, 
                               Clinical_Visit_Type, Clinical_Visit_Date, NIMH_Clinician, Visit_Cancelled, 
                               Parent_CTSS_username, Parent_CTSS_password, Child_CTSS_username, Child_CTSS_password, 
-                              parent_SDQplus_login, child_SDQplus_login, Child_Phone_Number, Child_Email, 
-                              Primary_clinician,	Referral_Source,	Important_Info,
-                              Marital_Status,	Sibling_Init,	Sibling_Type,
+                              parent_SDQplus_login, child_SDQplus_login, Child_Phone_Number, Child_Email, Primary_clinician,	
+                              Referral_Date,	Referral_Informant_Name,	Referral_Informant_Relationship,	Referral_Informant_Email,	Referral_Informant_Phone,	
+                              Referral_Source,	Referral_other_notes,	Screening_Start_Date,	Screening_initial_contact_successful,	Screening_number_contact_attempts,	
+                              Screening_notes,	Parent_e_consented,	Child_e_assented,	Parent_DAWBA_completed,	Child_DAWBA_completed,	DAWBA_MFQ,	DAWBA_completed,
+                              Important_Info, Marital_Status,	Sibling_Init,	Sibling_Type,
                               Parent_Name, FIRST_NAME_P1,	LAST_NAME_P1, Parent_Contact_Number,	Parent_Email, Street_address,	City,	State,	Zip,
                               Second_Parent_Name,	FIRST_NAME_P2,	LAST_NAME_P2, Second_Parent_Contact_Number,	Second_Parent_Email,	Second_Parent_Address, Parent_Consented,
                               Scanner,	Glasses,	Glasses_Prescription,	Metal,	Clinicals,	Clinicals_date,
@@ -54,7 +55,7 @@ master_IRTA_template <- master_IRTA_template %>%
 # if problem with dates in one or more individual trackers don't run these 3 lines - 
 # if you still want to create the dataset running this with improperly formatted dates will result in the removal of the dates from those columns. 
 # not running this line keeps them in character format (string)
-date_variabes <- c("DOB", "Screening_Start_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date")
+date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date")
 for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
 master_IRTA_template[date_variabes] <- lapply(master_IRTA_template[date_variabes], as.Date, "%Y-%m-%d")
 
@@ -87,6 +88,7 @@ age_dummy$Age_at_visit <- age_calc(dob = age_dummy$DOB, enddate = age_dummy$Over
 # age_dummy$Age_at_visit <- age_calc(dob = as.Date(age_dummy$DOB), enddate = as.Date(age_dummy$Overall_date), units = "years", precise = TRUE) %>%
 #   round(., digits = 2)
 # merging age variable back into master dataset 
+master_IRTA_reordered$Age_at_visit <- as.numeric(master_IRTA_reordered$Age_at_visit)
 master_IRTA_reordered <- left_join(master_IRTA_reordered, age_dummy, all=TRUE)
 
 master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'HV')] <- 'HV'
@@ -106,12 +108,14 @@ master_IRTA_reordered <- cbind(master_IRTA_reordered, split1)
 master_IRTA_latest <- master_IRTA_reordered %>% 
   select(FIRST_NAME, LAST_NAME, Initials, SDAN, MRN, DAWBA_ID, PLUSID, IRTA_tracker, SEX, DOB, Handedness, Age_at_visit, Overall_date, Current, 
             Eligible, Eligibility_notes, Scheduling_status, Scheduling_status_notes, 
-            Participant_Type, Participant_Type2, Treatment_Notes, DAWBA_completed, Screening_Start_Date, DAWBA_MFQ, Consent_Date, Protocol, Data_sharing, 
+            Participant_Type, Participant_Type2, Treatment_Notes, Consent_Date, Protocol, Data_sharing, 
             Clinical_Visit_Date, Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number, NIMH_Clinician, Visit_Cancelled, 
             Parent_CTSS_username, Parent_CTSS_password, Child_CTSS_username, Child_CTSS_password, 
-            parent_SDQplus_login, child_SDQplus_login, Child_Phone_Number, Child_Email, 
-            Primary_clinician,	Referral_Source,	Important_Info,
-            Marital_Status,	Sibling_Init,	Sibling_Type,
+            parent_SDQplus_login, child_SDQplus_login, Child_Phone_Number, Child_Email, Primary_clinician,
+            Referral_Date,	Referral_Informant_Name,	Referral_Informant_Relationship,	Referral_Informant_Email,	Referral_Informant_Phone,	
+            Referral_Source,	Referral_other_notes,	Screening_Start_Date,	Screening_initial_contact_successful,	Screening_number_contact_attempts,	
+            Screening_notes,	Parent_e_consented,	Child_e_assented,	Parent_DAWBA_completed,	Child_DAWBA_completed,	DAWBA_MFQ,	DAWBA_completed,
+            Important_Info, Marital_Status,	Sibling_Init,	Sibling_Type,
             Parent_Name, FIRST_NAME_P1,	LAST_NAME_P1,	Parent_Contact_Number,	Parent_Email, Street_address,	City,	State,	Zip,
             Second_Parent_Name,	FIRST_NAME_P2,	LAST_NAME_P2, Second_Parent_Contact_Number,	Second_Parent_Email,	Second_Parent_Address, Parent_Consented,
             Scanner,	Glasses,	Glasses_Prescription,	Metal,	Clinicals,	Clinicals_date,
