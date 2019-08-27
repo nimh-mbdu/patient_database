@@ -249,14 +249,18 @@
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE)
     
-    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
-    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% ncol() %>% as.numeric()
+    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% apply(., 1, count_na)
     measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
     measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
     
-    measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric)
-    
-    measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
+    if (measure_name=="p_mfq_" | measure_name=="p_mfq1w_" | measure_name=="p_ari1w_" | measure_name=="p_ari6m_") {
+      measure_temp_sdq[,8:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,8:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% rowSums(na.rm=TRUE)
+    } else {
+      measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
+    }
     
     if (measure_name=="s_ari1w_") {measure_temp_sdq <- measure_temp_sdq %>% mutate(temptotal=(temptotal-s_ari1w_7_impairment))
     } else if (measure_name=="s_ari6m_") {measure_temp_sdq <- measure_temp_sdq %>% mutate(temptotal=(temptotal-s_ari6m_7_impairment))
@@ -351,49 +355,67 @@
 # scared
     
   scared <- c('s_scared_', 'p_scared_')
-  panic <- c("1_breathe", "6_pass_out", "9_look_nervous", "12_feel_crazy", "15_not_real", "18_hr_fast", "19_shaky", "22_sweat", "24_no_reason", "27_choke", "30_panic_attack", "34_throw_up", "38_dizzy")
-  gad <- c("5_like_me", "7_nervous", "14_not_as_good", "21_things_work_out", "23_worry", "28_worry_too_much", "33_future", "35_how_well_I_do", "37_past")
-  sep <- c("4_sleep_away_home", "8_follow_parent", "13_sleep_alone", "16_nightmare_parents", "20_nightmare", "25_alone_at_home", "29_away_from_family", "31_worry_parents")
-  social <- c("3_dislike_strangers", "10_nervous_stranger", "26_hard_to_talk", "32_shy_strangers", "39_others_watch_me", "40_party", "41_shy")
-  school <- c("2_headache_school", "11_stomachache_school", "17_school", "36_go_to_school")
-  scared_subscales <- c('panic', 'gad', 'sep', 'social', 'school')
+  panic_subscale <- c("1_breathe|6_pass_out|9_look_nervous|12_feel_crazy|15_not_real|18_hr_fast|19_shaky|22_sweat|24_no_reason|27_choke|30_panic_attack|34_throw_up|38_dizzy")
+  gad_subscale <- c("5_like_me|7_nervous|14_not_as_good|21_things_work_out|23_worry|28_worry_too_much|33_future|35_how_well_I_do|37_past")
+  sep_subscale <- c("4_sleep_away_home|8_follow_parent|13_sleep_alone|16_nightmare_parents|20_nightmare|25_alone_at_home|29_away_from_family|31_worry_parents")
+  social_subscale <- c("3_dislike_strangers|10_nervous_stranger|26_hard_to_talk|32_shy_strangers|39_others_watch_me|40_party|41_shy")
+  school_subscale <- c("2_headache_school|11_stomachache_school|17_school|36_go_to_school")
+  scared_subscales <- c('sep_subscale', 'panic_subscale', 'gad_subscale', 'social_subscale', 'school_subscale')
   
   for(i in seq_along(scared)) {
     iter <- as.numeric(i)
-    # iter=1
+    # iter=2
     measure_name <- scared[iter]
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE) 
-    measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric)
     
-    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
-    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
-    measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
-    measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-    
-    measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
+    if (measure_name=="p_scared_") {
+      
+      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% ncol() %>% as.numeric()
+      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% apply(., 1, count_na)
+      measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
+      measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
+      measure_temp_sdq[,8:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,8:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% rowSums(na.rm=TRUE)
+      
+      measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% complete.cases(.)
+      measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
+      measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
+      
+    } else {
+      
+      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
+      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+      measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
+      measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
+      measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
+      
+      measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
+      measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
+      measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
+      
+    }
     
     for(j in seq_along(scared_subscales)) {
     iter2 <- as.numeric(j)
-      # iter2=1
+      # iter2=5
       subscale_name <- scared_subscales[iter2]
-      measure_temp_sdq$subscaletot <- measure_temp_sdq %>% select(matches(subscale_name)) %>% rowSums(na.rm=TRUE)
+      measure_temp_sdq$subscaletot <- measure_temp_sdq %>% select(matches(eval(parse(text=scared_subscales[iter2])))) %>% rowSums(na.rm=TRUE)
       names(measure_temp_sdq)[names(measure_temp_sdq) == "subscaletot"] <- (paste0(subscale_name, "_temp"))
     }
-    
-    measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
-    measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
-    measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
 
     measure_temp_sdq$date_temp <- measure_temp_sdq$Overall_date
     measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     
     measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches(measure_name)) %>% 
       rename(date_temp = ends_with("_date")) %>% rename(tempcomplete = ends_with("_complete")) %>% 
-      rename(panic_temp = ends_with("panic_tot")) %>% rename(gad_temp = ends_with("gad_tot")) %>% 
-      rename(sep_temp = ends_with("sep_tot")) %>% rename(social_temp = ends_with("social_tot")) %>% 
-      rename(school_temp = ends_with("school_tot")) %>% rename(temptotal = ends_with("_tot")) %>% 
+      rename(panic_subscale_temp = ends_with("panic_tot")) %>% rename(gad_subscale_temp = ends_with("gad_tot")) %>% 
+      rename(sep_subscale_temp = ends_with("sep_tot")) %>% rename(social_subscale_temp = ends_with("social_tot")) %>% 
+      rename(school_subscale_temp = ends_with("school_tot")) %>% rename(temptotal = ends_with("_tot")) %>% 
       filter(!is.na(temptotal))
     
     measure_temp_combined <- merge.default(measure_temp_ctdb, measure_temp_sdq, all=TRUE) %>% 
@@ -405,7 +427,7 @@
     
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal,
-             panic_temp, sep_temp, social_temp, school_temp, gad_temp,
+             panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
              measure_temp_source, tempcomplete)
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
     measure_temp_clinical <- measure_temp_clinical %>% 
@@ -425,17 +447,17 @@
     names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "temptotal"] <- (paste0(measure_name, "tot"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "date_temp"] <- (paste0(measure_name, "date"))
-    names(measure_temp_clinical)[names(measure_temp_clinical) == "panic_temp"] <- (paste0(measure_name, "panic_tot"))
-    names(measure_temp_clinical)[names(measure_temp_clinical) == "social_temp"] <- (paste0(measure_name, "social_tot"))
-    names(measure_temp_clinical)[names(measure_temp_clinical) == "sep_temp"] <- (paste0(measure_name, "sep_tot"))
-    names(measure_temp_clinical)[names(measure_temp_clinical) == "school_temp"] <- (paste0(measure_name, "school_tot"))
-    names(measure_temp_clinical)[names(measure_temp_clinical) == "gad_temp"] <- (paste0(measure_name, "gad_tot"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "panic_subscale_temp"] <- (paste0(measure_name, "panic_tot"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "social_subscale_temp"] <- (paste0(measure_name, "social_tot"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "sep_subscale_temp"] <- (paste0(measure_name, "sep_tot"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "school_subscale_temp"] <- (paste0(measure_name, "school_tot"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "gad_subscale_temp"] <- (paste0(measure_name, "gad_tot"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0(measure_name, "source"))
     assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
     
     measure_temp_task <- merge.default(task_DB_date, measure_temp_combined, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, 
-             panic_temp, sep_temp, social_temp, school_temp, gad_temp,
+             panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
              measure_temp_source, tempcomplete)
     measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
     measure_temp_task <- measure_temp_task %>% 
@@ -454,12 +476,12 @@
     names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_task)[names(measure_temp_task) == "temptotal"] <- (paste0(measure_name, "tot"))
-    names(measure_temp_task)[names(measure_temp_task) == "date_temp"] <- (paste0(measure_name, "date"))
-    names(measure_temp_task)[names(measure_temp_task) == "panic_temp"] <- (paste0(measure_name, "panic_tot"))
-    names(measure_temp_task)[names(measure_temp_task) == "social_temp"] <- (paste0(measure_name, "social_tot"))
-    names(measure_temp_task)[names(measure_temp_task) == "sep_temp"] <- (paste0(measure_name, "sep_tot"))
-    names(measure_temp_task)[names(measure_temp_task) == "school_temp"] <- (paste0(measure_name, "school_tot"))
-    names(measure_temp_task)[names(measure_temp_task) == "gad_temp"] <- (paste0(measure_name, "gad_tot"))
+    names(measure_temp_task)[names(measure_temp_task) == "date_subscale_temp"] <- (paste0(measure_name, "date"))
+    names(measure_temp_task)[names(measure_temp_task) == "panic_subscale_temp"] <- (paste0(measure_name, "panic_tot"))
+    names(measure_temp_task)[names(measure_temp_task) == "social_subscale_temp"] <- (paste0(measure_name, "social_tot"))
+    names(measure_temp_task)[names(measure_temp_task) == "sep_subscale_temp"] <- (paste0(measure_name, "sep_tot"))
+    names(measure_temp_task)[names(measure_temp_task) == "school_subscale_temp"] <- (paste0(measure_name, "school_tot"))
+    names(measure_temp_task)[names(measure_temp_task) == "gad_subscale_temp"] <- (paste0(measure_name, "gad_tot"))
     names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0(measure_name, "source"))
     assign(paste0(measure_name, "subset_task"), measure_temp_task)
     

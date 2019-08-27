@@ -124,21 +124,21 @@ master_IRTA_latest <- master_IRTA_reordered %>%
 
 ####################Chris's here..... 
 
-suppressWarnings(source(paste0(scripts,"Schedule_script_functions.R")))
-for (row in c(1:nrow(master_IRTA_latest))) {
-  #print(paste0("Row: ",row))
-  
-  if (!is.na(master_IRTA_latest[row,"IRTA_tracker"]) & master_IRTA_latest[row, "IRTA_tracker"] != "REMOVED") {
-    print_dates(row,master_IRTA_latest)
-    
-  }
-  #print("completed")
-  
-}
-
-master_IRTA_latest$Clinical_Visit_Date <- as.Date(master_IRTA_latest$Clinical_Visit_Date, origin = "1899-12-30")
-master_IRTA_latest$Task1_Date <- as.Date(master_IRTA_latest$Task1_Date, origin = "1899-12-30")
-master_IRTA_latest$Next_FU_date <- as.Date(master_IRTA_latest$Next_FU_date, origin = "1899-12-30")
+# suppressWarnings(source(paste0(scripts,"Schedule_script_functions.R")))
+# for (row in c(1:nrow(master_IRTA_latest))) {
+#   #print(paste0("Row: ",row))
+#   
+#   if (!is.na(master_IRTA_latest[row,"IRTA_tracker"]) & master_IRTA_latest[row, "IRTA_tracker"] != "REMOVED") {
+#     print_dates(row,master_IRTA_latest)
+#     
+#   }
+#   #print("completed")
+#   
+# }
+# 
+# master_IRTA_latest$Clinical_Visit_Date <- as.Date(master_IRTA_latest$Clinical_Visit_Date, origin = "1899-12-30")
+# master_IRTA_latest$Task1_Date <- as.Date(master_IRTA_latest$Task1_Date, origin = "1899-12-30")
+# master_IRTA_latest$Next_FU_date <- as.Date(master_IRTA_latest$Next_FU_date, origin = "1899-12-30")
 
 ######################################################################################
 #######Creating tasks database
