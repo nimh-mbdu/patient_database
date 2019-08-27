@@ -476,7 +476,7 @@
     names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_task)[names(measure_temp_task) == "temptotal"] <- (paste0(measure_name, "tot"))
-    names(measure_temp_task)[names(measure_temp_task) == "date_subscale_temp"] <- (paste0(measure_name, "date"))
+    names(measure_temp_task)[names(measure_temp_task) == "date_temp"] <- (paste0(measure_name, "date"))
     names(measure_temp_task)[names(measure_temp_task) == "panic_subscale_temp"] <- (paste0(measure_name, "panic_tot"))
     names(measure_temp_task)[names(measure_temp_task) == "social_subscale_temp"] <- (paste0(measure_name, "social_tot"))
     names(measure_temp_task)[names(measure_temp_task) == "sep_subscale_temp"] <- (paste0(measure_name, "sep_tot"))
