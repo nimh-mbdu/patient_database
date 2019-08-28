@@ -1,0 +1,430 @@
+---
+title: "MOOD BRAIN & DEVELOPMENT UNIT"
+output:
+  html_document:
+    df_print: paged
+  word_document:
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 8
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r echo=FALSE}
+
+# # directories -------------------------------------------------------------
+# 
+# todays_date_formatted <- as.Date("2019-08-28")
+# computer = 'pc' # set this to either 'mac' or 'pc' (Georgia = W:/ as I have string mounted differently)
+# 
+# Participant <- c("ARMY") # enter the initials of the participant you want to produce a summary report for
+# Clinician <- c("Chana") # enter either "Kathryn", "Ken" or "Argyris"
+# 
+# if (computer=="pc") {
+#   string = 'W:/'
+#   sdan1 = 'Y:/'
+# } else if (computer=="mac") {
+#   string = '/Volumes/string-mbd/'
+#   sdan1 = '/Volumes/sdan1/'
+# }
+# 
+# database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here
+# CBT_location = paste0(string, "Database/Master Psychometric Database/CBT/")
+# CBT_backup = paste0(CBT_location, "Backup/")
+# saving_reports = paste0(CBT_location, "Reports/")
+# 
+# # packages ----------------------------------------------------------------
+# 
+# suppressPackageStartupMessages(library(readxl))
+# suppressPackageStartupMessages(library(writexl)) 
+# suppressPackageStartupMessages(library(tidyr))
+# suppressPackageStartupMessages(library(dplyr))
+# suppressPackageStartupMessages(library(rmarkdown))
+# suppressPackageStartupMessages(library(eeptools))
+# suppressPackageStartupMessages(library(openxlsx))
+# suppressPackageStartupMessages(library(data.table))
+# suppressPackageStartupMessages(library(reshape2))
+# suppressPackageStartupMessages(library(stringr))
+# suppressPackageStartupMessages(library(lubridate))
+# suppressPackageStartupMessages(library(ggplot2))
+# suppressPackageStartupMessages(library(rlang))
+# suppressPackageStartupMessages(library(purrr))
+# suppressPackageStartupMessages(library(tidyverse))
+# suppressPackageStartupMessages(library(shiny))
+# suppressPackageStartupMessages(library(knitr))
+# 
+# Loading data ------------------------------------------------------------
+
+CBT_report <- read_excel(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
+  
+date_variabes <- CBT_report %>% select(matches("_date")) %>% colnames() 
+date_variabes <- c(date_variabes, "DOB")
+CBT_report[date_variabes] <- lapply(CBT_report[date_variabes], as.Date) 
+
+numeric_variables <- CBT_report %>% select(matches("_tot")) %>% colnames() 
+CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], as.numeric)
+CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], round)
+                                                
+# because there are 2 versions of the MFQ and ARI, coalescing these to fill in missing data: 
+CBT_report$p_mfq1w_tot <- coalesce(CBT_report$p_mfq1w_tot, CBT_report$p_mfq_tot)
+CBT_report$s_mfq1w_tot <- coalesce(CBT_report$s_mfq1w_tot, CBT_report$s_mfq_tot)
+CBT_report$p_ari1w_tot <- coalesce(CBT_report$p_ari1w_tot, CBT_report$p_ari6m_tot)
+CBT_report$s_ari1w_tot <- coalesce(CBT_report$s_ari1w_tot, CBT_report$s_ari6m_tot)
+
+CBT_report <- CBT_report %>% select(-matches("_ari6m_"), -matches("_mfq_"))
+
+# if you want to check that the variable types have been successfully transformed: 
+# str(CBT_report, list.len=ncol(CBT_report))
+
+# Patient specific data ------------------------------------------------------------
+
+data <- CBT_report %>% filter(Initials==Participant)
+
+# fixing name case
+f_name <- head(data$FIRST_NAME,1)
+l_name <- head(data$LAST_NAME,1)
+f_name <- paste(substring(f_name, 1, 1), tolower(substring(f_name, 2)), sep = "", collapse = " ")
+l_name <- paste(substring(l_name, 1, 1), tolower(substring(l_name, 2)), sep = "", collapse = " ")
+
+# parent name
+
+p_f_name <- head(data$FIRST_NAME_P1,1,)
+p_l_name <- head(data$LAST_NAME_P1,1)
+p_f_name <- paste(substring(p_f_name, 1, 1), tolower(substring(p_f_name, 2)), sep = "", collapse = " ")
+p_l_name <- paste(substring(p_l_name, 1, 1), tolower(substring(p_l_name, 2)), sep = "", collapse = " ")
+
+# treatment related 
+start <- data %>% arrange(Clinical_Visit_Number) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull()
+end <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull()
+weeks_treat  <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Number) %>% pull()
+
+provider <- head(data$Primary_clinician,1)
+# provider <- c("Dr. TEMP")
+
+# basic demographics 
+gender <- head(data$SEX,1) %>% tolower()
+datebirth <- head(data$DOB,1)
+age <- age_calc(dob = datebirth, enddate = todays_date_formatted, units = "years", precise = TRUE) %>% round(., digits = 1) 
+dx <- head(data$c_ksadsdx_primary_dx,1)
+
+if (head(data$SEX,1)=="FEMALE") {
+  pronoun <- c("her")
+} else {pronoun <- c("his")}
+
+# Setting Clinician ------------------------------------------------------------
+
+if (Clinician=="Kathryn") {
+  treating_clinician = "Kathryn DeLonga"
+  clinician_cred = "Psy.D"
+  clinician_position = "Licensed Clinical Psychologist, Director of Psychological Treatment"
+  clinician_location = "Mood Brain & Development Unit"
+  clinician_contact = "301-827-1168"
+} else if (Clinician=="Ken") {
+  treating_clinician = "Kenneth E. Towbin"
+  clinician_cred = "MD"
+  clinician_position = "Chief of Clinical Child and Adolescent Psychiatry"
+  clinician_location = "Emotion and Development Branch"
+  clinician_contact = "301-402-4403"
+} else if (Clinician=="Argyris") {
+  treating_clinician = "Argyris Stringaris"
+  clinician_cred = "MD, PhD, FRCPsych"
+  clinician_position = "Chief and Principal Investigator"
+  clinician_location = "Mood Brain & Development Unit"
+  clinician_contact = "301-443-8019"
+} else if (Clinician=="Chana") {
+  treating_clinician = "Chana Engel"
+  clinician_cred = "CRNP"
+  clinician_position = "Treating Clinician"
+  clinician_location = "Mood Brain & Development Unit"
+  clinician_contact = "301-435-1553"
+} else {
+  treating_clinician = "Jeasmine Aizvera"
+  clinician_cred = "LCSW-C"
+  clinician_position = "Treating Clinician"
+  clinician_location = "Mood Brain & Development Unit"
+  clinician_contact = "301-496-5968"
+}
+
+```
+
+![](`r paste0(CBT_location, "images/NIH_logo.png")`)
+
+***
+
+#### Treatment Summary: Behavioral Activation for Adolescent Depression
+
+##### DATE: `r todays_date_formatted` (YYYY-MM-DD)  
+
+***
+
+**Regarding patient:** `r f_name` `r l_name`; `r age` year old `r gender`. 
+
+***
+
+Dear `r provider`,  
+
+Your patient, `r f_name` `r l_name` (DOB: `r datebirth`), has completed a `r weeks_treat`-week course of manualized, evidence-based cognitive behavioral therapy in our outpatient mental health study. The study is being conducted by the Mood, Brain and Development Unit at the National Institute of Mental Health (NIMH).  This letter is the summary of your patient’s course of treatment and treatment response in this program.
+
+Treatment Summary: Between `r start` and `r end`, `r f_name` completed `r weeks_treat` sessions of Behavioral Activation, which included weekly individual patient sessions, parent coaching sessions, and between-session assignments (“homework”). The goal of the program is to help the adolescent stop the cycle of depression by identifying triggers related to sad feelings or loss of motivation, learn skills and strategies to overcome depression, and set goals to make life more fulfilling through guided activity. Additionally, parents learn new ways to communicate and support the adolescent. 
+
+Please see below for a summary of `r f_name`’s diagnoses, medications, clinical impressions and weekly self-report scores through treatment. 
+
+**Diagnosis:** 
+
+*INSERT*
+
+**Medications:** 
+
+*INSERT*
+
+**Medical:** 
+
+*INSERT*
+
+Recommendations: 
+
+1. Safety: *INSERT*
+2. Medication: *INSERT*
+3. General care: *INSERT*
+4. Psychotherapy: *INSERT*
+5. Academics: *INSERT*
+6. Additional Assessment: *INSERT*
+7. Parent Couple’s Counseling: *INSERT*
+8. Family work/Parent coaching: *INSERT*
+
+It has been a pleasure to work with `r f_name` and `r pronoun` parents. I remain available to confer regarding the formulation of `r pronoun` disorders and psychological treatment as desired. Please contact me at the number below with any questions. 
+
+Respectfully yours,
+
+`r treating_clinician`, `r clinician_cred`,  
+`r clinician_position`,  
+`r clinician_location`,  
+National Institute of Mental Health,  
+National Institutes of Health,  
+Bethesda, MD  
+Tel: `r clinician_contact`  
+
+CC': `r p_f_name` `r p_l_name`; parent.
+
+\pagebreak
+
+***
+
+#### Patient self-report score summary
+
+During `r pronoun` treatment, we monitored `r f_name`'s symptoms through weekly self-report questionnaires, each summarized below. 
+
+*** 
+
+##### Depressive symptoms
+
+MFQ (Mood & Feelings Questionnaire): 13 items rated 0-2, clinical cutoff score = 12.
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% 
+  gather(Measure, value, s_mfq1w_tot, p_mfq1w_tot) %>%
+  ggplot(aes(x=Clinical_Visit_Date, y=value, colour=Measure), na.rm = TRUE) +
+  geom_line() +
+  geom_point(size=3) +
+  geom_text(aes(label=value), hjust=0, vjust=-1) +
+  labs(title="Depressive symptoms\n", x="\nDate of visit (MM-DD-YYYY)", y="MFQ Total\n") + 
+  scale_x_date(date_labels = "%m-%d-%Y") +
+  ylim(0,27) + 
+  scale_color_manual(labels = c("Parent", "Child"), values = c("#339900", "#CC0033")) +
+  theme_minimal() +
+  guides(color=guide_legend("Person reporting:")) 
+
+```
+
+***
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>%
+  select(Clinical_Visit_Date, Clinical_Visit_Number, s_mfq1w_tot, p_mfq1w_tot) %>%
+  kable(., col.names = c("Visit Date", "Visit Number", "Child MFQ", "Parent MFQ"))
+
+```
+
+\pagebreak
+
+***
+
+##### General anxiety symptoms 
+
+SCARED (Self-Report for Anxiety Related Emotional Disorders): 41 items rated 0-2, clinical cutoff = 25.
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>% 
+  gather(Measure, value, s_scared_tot, p_scared_tot) %>%
+  ggplot(aes(x=Clinical_Visit_Date, y=value, colour=Measure), na.rm = TRUE) +
+  geom_line() +
+  geom_point(size=3) +
+  geom_text(aes(label=value), hjust=0, vjust=-1) +
+  labs(title="General anxiety symptoms\n", x="\nDate of visit (MM-DD-YYYY)", y="SCARED Total\n") + 
+  scale_x_date(date_labels = "%m-%d-%Y") +
+  ylim(0,83) + 
+  scale_color_manual(labels = c("Parent", "Child"), values = c("#0066CC", "#FF00CC")) +
+  theme_minimal() +
+  guides(color=guide_legend("Person reporting:")) 
+
+```
+
+***
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>%
+  select(Clinical_Visit_Date, Clinical_Visit_Number, s_scared_tot, p_scared_tot) %>%
+  kable(., col.names = c("Visit Date", "Visit Number", "Child SCARED", "Parent SCARED"))
+
+```
+
+\pagebreak
+
+***
+
+##### Anhedonia symptoms 
+
+SHAPS (Snaith-Hamilton Pleasure Scale): 14 items rated 0-3, higher scores reflecting less pleasure.
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_shaps_tot)) %>% 
+  gather(Measure, value, s_shaps_tot) %>%
+  ggplot(aes(x=Clinical_Visit_Date, y=value, colour=Measure), na.rm = TRUE) +
+  geom_line() +
+  geom_point(size=3) +
+  geom_text(aes(label=value), hjust=0, vjust=-1) +
+  labs(title="Anhedonia symptoms\n", x="\nDate of visit (MM-DD-YYYY)", y="SHAPS Total\n") + 
+  scale_x_date(date_labels = "%m-%d-%Y") +
+  ylim(0,43) + 
+  scale_color_manual(labels = c("Child"), values = c("#FF9933")) +
+  theme_minimal() +
+  guides(color=guide_legend("Person reporting:")) 
+
+```
+
+***
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_shaps_tot)) %>%
+  select(Clinical_Visit_Date, Clinical_Visit_Number, s_shaps_tot) %>%
+  kable(., col.names = c("Visit Date", "Visit Number", "Child SHAPS"))
+
+```
+
+\pagebreak
+
+***
+
+##### Irritability symptoms 
+
+ARI (Affective Reactivity Index): 7 items rated 0-2, clinical cutoff = 2.
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>% 
+  gather(Measure, value, s_ari1w_tot, p_ari1w_tot) %>%
+  ggplot(aes(x=Clinical_Visit_Date, y=value, colour=Measure), na.rm = TRUE) +
+  geom_line() +
+  geom_point(size=3) +
+  geom_text(aes(label=value), hjust=0, vjust=-1) +
+  labs(title="Irritability symptoms\n", x="\nDate of visit (MM-DD-YYYY)", y="ARI Total\n") + 
+  scale_x_date(date_labels = "%m-%d-%Y") +
+  ylim(0,13) + 
+  scale_color_manual(labels = c("Parent", "Child"), values = c("#990099", "#339999")) +
+  theme_minimal() +
+  guides(color=guide_legend("Person reporting:")) 
+
+```
+
+***
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>%
+  select(Clinical_Visit_Date, Clinical_Visit_Number, s_ari1w_tot, p_ari1w_tot) %>%
+  kable(., col.names = c("Visit Date", "Visit Number", "Child ARI", "Parent ARI"))
+
+```
+
+\pagebreak
+
+***
+
+##### Social anxiety symptoms 
+
+LSAS (Liebowitz Social Anxiety Scale): 24 items rated 0-3, clinical cutoff = 30.
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_lsas_tot)) %>% 
+  gather(Measure, value, s_lsas_tot) %>%
+  ggplot(aes(x=Clinical_Visit_Date, y=value, colour=Measure), na.rm = TRUE) +
+  geom_line() +
+  geom_point(size=3) +
+  geom_text(aes(label=value), hjust=0, vjust=-1) +
+  labs(title="Social anxiety symptoms\n", x="\nDate of visit (MM-DD-YYYY)", y="LSAS Total\n") + 
+  scale_x_date(date_labels = "%m-%d-%Y") +
+  ylim(0,100) + 
+  scale_color_manual(labels = c("Child"), values = c("#FF6666")) +
+  theme_minimal() +
+  guides(color=guide_legend("Person reporting:")) 
+
+```
+
+***
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(s_lsas_tot)) %>%
+  select(Clinical_Visit_Date, Clinical_Visit_Number, s_lsas_tot) %>%
+  kable(., col.names = c("Visit Date", "Visit Number", "Child LSAS"))
+
+```
+
+\pagebreak
+
+***
+
+#### Alternative measures of depression: 
+
+##### Parent and child consensus on depression symptoms 
+
+CDRS (Children's Depression Rating Scale): 20 items. Each question is asked of both parent and child and then a consensus score reached by the clinician. Items range between 1-5 and 1-7, depending on the question.
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>%
+  ggplot(aes(x=Clinical_Visit_Date, y=value, colour=Measure), na.rm = TRUE) +
+  geom_line() +
+  geom_point(size=3) +
+  geom_text(aes(label=value), hjust=0, vjust=-1) +
+  labs(title="Depression symptoms\n", x="\nDate of visit (MM-DD-YYYY)", y="CDRS Total\n") + 
+  scale_x_date(date_labels = "%m-%d-%Y") +
+  ylim(0,125) + 
+  scale_color_manual(labels = c("Consensus"), values = c("#339900")) +
+  theme_minimal() +
+  guides(color=guide_legend("Person reporting:")) 
+
+```
+
+***
+
+```{r, echo=FALSE, warning=FALSE}
+
+data %>% filter(!is.na(c_cdrs_tot)) %>% select(Clinical_Visit_Date, Clinical_Visit_Number, c_cdrs_tot) %>%
+  kable(., col.names = c("Visit Date", "Visit Number", "CDRS"))
+
+```
+
+\pagebreak
+
+***

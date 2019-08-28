@@ -192,12 +192,12 @@ if (modules2run==7 | modules2run==8) {
     
     if (report_type=="progress") {
       print(string)
-      render(paste0(CBT_location, "Produce_CBT_progress_report_08152019.Rmd"), output_format = "word_document", 
+      render(paste0(scripts, "CBT_scripts/Produce_CBT_progress_report.Rmd"), output_format = "word_document", 
              output_file = paste0(Participant, "_", todays_date_formatted), output_dir = out_file)
     } else {
       render(paste0(scripts, "CBT_scripts/Produce_CBT_final_report.Rmd"), output_format = "word_document", 
              output_file = paste0(Participant, "_final_", todays_date_formatted), output_dir = out_file)
-      render(paste0(CBT_location, "Produce_CBT_final_report_provider_08092019.Rmd"), output_format = "word_document", 
+      render(paste0(scripts, "CBT_scripts/Produce_CBT_final_report_provider.Rmd"), output_format = "word_document", 
              output_file = paste0(Participant, "_final_provider_", todays_date_formatted), output_dir = out_file)
     }
     

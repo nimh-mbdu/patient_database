@@ -206,7 +206,7 @@
   
   clinical_DB <- master_IRTA_latest %>% 
     select(FIRST_NAME, LAST_NAME, Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker,
-           FIRST_NAME_P1, LAST_NAME_P1, FIRST_NAME_P2, LAST_NAME_P2,
+           FIRST_NAME_P1, LAST_NAME_P1, FIRST_NAME_P2, LAST_NAME_P2, Primary_clinician,
            SEX, DOB, Handedness, Participant_Type, Participant_Type2, Age_at_visit,
            Eligible, Clinical_Visit_Date, Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number,
            Scheduling_status, Protocol)

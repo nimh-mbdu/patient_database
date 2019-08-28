@@ -40,10 +40,9 @@ knitr::opts_chunk$set(echo = TRUE)
 # # packages ----------------------------------------------------------------
 # 
 # suppressPackageStartupMessages(library(readxl))
-# suppressPackageStartupMessages(library(xlsx))
+# suppressPackageStartupMessages(library(writexl))
 # suppressPackageStartupMessages(library(tidyr))
 # suppressPackageStartupMessages(library(dplyr))
-# suppressPackageStartupMessages(library(summarytools))
 # suppressPackageStartupMessages(library(rmarkdown))
 # suppressPackageStartupMessages(library(eeptools))
 # suppressPackageStartupMessages(library(openxlsx))
@@ -57,7 +56,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # suppressPackageStartupMessages(library(tidyverse))
 # suppressPackageStartupMessages(library(shiny))
 # suppressPackageStartupMessages(library(knitr))
-
+# 
 # Loading data ------------------------------------------------------------
 
 CBT_report <- read_excel(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
@@ -81,8 +80,9 @@ CBT_report <- CBT_report %>% select(-matches("_ari6m_"), -matches("_mfq_"))
 # if you want to check that the variable types have been successfully transformed: 
 # str(CBT_report, list.len=ncol(CBT_report))
 
+# Patient specific data ------------------------------------------------------------
+
 data <- CBT_report %>% filter(Initials==Participant)
-start <- data %>% filter(Clinical_Visit_Number==1) %>% select(Clinical_Visit_Date) %>% pull()
 
 # fixing name case
 f_name <- head(data$FIRST_NAME,1)
@@ -90,12 +90,31 @@ l_name <- head(data$LAST_NAME,1)
 f_name <- paste(substring(f_name, 1, 1), tolower(substring(f_name, 2)), sep = "", collapse = " ")
 l_name <- paste(substring(l_name, 1, 1), tolower(substring(l_name, 2)), sep = "", collapse = " ")
 
+# parent name
+
+p_f_name <- head(data$FIRST_NAME_P1,1,)
+p_l_name <- head(data$LAST_NAME_P1,1)
+p_f_name <- paste(substring(p_f_name, 1, 1), tolower(substring(p_f_name, 2)), sep = "", collapse = " ")
+p_l_name <- paste(substring(p_l_name, 1, 1), tolower(substring(p_l_name, 2)), sep = "", collapse = " ")
+
+# treatment related 
+start <- data %>% arrange(Clinical_Visit_Number) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull()
+end <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull()
+weeks_treat  <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Number) %>% pull()
+
+# provider <- head(data$Primary_clinician,1)
+
 # basic demographics 
 gender <- head(data$SEX,1) %>% tolower()
-age <- tail(data$Age_at_visit,1) %>% round(.,1)
+datebirth <- head(data$DOB,1)
+age <- age_calc(dob = datebirth, enddate = todays_date_formatted, units = "years", precise = TRUE) %>% round(., digits = 1) 
 dx <- head(data$c_ksadsdx_primary_dx,1)
 
-# setting clinician: 
+if (head(data$SEX,1)=="FEMALE") {
+  pronoun <- c("her")
+} else {pronoun <- c("his")}
+
+# Setting Clinician ------------------------------------------------------------
 
 if (Clinician=="Kathryn") {
   treating_clinician = "Kathryn DeLonga"
@@ -148,13 +167,13 @@ if (Clinician=="Kathryn") {
 **Treatment dates:**
 
 Began: `r start`  
-Finished: `r tail(data$Clinical_Visit_Date, 1)`
+Finished: `r end`
 
 ***
 
 Dear `r f_name`,  
 
-Congratulations on successfully completing the 13-session course of Behavioral Activation with the Mood Brain & Development Unit at the National Institute of Mental Health! Through your hard work and effort you have helped to advance the brain science that will help other teenagers in the future. Thank you!  
+Congratulations on successfully completing the `r weeks_treat`-session course of Behavioral Activation with the Mood Brain & Development Unit at the National Institute of Mental Health! Through your hard work and effort you have helped to advance the brain science that will help other teenagers in the future. Thank you!  
 
 During these weeks you have also practiced new skills and worked hard to make some important changes. You have learned how to identify and talk about your feelings and to communicate your needs and reach out for support. You have identified behaviors that lead to a downward/depressive spiral and alternative behaviors that help to improve your mood in both the short and long term, including:  
 
@@ -162,7 +181,7 @@ During these weeks you have also practiced new skills and worked hard to make so
 
 Additionally, you have learned strategies for solving problems and managing difficult feelings (COPE) and for setting and achieving your goals by making them SMART and breaking them into small, achievable parts. You have learned how to challenge avoidance through action by following your plan rather than your mood. Some of the tools you have used are included here for you to remember the hard work you have invested over these weeks at NIH and for you to continue to practice.  
 
-It has been a true pleasure to get to know you and to work with you over these 13 weeks. I wish you all the best!  
+It has been a true pleasure to get to know you and to work with you over these `r weeks_treat` weeks. I wish you all the best!  
 
 Sincerely Yours,
 
