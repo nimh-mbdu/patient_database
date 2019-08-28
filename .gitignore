@@ -1,6 +1,6 @@
 .RData
 .Rhistory
 to_change_before_running_master_script.xlsx
-CBT_scripts\.RData
-CBT_scripts\.Rhistory
-CBT_scripts\cbt_reports_to_produce.xlsx
+CBT_scripts/.RData
+CBT_scripts/.Rhistory
+CBT_scripts/cbt_reports_to_produce.xlsx
