@@ -39,7 +39,7 @@
   SDQ_Data_Download_raw <- read.delim(paste0(sdq_pull, latest_sdq_pull, ".txt"),  quote="",  
                                     encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
   
-  # adding special cases
+  #****** adding special cases
 
   SDQ_Data_Download_raw <- SDQ_Data_Download_raw %>% filter(PlusIID != "4711-5358-6649-5157")
   SDQ_Data_Download_raw <- SDQ_Data_Download_raw %>% filter(PlusIID != "8768-8233-7459-5808")
@@ -109,7 +109,27 @@
       print("Fixing FIRST_NAME")
       CTDB_Data_Download$FIRST_NAME <- gsub(eval(incorrect), eval(correct), CTDB_Data_Download$FIRST_NAME, fixed=TRUE)
       }
-    }
+  }
+  
+  #****** Manual entry database
+  
+  # manual_shaps <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SHAPS", skip=2) %>% select(-starts_with("x"))
+  # manual_mfq <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "MFQ", skip=2) %>% select(-starts_with("x"))
+  # manual_ari <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "ARI", skip=2) %>% select(-starts_with("x"))
+  # manual_lsas <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "LSAS", skip=2) %>% select(-starts_with("x"))
+  # manual_scared <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SCARED", skip=2) %>% select(-starts_with("x"))
+  # 
+  # mandb_sdans <- c(manual_shaps$SDAN, manual_mfq$SDAN, manual_ari$SDAN, manual_lsas$SDAN, manual_scared$SDAN) 
+  # mandb_sdans <- as.data.frame(mandb_sdans) %>% rename(SDAN = "mandb_sdans")
+  # 
+  # temp_ids <- master_IRTA_latest %>% select(SDAN, PLUSID) %>% rename(PlusIID = "PLUSID")
+  # mandb_sdans <- left_join(mandb_sdans, temp_ids) %>% distinct(., .keep_all = TRUE)
+  # rm(temp_ids)
+  # manual_sets <- ls(pattern="manual_")
+  # manual_sets <- c("mandb_sdans", manual_sets)
+  # manual_sets <- mget(manual_sets)
+  # 
+  # manual_combined <- reduce(manual_sets, full_join) 
 
   # Clean up -------------------------------------------
   
