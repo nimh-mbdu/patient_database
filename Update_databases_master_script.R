@@ -82,6 +82,7 @@ to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.
 
 # date
 todays_date_formatted <- c(to_change$todays_date_formatted)
+todays_date_formatted <- as.Date(todays_date_formatted)
 
 # task related 
 max_tasks <- c(to_change$max_tasks)
@@ -101,7 +102,7 @@ current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
 
 modules2run <- c(to_change$modules2run)
 # to overwrite the above, uncomment the below and enter number that you want to run isntead - reference the list below
-modules2run <- c(6)
+# modules2run <- c(8)
 
 # description of modules: 
 # 0 = none
@@ -175,8 +176,8 @@ if (modules2run==7 | modules2run==8) {
   cbt_participants <- read_excel(paste0(scripts, "CBT_scripts/cbt_reports_to_produce.xlsx")) 
   
   for(a in seq_len(nrow(cbt_participants))) {
-    iter9 <- as.numeric(a)
-    # iter9 = 1
+  iter9 <- as.numeric(a)
+    # iter9 = 5
     
     Participant <- as.character(cbt_participants[iter9, 1])
     Clinician <- as.character(cbt_participants[iter9, 2])
