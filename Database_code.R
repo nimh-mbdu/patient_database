@@ -113,23 +113,27 @@
   
   #****** Manual entry database
   
-  # manual_shaps <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SHAPS", skip=2) %>% select(-starts_with("x"))
-  # manual_mfq <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "MFQ", skip=2) %>% select(-starts_with("x"))
-  # manual_ari <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "ARI", skip=2) %>% select(-starts_with("x"))
-  # manual_lsas <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "LSAS", skip=2) %>% select(-starts_with("x"))
-  # manual_scared <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SCARED", skip=2) %>% select(-starts_with("x"))
-  # 
-  # mandb_sdans <- c(manual_shaps$SDAN, manual_mfq$SDAN, manual_ari$SDAN, manual_lsas$SDAN, manual_scared$SDAN) 
-  # mandb_sdans <- as.data.frame(mandb_sdans) %>% rename(SDAN = "mandb_sdans")
-  # 
-  # temp_ids <- master_IRTA_latest %>% select(SDAN, PLUSID) %>% rename(PlusIID = "PLUSID")
-  # mandb_sdans <- left_join(mandb_sdans, temp_ids) %>% distinct(., .keep_all = TRUE)
-  # rm(temp_ids)
-  # manual_sets <- ls(pattern="manual_")
-  # manual_sets <- c("mandb_sdans", manual_sets)
-  # manual_sets <- mget(manual_sets)
-  # 
-  # manual_combined <- reduce(manual_sets, full_join) 
+  manual_shaps <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SHAPS", skip=2) %>% 
+    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+  manual_mfq <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "MFQ", skip=2) %>% 
+    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+  manual_ari <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "ARI", skip=2) %>% 
+    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+  manual_lsas <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "LSAS", skip=2) %>% 
+    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+  manual_scared <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SCARED", skip=2) %>% 
+    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+
+  manual_sets <- ls(pattern="manual_")
+  manual_sets <- mget(manual_sets)
+  manual_combined <- reduce(manual_sets, full_join) %>% select(-Entry_date)
+  manual_combined <- manual_combined %>% 
+    group_by(SDAN, Overall_date) %>% 
+    fill(., names(manual_combined), .direction = "down") %>%
+    fill(., names(manual_combined), .direction = "up") %>%
+    ungroup() %>% 
+    distinct(., .keep_all = TRUE)
+  manual_combined$Overall_date <- as.Date(manual_combined$Overall_date)
 
   # Clean up -------------------------------------------
   
@@ -165,7 +169,7 @@
     select(-MRN, -SDAN, -DOB, -SEX, -Age_at_visit, -Overall_date, -CTDB_visit_name) %>% 
     rename(Protocol_CTDB = "Protocol") 
   
-  common_identifiers_child <- master_IRTA_latest %>% select(PLUSID, FIRST_NAME, LAST_NAME, SDAN) %>% 
+  common_identifiers_child <- master_IRTA_latest %>% select(PLUSID, FIRST_NAME, LAST_NAME, SDAN, Initials) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% 
     fill(PLUSID, .direction = "down") %>% fill(PLUSID, .direction = "up") %>% 
     ungroup() %>% 
@@ -174,13 +178,13 @@
   
   #****** CTDB parent name prep
 
-  parent_names <- master_IRTA_latest %>% select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, FIRST_NAME_P1, LAST_NAME_P1, FIRST_NAME_P2, LAST_NAME_P2) %>%
+  parent_names <- master_IRTA_latest %>% select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, FIRST_NAME_P1, LAST_NAME_P1, FIRST_NAME_P2, LAST_NAME_P2) %>%
     distinct(., .keep_all = TRUE)
-  parent_names[3:8] <- lapply(parent_names[3:8], str_to_upper)
+  parent_names[3:9] <- lapply(parent_names[3:9], str_to_upper)
   
   # parent 1:
   
-  common_identifiers_parent1 <- parent_names %>% select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, FIRST_NAME_P1, LAST_NAME_P1) %>%
+  common_identifiers_parent1 <- parent_names %>% select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, FIRST_NAME_P1, LAST_NAME_P1) %>%
     filter(!is.na(FIRST_NAME_P1)) %>% rename(FIRST_NAME_C = "FIRST_NAME", LAST_NAME_C = "LAST_NAME") %>% 
     rename(FIRST_NAME = "FIRST_NAME_P1", LAST_NAME = "LAST_NAME_P1") %>% distinct(., .keep_all = TRUE)
   ctdb_w_plusid_parent1 <- left_join(common_identifiers_parent1, ctdb_Data_Download_reduced, all=TRUE) %>%
@@ -188,7 +192,7 @@
 
   # parent 2:
   
-  common_identifiers_parent2 <- parent_names %>% select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, FIRST_NAME_P2, LAST_NAME_P2) %>%
+  common_identifiers_parent2 <- parent_names %>% select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, FIRST_NAME_P2, LAST_NAME_P2) %>%
     filter(!is.na(FIRST_NAME_P2)) %>% rename(FIRST_NAME_C = "FIRST_NAME", LAST_NAME_C = "LAST_NAME") %>% 
     rename(FIRST_NAME = "FIRST_NAME_P2", LAST_NAME = "LAST_NAME_P2") %>% distinct(., .keep_all = TRUE)
   ctdb_w_plusid_parent2 <- left_join(common_identifiers_parent2, ctdb_Data_Download_reduced, all=TRUE) %>%
@@ -197,7 +201,7 @@
   # combining these 
   
   ctdb_w_plusid_parent <- merge.default(ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, all=TRUE) %>% 
-    select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Protocol_CTDB, matches("_mfq"), matches("_ari"), matches("_scared"), matches("_medsctdb"))
+    select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, matches("_mfq"), matches("_ari"), matches("_scared"), matches("_medsctdb"))
 
   # coalescing any information incorrectly entered under 'self', rather than 'parent': 
   
@@ -213,7 +217,7 @@
     }
   
   ctdb_w_plusid_parent_reduced <- ctdb_w_plusid_parent %>% 
-    select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Protocol_CTDB, matches("p_mfq"), matches("p_ari"), matches("p_scared"), matches("_medsctdb"))
+    select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, matches("p_mfq"), matches("p_ari"), matches("p_scared"), matches("_medsctdb"))
 
   # joining parent and child report 
   
@@ -223,6 +227,13 @@
   
   sdq_w_names <- left_join(common_identifiers_child, SDQ_Data_Download, all=TRUE) %>% 
     mutate(source = "SDQ") %>% filter(!is.na(Overall_date))
+  
+  #****** 
+  
+  manual_db_w_names <- left_join(common_identifiers_child, manual_combined, all=TRUE) %>% 
+    mutate(source = "MANUAL") %>% filter(!is.na(Overall_date))
+  
+  #******   
   
   clinical_DB <- master_IRTA_latest %>% 
     select(FIRST_NAME, LAST_NAME, Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker,
@@ -262,12 +273,14 @@
   
   for(i in seq_along(tot_sum)) {
     iter <- as.numeric(i)
-    # iter=2
+    # iter=1
     measure_name <- tot_sum[iter]
     
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE)
+    measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
+    measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE)
     
     measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% ncol() %>% as.numeric()
     measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% apply(., 1, count_na)
@@ -275,10 +288,10 @@
     measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
     
     if (measure_name=="p_mfq_" | measure_name=="p_mfq1w_" | measure_name=="p_ari1w_" | measure_name=="p_ari6m_") {
-      measure_temp_sdq[,8:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,8:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% rowSums(na.rm=TRUE)
     } else {
-      measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
     }
     
@@ -293,20 +306,20 @@
     measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
 
     if (measure_name=="s_mfq1w_") {
-      measure_temp_sdq[,6:18] <- sapply(measure_temp_sdq[,6:18], replace_na, '-9')
+      measure_temp_sdq[,7:19] <- sapply(measure_temp_sdq[,7:19], replace_na, '-9')
       measure_temp_sdq <- measure_temp_sdq %>% 
         filter(s_mfq1w_1_unhappy<4 & s_mfq1w_2_didnt_enjoy<4 & s_mfq1w_3_tired<4 & s_mfq1w_4_restless<4 &
                  s_mfq1w_5_no_good<4 & s_mfq1w_6_cried<4 & s_mfq1w_7_hard_think<4 & s_mfq1w_8_hate_myself<4 &
                  s_mfq1w_9_bad_person<4 & s_mfq1w_10_lonely<4 & s_mfq1w_11_nobody_love<4 & s_mfq1w_12_good_other_kid<4 &
                  s_mfq1w_13_all_wrong<4)
-      measure_temp_sdq[,6:18] <- lapply(measure_temp_sdq[,6:18], na_if, '-9')
-      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches(measure_name)) 
+      measure_temp_sdq[,7:19] <- lapply(measure_temp_sdq[,7:19], na_if, '-9')
+      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches(measure_name)) 
     } else if (measure_name=="p_mfq1w_") {
       measure_temp_sdq <- measure_temp_sdq
-      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches(measure_name)) 
+      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches(measure_name)) 
     } else {
       measure_temp_sdq <- measure_temp_sdq
-      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches(measure_name)) %>% 
+      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches(measure_name)) %>% 
       rename(date_temp = ends_with("_date")) %>% rename(tempcomplete = ends_with("_complete")) %>% rename(temptotal = ends_with("_tot")) %>% 
         filter(!is.na(temptotal))
       }
@@ -316,22 +329,22 @@
     
     measure_temp_combined <- merge.default(measure_temp_ctdb, measure_temp_sdq, all=TRUE) %>% 
       rename(measure_temp_source = source) %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
-      filter(1:n() == 1) %>% 
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
+      filter(1:n() == 1) %>%
       ungroup()
 
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
-      select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
     measure_temp_clinical <- measure_temp_clinical %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+      group_by(Initials, Clinical_Visit_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
@@ -345,16 +358,16 @@
     assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
     
     measure_temp_task <- merge.default(task_DB_date, measure_temp_combined, all=TRUE) %>% 
-      select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
     measure_temp_task <- measure_temp_task %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+      group_by(Initials, Task_Name, Task_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      group_by(FIRST_NAME, LAST_NAME, Task_Name, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Task_Name, date_temp, measurement_TDiff_abs) %>% 
+      group_by(Initials, Task_Name, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
@@ -386,9 +399,12 @@
     iter <- as.numeric(i)
     # iter=2
     measure_name <- scared[iter]
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE) 
+    
+    measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
+    measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE)
     
     if (measure_name=="p_scared_") {
       
@@ -397,7 +413,7 @@
       measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
       
-      measure_temp_sdq[,8:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,8:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% rowSums(na.rm=TRUE)
       
       measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% complete.cases(.)
@@ -411,7 +427,7 @@
       measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
       
-      measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
       
       measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
@@ -431,7 +447,7 @@
     measure_temp_sdq$date_temp <- measure_temp_sdq$Overall_date
     measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     
-    measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches(measure_name)) %>% 
+    measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches(measure_name)) %>% 
       rename(date_temp = ends_with("_date")) %>% rename(tempcomplete = ends_with("_complete")) %>% 
       rename(panic_subscale_temp = ends_with("panic_tot")) %>% rename(gad_subscale_temp = ends_with("gad_tot")) %>% 
       rename(sep_subscale_temp = ends_with("sep_tot")) %>% rename(social_subscale_temp = ends_with("social_tot")) %>% 
@@ -440,24 +456,24 @@
     
     measure_temp_combined <- merge.default(measure_temp_ctdb, measure_temp_sdq, all=TRUE) %>% 
       rename(measure_temp_source = source) %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
       filter(1:n() == 1) %>% 
       ungroup()
     
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
-      select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal,
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal,
              panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
              measure_temp_source, tempcomplete)
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
     measure_temp_clinical <- measure_temp_clinical %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+      group_by(Initials, Clinical_Visit_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
@@ -476,18 +492,18 @@
     assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
     
     measure_temp_task <- merge.default(task_DB_date, measure_temp_combined, all=TRUE) %>% 
-      select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, 
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, 
              panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
              measure_temp_source, tempcomplete)
     measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
     measure_temp_task <- measure_temp_task %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+      group_by(Initials, Task_Name, Task_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      group_by(FIRST_NAME, LAST_NAME, Task_Name, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Task_Name, date_temp, measurement_TDiff_abs) %>% 
+      group_by(Initials, Task_Name, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
@@ -510,10 +526,13 @@
 #####
 # lsas:
   
-  s_lsas_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_lsas_')) %>% 
+  s_lsas_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_lsas_')) %>% 
     distinct(., .keep_all = TRUE)
+  
+  s_lsas_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_lsas_'))
+  s_lsas_subset_sdq <- merge.default(s_lsas_subset_sdq, s_lsas_manual, all=TRUE)
     
-  s_lsas_subset_sdq[,6:ncol(s_lsas_subset_sdq)] <- sapply(s_lsas_subset_sdq[,6:ncol(s_lsas_subset_sdq)], as.numeric) 
+  s_lsas_subset_sdq[,7:ncol(s_lsas_subset_sdq)] <- sapply(s_lsas_subset_sdq[,7:ncol(s_lsas_subset_sdq)], as.numeric) 
   
   s_lsas_subset_sdq$no_columns <- s_lsas_subset_sdq %>% select(matches('s_lsas_')) %>% ncol() %>% as.numeric()
   s_lsas_subset_sdq$NA_count <- s_lsas_subset_sdq %>% select(matches('s_lsas_')) %>% apply(., 1, count_na)
@@ -536,43 +555,43 @@
   s_lsas_subset_sdq$s_lsas_date <- s_lsas_subset_sdq$Overall_date
   s_lsas_subset_sdq <- s_lsas_subset_sdq %>% select(-Overall_date)
   
-  s_lsas_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches('s_lsas_')) %>% 
+  s_lsas_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('s_lsas_')) %>% 
     filter(!is.na(s_lsas_date))
   
   s_lsas_subset <- merge.default(s_lsas_subset_ctdb, s_lsas_subset_sdq, all=TRUE) %>% 
     rename(s_lsas_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_lsas_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_lsas_date, desc(s_lsas_tot), desc(s_lsas_source)) %>%
+    group_by(Initials, s_lsas_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_lsas_date, desc(s_lsas_tot), desc(s_lsas_source)) %>%
     filter(1:n() == 1) %>% 
     ungroup()
   
   s_lsas_subset_clinical <- merge.default(clinical_DB_date, s_lsas_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_lsas_source, matches('s_lsas_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_lsas_source, matches('s_lsas_'))
   s_lsas_subset_clinical$s_lsas_TDiff <- as.numeric(difftime(s_lsas_subset_clinical$Clinical_Visit_Date, s_lsas_subset_clinical$s_lsas_date, tz="", units = "days"))
   s_lsas_subset_clinical <- s_lsas_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_lsas_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_lsas_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_lsas_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, s_lsas_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_lsas_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
   
   s_lsas_subset_task <- merge.default(task_DB_date, s_lsas_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, s_lsas_source, matches('s_lsas_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, s_lsas_source, matches('s_lsas_'))
   s_lsas_subset_task$s_lsas_TDiff <- as.numeric(difftime(s_lsas_subset_task$Task_Date, s_lsas_subset_task$s_lsas_date, tz="", units = "days"))
   s_lsas_subset_task <- s_lsas_subset_task %>% 
     mutate(measurement_TDiff_abs=abs(s_lsas_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, Task_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, s_lsas_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, s_lsas_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, s_lsas_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, s_lsas_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -581,10 +600,13 @@
 #####
 # shaps
   
-  s_shaps_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_shaps_')) %>% 
+  s_shaps_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_shaps_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_shaps_subset_sdq[,6:19] <- sapply(s_shaps_subset_sdq[,6:19], as.numeric) 
+  s_shaps_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_shaps_'))
+  s_shaps_subset_sdq <- merge.default(s_shaps_subset_sdq, s_shaps_manual, all=TRUE)
+  
+  s_shaps_subset_sdq[,7:20] <- sapply(s_shaps_subset_sdq[,7:20], as.numeric) 
   
   s_shaps_subset_sdq$no_columns <- s_shaps_subset_sdq %>% select(matches('s_shaps_')) %>% ncol() %>% as.numeric()
   s_shaps_subset_sdq$NA_count <- s_shaps_subset_sdq %>% select(matches('s_shaps_')) %>% apply(., 1, count_na)
@@ -592,9 +614,9 @@
   s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
 
   s_shaps_binary <- s_shaps_subset_sdq
-  s_shaps_binary[,6:19]  <- lapply(s_shaps_binary[,6:19], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=1, `3`=1, .missing = NULL))
+  s_shaps_binary[,7:20]  <- lapply(s_shaps_binary[,7:20], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=1, `3`=1, .missing = NULL))
   s_shaps_binary$s_shaps_binary_tot <- s_shaps_binary %>% select(matches('s_shaps_')) %>% rowSums(na.rm=TRUE) 
-  s_shaps_binary <- s_shaps_binary %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, s_shaps_binary_tot)
+  s_shaps_binary <- s_shaps_binary %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, s_shaps_binary_tot)
   
   s_shaps_subset_sdq$s_shaps_tot <- s_shaps_subset_sdq %>% select(matches('s_shaps_')) %>% rowSums(na.rm=TRUE)
   
@@ -607,46 +629,46 @@
   s_shaps_subset_sdq$s_shaps_date <- s_shaps_subset_sdq$Overall_date
   s_shaps_subset_sdq <- s_shaps_subset_sdq %>% select(-Overall_date)
   
-  s_shaps_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches('s_shaps_')) %>% 
+  s_shaps_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('s_shaps_')) %>% 
     filter(!is.na(s_shaps_date))
-  s_shaps_subset_ctdb[,6:19]  <- lapply(s_shaps_subset_ctdb[,6:19], FUN = function(x) recode(x, `1`=0, `2`=1, `3`=2, `4`=3, .missing = NULL))
+  s_shaps_subset_ctdb[,7:20]  <- lapply(s_shaps_subset_ctdb[,7:20], FUN = function(x) recode(x, `1`=0, `2`=1, `3`=2, `4`=3, .missing = NULL))
   
   s_shaps_subset <- merge.default(s_shaps_subset_ctdb, s_shaps_subset_sdq, all=TRUE) %>% 
     rename(s_shaps_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_shaps_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_shaps_date, desc(s_shaps_tot), desc(s_shaps_source)) %>%
+    group_by(Initials, s_shaps_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_shaps_date, desc(s_shaps_tot), desc(s_shaps_source)) %>%
     filter(1:n() == 1) %>% 
     ungroup()
   
   s_shaps_subset_clinical <- merge.default(clinical_DB_date, s_shaps_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_shaps_source, matches('s_shaps_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_shaps_source, matches('s_shaps_'))
   s_shaps_subset_clinical$s_shaps_TDiff <- as.numeric(difftime(s_shaps_subset_clinical$Clinical_Visit_Date, s_shaps_subset_clinical$s_shaps_date, tz="", units = "days"))
   
   s_shaps_subset_clinical <- s_shaps_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_shaps_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_shaps_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_shaps_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, s_shaps_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_shaps_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
   
   s_shaps_subset_task <- merge.default(task_DB_date, s_shaps_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, s_shaps_source, matches('s_shaps_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, s_shaps_source, matches('s_shaps_'))
   s_shaps_subset_task$s_shaps_TDiff <- as.numeric(difftime(s_shaps_subset_task$Task_Date, s_shaps_subset_task$s_shaps_date, tz="", units = "days"))
   
   s_shaps_subset_task <- s_shaps_subset_task %>% 
     mutate(measurement_TDiff_abs=abs(s_shaps_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, Task_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, s_shaps_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, s_shaps_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, s_shaps_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, s_shaps_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -661,7 +683,7 @@
                "c_ksadsdx_epset_current_mdd", "c_ksadsdx_epset_current_submdd", "c_ksadsdx_epset_current_mddsympt", 
                "c_ksadsdx_epset_current_mania", "c_ksadsdx_epset_current_hypomania")
   
-  diagnosis_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('c_ksadsdx')) 
+  diagnosis_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx')) 
   diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], as.character)
   diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], na_if, '')
 
@@ -686,32 +708,32 @@
   
   diagnosis_subset_task <- merge.default(task_DB_date, diagnosis_subset_sdq, all=TRUE) %>% 
     rename(c_ksadsdx_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_ksadsdx_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_ksadsdx_date) %>%
+    group_by(Initials, c_ksadsdx_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_ksadsdx_date) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, c_ksadsdx_date, matches("c_ksadsdx_"))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, c_ksadsdx_date, matches("c_ksadsdx_"))
   
   diagnosis_subset_task$diagnosis_TDiff <- as.numeric(difftime(diagnosis_subset_task$Task_Date, diagnosis_subset_task$c_ksadsdx_date, tz="", units = "days"))
   diagnosis_subset_task <- diagnosis_subset_task %>% 
     mutate(measurement_TDiff_abs=abs(diagnosis_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, Task_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     select(-measurement_TDiff_abs)
   
   diagnosis_subset_clinical <- merge.default(clinical_DB_date, diagnosis_subset_sdq, all=TRUE) %>% 
     rename(c_ksadsdx_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_ksadsdx_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_ksadsdx_date) %>%
+    group_by(Initials, c_ksadsdx_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_ksadsdx_date) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, c_ksadsdx_date, matches('c_ksadsdx_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_ksadsdx_date, matches('c_ksadsdx_'))
   
   diagnosis_subset_clinical$diagnosis_TDiff <- as.numeric(difftime(diagnosis_subset_clinical$Clinical_Visit_Date, diagnosis_subset_clinical$c_ksadsdx_date, tz="", units = "days"))
   diagnosis_subset_clinical <- diagnosis_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(diagnosis_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, c_ksadsdx_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, c_ksadsdx_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     select(-measurement_TDiff_abs)
@@ -721,10 +743,10 @@
 #####
 # IQ:
   
-  c_wasi_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('c_wasi_')) %>% 
+  c_wasi_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_wasi_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  c_wasi_subset_sdq[,6:8] <- sapply(c_wasi_subset_sdq[,6:8], as.character) 
+  c_wasi_subset_sdq[,7:9] <- sapply(c_wasi_subset_sdq[,7:9], as.character) 
   
   c_wasi_subset_sdq$no_columns <- c_wasi_subset_sdq %>% select(matches('c_wasi_')) %>% ncol() %>% as.numeric()
   c_wasi_subset_sdq$NA_count <- c_wasi_subset_sdq %>% select(matches('c_wasi_')) %>% apply(., 1, count_na)
@@ -734,29 +756,29 @@
   c_wasi_subset_sdq$c_wasi_date <- c_wasi_subset_sdq$Overall_date
   c_wasi_subset_sdq <- c_wasi_subset_sdq %>% select(-Overall_date)
   
-  c_wasi_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches('c_wasi_')) %>% 
+  c_wasi_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('c_wasi_')) %>% 
     filter(!is.na(c_wasi_date))
 
   c_wasi_subset <- merge.default(c_wasi_subset_ctdb, c_wasi_subset_sdq, all=TRUE) %>% 
     rename(c_wasi_source = source) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% 
-    arrange(FIRST_NAME, LAST_NAME, desc(c_wasi_date), desc(c_wasi_iq), desc(c_wasi_source)) %>%
+    arrange(FIRST_NAME, LAST_NAME, Initials, desc(c_wasi_date), desc(c_wasi_iq), desc(c_wasi_source)) %>%
     filter(1:n() == 1) %>% 
     ungroup()
   
   c_wasi_subset_clinical <- merge.default(clinical_DB_date, c_wasi_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, c_wasi_source, c_wasi_date, matches('c_wasi_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_wasi_source, c_wasi_date, matches('c_wasi_'))
   
   c_wasi_subset_task <- merge.default(task_DB_date, c_wasi_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, c_wasi_source, c_wasi_date, matches('c_wasi_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, c_wasi_source, c_wasi_date, matches('c_wasi_'))
   
 #####
 # TANNER: 
   
-  s_tanner_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_tanner_')) %>% 
+  s_tanner_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_tanner_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_tanner_subset_sdq[,6:9] <- sapply(s_tanner_subset_sdq[,6:9], as.character) 
+  s_tanner_subset_sdq[,7:10] <- sapply(s_tanner_subset_sdq[,7:10], as.character) 
   
   s_tanner_subset_sdq$no_columns <- s_tanner_subset_sdq %>% select(matches('s_tanner_')) %>% ncol() %>% as.numeric()
   s_tanner_subset_sdq$NA_count <- s_tanner_subset_sdq %>% select(matches('s_tanner_')) %>% apply(., 1, count_na)
@@ -766,36 +788,36 @@
   s_tanner_subset_sdq$s_tanner_date <- s_tanner_subset_sdq$Overall_date
   s_tanner_subset_sdq <- s_tanner_subset_sdq %>% select(-Overall_date)
   
-  s_tanner_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches('s_tanner_')) %>% 
+  s_tanner_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('s_tanner_')) %>% 
     filter(!is.na(s_tanner_date))
   
   s_tanner_subset <- merge.default(s_tanner_subset_ctdb, s_tanner_subset_sdq, all=TRUE) %>% 
     rename(s_tanner_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_tanner_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_tanner_date, desc(s_tanner_source)) %>%
+    group_by(Initials, s_tanner_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_tanner_date, desc(s_tanner_source)) %>%
     filter(1:n() == 1) %>% 
     ungroup()
   
   s_tanner_subset_clinical <- merge.default(clinical_DB_date, s_tanner_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_tanner_source, s_tanner_date, matches('s_tanner_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_tanner_source, s_tanner_date, matches('s_tanner_'))
   s_tanner_subset_clinical$s_tanner_TDiff <- as.numeric(difftime(s_tanner_subset_clinical$Clinical_Visit_Date, s_tanner_subset_clinical$s_tanner_date, tz="", units = "days"))
   
   s_tanner_subset_clinical <- s_tanner_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_tanner_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     select(-measurement_TDiff_abs)
   
   s_tanner_subset_task <- merge.default(task_DB_date, s_tanner_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, s_tanner_source, s_tanner_date, matches('s_tanner_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, s_tanner_source, s_tanner_date, matches('s_tanner_'))
   s_tanner_subset_task$s_tanner_TDiff <- as.numeric(difftime(s_tanner_subset_task$Task_Date, s_tanner_subset_task$s_tanner_date, tz="", units = "days"))
   
   s_tanner_subset_task <- s_tanner_subset_task %>% 
     mutate(measurement_TDiff_abs=abs(s_tanner_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, Task_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     select(-measurement_TDiff_abs)
@@ -803,10 +825,10 @@
 #####
 # Handedness - needs date 
   
-  s_handedness_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_handedness_')) %>% 
+  s_handedness_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_handedness_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_handedness_subset_sdq[,6:ncol(s_handedness_subset_sdq)] <- sapply(s_handedness_subset_sdq[,6:ncol(s_handedness_subset_sdq)], as.numeric) 
+  s_handedness_subset_sdq[,7:ncol(s_handedness_subset_sdq)] <- sapply(s_handedness_subset_sdq[,7:ncol(s_handedness_subset_sdq)], as.numeric) 
   
   s_handedness_subset_sdq$no_columns <- s_handedness_subset_sdq %>% select(matches('s_handedness_')) %>% ncol() %>% as.numeric()
   s_handedness_subset_sdq$NA_count <- s_handedness_subset_sdq %>% select(matches('s_handedness_')) %>% apply(., 1, count_na)
@@ -851,10 +873,10 @@
   s_handedness_subset_sdq$s_handedness_ehi_complete[s_handedness_subset_sdq$s_handedness_ehi_complete=="TRUE"] <- "1"
 
   s_handedness_subset_sdq$s_handedness_ehi_date <- s_handedness_subset_sdq$Overall_date
-  s_handedness_subset_sdq <- s_handedness_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, s_handedness_ehi_tot, s_handedness_ehi_date, s_handedness_ehi_complete) %>% 
+  s_handedness_subset_sdq <- s_handedness_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, s_handedness_ehi_tot, s_handedness_ehi_date, s_handedness_ehi_complete) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_handedness_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, matches('s_handedness')) %>% 
+  s_handedness_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('s_handedness')) %>% 
     filter(!is.na(s_handedness_ehi_date) | !is.na(s_handedness1_date))
   
   s_handedness_subset_ctdb$s_handedness_ehi_date <- coalesce(s_handedness_subset_ctdb$s_handedness_ehi_date, s_handedness_subset_ctdb$s_handedness1_date)
@@ -866,7 +888,7 @@
   s_handedness_subset <- merge.default(s_handedness_subset_ctdb, s_handedness_subset_sdq, all=TRUE) %>% 
     rename(s_handedness_ehi_source = source) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% 
-    arrange(FIRST_NAME, LAST_NAME, desc(s_handedness_ehi_date), desc(s_handedness_ehi_tot), desc(s_handedness_ehi_source)) %>%
+    arrange(FIRST_NAME, LAST_NAME, Initials, desc(s_handedness_ehi_date), desc(s_handedness_ehi_tot), desc(s_handedness_ehi_source)) %>%
     filter(1:n() == 1) %>%
     ungroup()
   s_handedness_subset$s_handedness_ehi_tot <- as.numeric(s_handedness_subset$s_handedness_ehi_tot)
@@ -875,16 +897,16 @@
     mutate(s_handedness_ehi = ifelse(s_handedness_ehi_tot < -40, "LEFT", ifelse(s_handedness_ehi_tot >= 40, "RIGHT", "AMBIDEXTROUS")))
   
   s_handedness_subset_clinical <- merge.default(clinical_DB_date, s_handedness_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_handedness_ehi_source, s_handedness_ehi_date, matches('s_handedness_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_handedness_ehi_source, s_handedness_ehi_date, matches('s_handedness_'))
   
   s_handedness_subset_task <- merge.default(task_DB_date, s_handedness_subset, all=TRUE) %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, s_handedness_ehi_source, s_handedness_ehi_date, matches('s_handedness_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, s_handedness_ehi_source, s_handedness_ehi_date, matches('s_handedness_'))
   
 # Medication --------------------------------------------------------------
   
   ###
   
-  c_medsclin_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Overall_date, source, c_medsclin_date, 
+  c_medsclin_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, c_medsclin_date, 
                                               c_medsclin_clinician_name, c_medsclin_person_completing:c_medsclin_othernotes) %>% 
     filter(!is.na(Overall_date)) %>% 
     distinct(., .keep_all = TRUE)
@@ -893,9 +915,9 @@
   c_medsclin_sdq$c_medsclin_date <- coalesce(c_medsclin_sdq$c_medsclin_date, c_medsclin_sdq$Overall_date) 
   c_medsclin_sdq <- c_medsclin_sdq %>% select(-Overall_date)
 
-  c_medsclin_sdq[,6:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,6:ncol(c_medsclin_sdq)], as.character)
-  c_medsclin_sdq[,6:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,6:ncol(c_medsclin_sdq)], na_if, 999)
-  c_medsclin_sdq[,6:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,6:ncol(c_medsclin_sdq)], na_if, "") 
+  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], as.character)
+  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], na_if, 999)
+  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], na_if, "") 
 
   c_medsclin_sdq$no_columns <- c_medsclin_sdq %>% select(c_medsclin_treatment_changes, matches("med1name")) %>% ncol() %>% as.numeric()
   c_medsclin_sdq$NA_count <- c_medsclin_sdq %>% select(c_medsclin_treatment_changes, matches("med1name")) %>% apply(., 1, count_na)
@@ -904,7 +926,7 @@
   
   ###
 
-  c_medsclin1yr_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Overall_date, source, c_medsclin1yr_date, c_medsclin1yr_baseline_date,
+  c_medsclin1yr_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, c_medsclin1yr_date, c_medsclin1yr_baseline_date,
                                            c_medsclin1yr_clinician_name, c_medsclin1yr_02_med1name:c_medsclin1yr_othernotes) %>% 
     filter(!is.na(Overall_date)) %>% 
     distinct(., .keep_all = TRUE)
@@ -927,20 +949,20 @@
   
   c_medsclin_sdq_task <- merge.default(task_DB_date, c_medsclin_sdq, all=TRUE) %>% 
     rename(c_medsclin_sdq_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_medsclin_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_medsclin_date) %>%
+    group_by(Initials, c_medsclin_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin_date) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, c_medsclin_date, matches("c_medsclin_"))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, c_medsclin_date, matches("c_medsclin_"))
   
   c_medsclin_sdq_task$c_medsclin_TDiff <- as.numeric(difftime(c_medsclin_sdq_task$Task_Date, c_medsclin_sdq_task$c_medsclin_date, tz="", units = "days"))
   c_medsclin_sdq_task <- c_medsclin_sdq_task %>% 
     mutate(measurement_TDiff_abs=abs(c_medsclin_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, Task_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, c_medsclin_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, c_medsclin_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, c_medsclin_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_medsclin_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -948,20 +970,20 @@
   
   c_medsclin_sdq_clinical <- merge.default(clinical_DB_date, c_medsclin_sdq, all=TRUE) %>% 
     rename(c_medsclin_sdq_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_medsclin_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_medsclin_date) %>%
+    group_by(Initials, c_medsclin_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin_date) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, c_medsclin_date, matches("c_medsclin_"))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_medsclin_date, matches("c_medsclin_"))
   
   c_medsclin_sdq_clinical$c_medsclin_TDiff <- as.numeric(difftime(c_medsclin_sdq_clinical$Clinical_Visit_Date, c_medsclin_sdq_clinical$c_medsclin_date, tz="", units = "days"))
   c_medsclin_sdq_clinical <- c_medsclin_sdq_clinical %>% 
     mutate(measurement_TDiff_abs=abs(c_medsclin_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_medsclin_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_medsclin_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, c_medsclin_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -971,20 +993,20 @@
   
   c_medsclin1yr_sdq_task <- merge.default(task_DB_date, c_medsclin1yr_sdq, all=TRUE) %>% 
     rename(c_medsclin1yr_sdq_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_medsclin1yr_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_medsclin1yr_date) %>%
+    group_by(Initials, c_medsclin1yr_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin1yr_date) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, c_medsclin1yr_date, matches("c_medsclin1yr_"))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, c_medsclin1yr_date, matches("c_medsclin1yr_"))
   
   c_medsclin1yr_sdq_task$c_medsclin1yr_TDiff <- as.numeric(difftime(c_medsclin1yr_sdq_task$Task_Date, c_medsclin1yr_sdq_task$c_medsclin1yr_date, tz="", units = "days"))
   c_medsclin1yr_sdq_task <- c_medsclin1yr_sdq_task %>% 
     mutate(measurement_TDiff_abs=abs(c_medsclin1yr_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, Task_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, Task_Name, c_medsclin1yr_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Task_Name, c_medsclin1yr_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Task_Name, c_medsclin1yr_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_medsclin1yr_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -992,20 +1014,20 @@
   
   c_medsclin1yr_sdq_clinical <- merge.default(clinical_DB_date, c_medsclin1yr_sdq, all=TRUE) %>% 
     rename(c_medsclin1yr_sdq_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_medsclin1yr_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_medsclin1yr_date) %>%
+    group_by(Initials, c_medsclin1yr_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin1yr_date) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, c_medsclin1yr_date, matches("c_medsclin1yr_"))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_medsclin1yr_date, matches("c_medsclin1yr_"))
   
   c_medsclin1yr_sdq_clinical$c_medsclin1yr_TDiff <- as.numeric(difftime(c_medsclin1yr_sdq_clinical$Clinical_Visit_Date, c_medsclin1yr_sdq_clinical$c_medsclin1yr_date, tz="", units = "days"))
   c_medsclin1yr_sdq_clinical <- c_medsclin1yr_sdq_clinical %>% 
     mutate(measurement_TDiff_abs=abs(c_medsclin1yr_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_medsclin1yr_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_medsclin1yr_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, c_medsclin1yr_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin1yr_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1023,7 +1045,7 @@
     # iter=1
     measure_name <- tot_sum_clin[iter]
     
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Overall_date, source, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE)
     
@@ -1040,19 +1062,19 @@
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
       }  
     
-    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, date_temp, source, matches(measure_name))
+    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
     
     if (measure_name=="s_promis_") {
       print("recoding measure")
       measure_temp_sdq <- measure_temp_sdq %>% 
         select(PLUSID:source, s_promis_1_restless, s_promis_4_falling_asleep, s_promis_5_troublesleeping, s_promis_8_stayingasleep,
                s_promis_2_satisfied, s_promis_3_refreshing, s_promis_6_enough_sleep, s_promis_7_quality)
-      measure_temp_sdq[,6:9] <- lapply(measure_temp_sdq[,6:9], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
-      measure_temp_sdq[,10:13] <- lapply(measure_temp_sdq[,10:13], FUN = function(x) recode(x, `0`=5, `1`=9, `2`=8, `3`=2, `4`=1, .missing = NULL))
-      measure_temp_sdq[,10:13] <- lapply(measure_temp_sdq[,10:13], FUN = function(x) recode(x, `5`=5, `9`=4, `8`=3, `2`=2, `1`=1, .missing = NULL))
+      measure_temp_sdq[,7:10] <- lapply(measure_temp_sdq[,7:10], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+      measure_temp_sdq[,11:14] <- lapply(measure_temp_sdq[,11:14], FUN = function(x) recode(x, `0`=5, `1`=9, `2`=8, `3`=2, `4`=1, .missing = NULL))
+      measure_temp_sdq[,11:14] <- lapply(measure_temp_sdq[,11:14], FUN = function(x) recode(x, `5`=5, `9`=4, `8`=3, `2`=2, `1`=1, .missing = NULL))
     } else if (measure_name=="s_mpss_") {
       print("recoding measure")
-      measure_temp_sdq[,6:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `6`=7, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+      measure_temp_sdq[,7:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `6`=7, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
     } else if (measure_name=="s_bads_") {
       print("recoding measure")
       measure_temp_sdq <- measure_temp_sdq %>% 
@@ -1062,15 +1084,15 @@
                s_bads_13_time_thinking, s_bads_14_not_tried_solutions, s_bads_15_think_past, s_bads_16_didnt_see_friends, s_bads_17_array_activities,
                s_bads_18_not_social, s_bads_19_pushed_people, s_bads_20_cut_off_from_people, s_bads_21_time_off, s_bads_22_not_active, s_bads_24_distract, 
                s_bads_25_felt_bad)
-      measure_temp_sdq[,13:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,13:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `0`=7, `1`=8, `2`=9, `3`=3, `4`=2, `5`=1, `6`=0, .missing = NULL))
-      measure_temp_sdq[,13:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,13:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `7`=6, `8`=5, `9`=4, `3`=3, `2`=2, `1`=1, `0`=0, .missing = NULL))
+      measure_temp_sdq[,14:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,14:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `0`=7, `1`=8, `2`=9, `3`=3, `4`=2, `5`=1, `6`=0, .missing = NULL))
+      measure_temp_sdq[,14:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,14:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `7`=6, `8`=5, `9`=4, `3`=3, `2`=2, `1`=1, `0`=0, .missing = NULL))
     } else {
       print("no recoding necessary for this measure")
     }
     
     if (measure_name=="c_cadam_") {
       
-      measure_temp_sdq[,10:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,10:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,11:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,11:ncol(measure_temp_sdq)], as.numeric)
       
       measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(c_cadam_1_sad_facial:c_cadam_15_leisure_activities) %>% ncol() %>% as.numeric()
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(c_cadam_1_sad_facial:c_cadam_15_leisure_activities) %>% apply(., 1, count_na)
@@ -1081,7 +1103,7 @@
       
     } else if (measure_name=="c_cdrs_") {
       
-      measure_temp_sdq[,6:(ncol(measure_temp_sdq)-2)] <- sapply(measure_temp_sdq[,6:(ncol(measure_temp_sdq)-2)], as.numeric)
+      measure_temp_sdq[,7:(ncol(measure_temp_sdq)-2)] <- sapply(measure_temp_sdq[,7:(ncol(measure_temp_sdq)-2)], as.numeric)
       
       measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(c_cdrs_1_depress_feel:c_cdrs_9a_sleep_disturb_middl_night) %>% ncol() %>% as.numeric()
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(c_cdrs_1_depress_feel:c_cdrs_9a_sleep_disturb_middl_night) %>% apply(., 1, count_na)
@@ -1094,7 +1116,7 @@
       
     } else {
       
-      measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
       
       measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
@@ -1112,20 +1134,20 @@
     
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_sdq, all=TRUE) %>% 
       rename(measure_temp_source = source) %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
       ungroup() %>% 
-      select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source)
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source)
     
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
     measure_temp_clinical <- measure_temp_clinical %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+      group_by(Initials, Clinical_Visit_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
@@ -1152,11 +1174,11 @@
     # iter=2
     measure_name <- CASE[iter]
     
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
       distinct(., .keep_all = TRUE)
     
     measure_temp_sdq$date_temp <- measure_temp_sdq$Overall_date
-    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, date_temp, matches(measure_name))
+    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, date_temp, matches(measure_name))
     measure_temp_sdq[,7:(ncol(measure_temp_sdq)-1)] <- sapply(measure_temp_sdq[,7:(ncol(measure_temp_sdq)-1)], as.numeric) 
 
     measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches("_if")) %>% ncol() %>% as.numeric()
@@ -1191,21 +1213,21 @@
     
     measure_temp_task <- merge.default(task_DB_date, measure_temp_sdq, all=TRUE) %>% 
       rename(measure_temp_source = source) %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, desc(temptotal)) %>%
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal)) %>%
       ungroup() %>% 
-      select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete, 
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete, 
              temptotal, temp_pos_tot, temp_neg_tot)
     
     measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
     measure_temp_task <- measure_temp_task %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+      group_by(Initials, Task_Name, Task_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      group_by(FIRST_NAME, LAST_NAME, Task_Name, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Task_Name, date_temp, measurement_TDiff_abs) %>% 
+      group_by(Initials, Task_Name, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
@@ -1222,21 +1244,21 @@
     
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_sdq, all=TRUE) %>% 
       rename(measure_temp_source = source) %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, desc(temptotal)) %>%
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal)) %>%
       ungroup() %>% 
-      select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, measure_temp_source, date_temp, matches(measure_name), 
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, measure_temp_source, date_temp, matches(measure_name), 
              tempcomplete, temptotal, temp_pos_tot, temp_neg_tot)
     
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
     measure_temp_clinical <- measure_temp_clinical %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+      group_by(Initials, Clinical_Visit_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
@@ -1256,10 +1278,10 @@
 #####
 # SEQ - SEQ (SELF-EFFICACY QUESTIONNAIRE) child
   
-  s_seq_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_seq_')) %>% 
+  s_seq_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_seq_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_seq_subset_sdq[,6:ncol(s_seq_subset_sdq)] <- sapply(s_seq_subset_sdq[,6:ncol(s_seq_subset_sdq)], as.numeric) 
+  s_seq_subset_sdq[,7:ncol(s_seq_subset_sdq)] <- sapply(s_seq_subset_sdq[,7:ncol(s_seq_subset_sdq)], as.numeric) 
   
   s_seq_subset_sdq$no_columns <- s_seq_subset_sdq %>% select(matches('s_seq_')) %>% ncol() %>% as.numeric()
   s_seq_subset_sdq$NA_count <- s_seq_subset_sdq %>% select(matches('s_seq_')) %>% apply(., 1, count_na)
@@ -1284,21 +1306,21 @@
   
   s_seq_subset_clinical <- merge.default(clinical_DB_date, s_seq_subset_sdq, all=TRUE) %>% 
     rename(s_seq_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_seq_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_seq_date, desc(s_seq_tot), desc(s_seq_source)) %>%
+    group_by(Initials, s_seq_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_seq_date, desc(s_seq_tot), desc(s_seq_source)) %>%
     # filter(1:n() == 1) %>% 
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_seq_source, matches('s_seq_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_seq_source, matches('s_seq_'))
   
   s_seq_subset_clinical$s_seq_TDiff <- as.numeric(difftime(s_seq_subset_clinical$Clinical_Visit_Date, s_seq_subset_clinical$s_seq_date, tz="", units = "days"))
   s_seq_subset_clinical <- s_seq_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_seq_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_seq_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_seq_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, s_seq_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_seq_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1317,7 +1339,7 @@
     # iter=2
     measure_name <- FAD[iter]
     
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
       distinct(., .keep_all = TRUE)
   
     measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(fad_normal), matches(fad_reverse)) %>% ncol() %>% as.numeric()
@@ -1326,15 +1348,15 @@
     measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
 
     if (measure_name == "p_fad_") {
-      measure_temp_sdq[,8:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,8:ncol(measure_temp_sdq)], as.numeric) 
+      measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric) 
       measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, p_fad_parent, p_fad_parent_other, matches(fad_normal), matches(fad_reverse))
-      measure_temp_sdq[,33:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,33:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
-      measure_temp_sdq[,33:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,33:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
+      measure_temp_sdq[,34:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,34:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
+      measure_temp_sdq[,34:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,34:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
     } else {
-      measure_temp_sdq[,6:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,6:ncol(measure_temp_sdq)], as.numeric) 
+      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric) 
       measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, matches(fad_normal), matches(fad_reverse))
-      measure_temp_sdq[,31:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,31:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
-      measure_temp_sdq[,31:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,31:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
+      measure_temp_sdq[,32:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,32:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
+      measure_temp_sdq[,32:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,32:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
     }
     
     problem_solving <- c("_2_|_12_|_24_|_38_|_50_|_60_")
@@ -1359,20 +1381,20 @@
     
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_sdq, all=TRUE) %>% 
       rename(measure_temp_source = source) %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, desc(temp_gen_functioning_tot), desc(measure_temp_source)) %>%
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temp_gen_functioning_tot), desc(measure_temp_source)) %>%
       filter(1:n() == 1) %>% 
       ungroup() 
     
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
     measure_temp_clinical <- measure_temp_clinical %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+      group_by(Initials, Clinical_Visit_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
-      group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
       filter(1:n() == 1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>%
@@ -1395,11 +1417,11 @@
 #####
 # FASA - FAMILY ACCOMODATION SCALE ANXIETY (parent report)
   
-  p_fasa_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, p_fasa_responder, 
+  p_fasa_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, p_fasa_responder, 
                                               p_fasa_responder_other, p_fasa_1_reassure:p_fasa_13_anxiety_worsen) %>% 
     distinct(., .keep_all = TRUE)
   
-  p_fasa_subset_sdq[,8:ncol(p_fasa_subset_sdq)] <- sapply(p_fasa_subset_sdq[,8:ncol(p_fasa_subset_sdq)], as.numeric) 
+  p_fasa_subset_sdq[,9:ncol(p_fasa_subset_sdq)] <- sapply(p_fasa_subset_sdq[,9:ncol(p_fasa_subset_sdq)], as.numeric) 
   
   p_fasa_subset_sdq$no_columns <- p_fasa_subset_sdq %>% select(p_fasa_1_reassure:p_fasa_13_anxiety_worsen) %>% ncol() %>% as.numeric()
   p_fasa_subset_sdq$NA_count <- p_fasa_subset_sdq %>% select(p_fasa_1_reassure:p_fasa_13_anxiety_worsen) %>% apply(., 1, count_na)
@@ -1424,21 +1446,21 @@
   
   p_fasa_subset_clinical <- merge.default(clinical_DB_date, p_fasa_subset_sdq, all=TRUE) %>% 
     rename(p_fasa_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, p_fasa_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, p_fasa_date, desc(p_fasa_tot), desc(p_fasa_source)) %>%
+    group_by(Initials, p_fasa_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, p_fasa_date, desc(p_fasa_tot), desc(p_fasa_source)) %>%
     filter(1:n() == 1) %>% 
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, p_fasa_source, matches('p_fasa_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, p_fasa_source, matches('p_fasa_'))
   
   p_fasa_subset_clinical$p_fasa_TDiff <- as.numeric(difftime(p_fasa_subset_clinical$Clinical_Visit_Date, p_fasa_subset_clinical$p_fasa_date, tz="", units = "days"))
   p_fasa_subset_clinical <- p_fasa_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(p_fasa_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, p_fasa_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, p_fasa_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, p_fasa_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, p_fasa_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1447,12 +1469,12 @@
 #####
 # BA activities expectation & outcome
   
-  s_baexpout_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_baexpout_')) %>% 
+  s_baexpout_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_baexpout_')) %>% 
     distinct(., .keep_all = TRUE)
   
   s_baexpout_subset_sdq$s_baexpout_date <- as.Date(s_baexpout_subset_sdq$s_baexpout_date)
   s_baexpout_subset_sdq$s_baexpout_date <- coalesce(s_baexpout_subset_sdq$s_baexpout_date, s_baexpout_subset_sdq$Overall_date) 
-  s_baexpout_subset_sdq <- s_baexpout_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, s_baexpout_date, 
+  s_baexpout_subset_sdq <- s_baexpout_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, s_baexpout_date, 
                                                             s_baexpout_clinician_name,
                                                             s_baexpout_weeks_treat:s_baexpout_act_1_type, s_baexpout_act_1_notes:s_baexpout_act_2_type,
                                                             s_baexpout_act_2_notes:s_baexpout_act_3_type, s_baexpout_act_3_notes:s_baexpout_act_4_type,
@@ -1461,14 +1483,14 @@
                                                             s_baexpout_act_3_moodbef:s_baexpout_act_3_again, s_baexpout_act_4_moodbef:s_baexpout_act_4_again, 
                                                             s_baexpout_act_5_moodbef:s_baexpout_act_5_again)
   
-  s_baexpout_subset_sdq[,8:23] <- sapply(s_baexpout_subset_sdq[,8:23], as.character) 
-  s_baexpout_subset_sdq[,24:ncol(s_baexpout_subset_sdq)] <- sapply(s_baexpout_subset_sdq[,24:ncol(s_baexpout_subset_sdq)], as.numeric) 
+  s_baexpout_subset_sdq[,9:24] <- sapply(s_baexpout_subset_sdq[,9:24], as.character) 
+  s_baexpout_subset_sdq[,25:ncol(s_baexpout_subset_sdq)] <- sapply(s_baexpout_subset_sdq[,25:ncol(s_baexpout_subset_sdq)], as.numeric) 
   
-  s_baexpout_subset_sdq[,9]  <- lapply(s_baexpout_subset_sdq[,9], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
-  s_baexpout_subset_sdq[,12]  <- lapply(s_baexpout_subset_sdq[,12], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
-  s_baexpout_subset_sdq[,15]  <- lapply(s_baexpout_subset_sdq[,15], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
-  s_baexpout_subset_sdq[,18]  <- lapply(s_baexpout_subset_sdq[,18], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
-  s_baexpout_subset_sdq[,21]  <- lapply(s_baexpout_subset_sdq[,21], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,10]  <- lapply(s_baexpout_subset_sdq[,10], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,13]  <- lapply(s_baexpout_subset_sdq[,13], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,16]  <- lapply(s_baexpout_subset_sdq[,16], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,19]  <- lapply(s_baexpout_subset_sdq[,19], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,22]  <- lapply(s_baexpout_subset_sdq[,22], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
   
   s_baexpout_subset_sdq$no_columns <- s_baexpout_subset_sdq %>% select(s_baexpout_act_1_moodbef:s_baexpout_act_5_again) %>% ncol() %>% as.numeric()
   s_baexpout_subset_sdq$NA_count <- s_baexpout_subset_sdq %>% select(s_baexpout_act_1_moodbef:s_baexpout_act_5_again) %>% apply(., 1, count_na)
@@ -1506,10 +1528,10 @@
   
   s_baexpout_subset_clinical <- merge.default(clinical_DB_date, s_baexpout_subset_sdq, all=TRUE) %>% 
     rename(s_baexpout_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_baexpout_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_baexpout_date, desc(s_baexpout_act_1_enjoyment_diff)) %>%
+    group_by(Initials, s_baexpout_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_baexpout_date, desc(s_baexpout_act_1_enjoyment_diff)) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_baexpout_source, s_baexpout_date:s_baexpout_act_1_type, 
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_baexpout_source, s_baexpout_date:s_baexpout_act_1_type, 
            s_baexpout_act_1_mood_diff:s_baexpout_act_1_satisfaction_diff, s_baexpout_act_1_again, s_baexpout_act_1_notes,
            s_baexpout_act_2_descrip, s_baexpout_act_2_type, s_baexpout_act_2_mood_diff:s_baexpout_act_2_satisfaction_diff, s_baexpout_act_2_again, s_baexpout_act_2_notes,
            s_baexpout_act_3_descrip, s_baexpout_act_3_type, s_baexpout_act_1_mood_diff:s_baexpout_act_3_satisfaction_diff, s_baexpout_act_3_again, s_baexpout_act_3_notes,
@@ -1520,12 +1542,12 @@
   s_baexpout_subset_clinical$s_baexpout_TDiff <- as.numeric(difftime(s_baexpout_subset_clinical$Clinical_Visit_Date, s_baexpout_subset_clinical$s_baexpout_date, tz="", units = "days"))
   s_baexpout_subset_clinical <- s_baexpout_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_baexpout_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_baexpout_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_baexpout_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, s_baexpout_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_baexpout_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1534,15 +1556,15 @@
 #####
 # SNAP
   
-  c_snap_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('c_snap_')) %>% 
+  c_snap_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_snap_')) %>% 
     distinct(., .keep_all = TRUE)
   
   c_snap_subset_sdq$c_snap_date <- as.Date(c_snap_subset_sdq$c_snap_date)
   c_snap_subset_sdq$c_snap_date <- coalesce(c_snap_subset_sdq$c_snap_date, c_snap_subset_sdq$Overall_date) 
-  c_snap_subset_sdq <- c_snap_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, c_snap_date, source, c_snap_clinician_name, c_snap_clinician_role,
+  c_snap_subset_sdq <- c_snap_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, c_snap_date, source, c_snap_clinician_name, c_snap_clinician_role,
                                                     c_snap_visit_type, c_snap_treatment_week, c_snap_1_fail_attention:c_snap_18_interrupts)
   
-  c_snap_subset_sdq[,10:ncol(c_snap_subset_sdq)] <- sapply(c_snap_subset_sdq[,10:ncol(c_snap_subset_sdq)], as.numeric) 
+  c_snap_subset_sdq[,11:ncol(c_snap_subset_sdq)] <- sapply(c_snap_subset_sdq[,11:ncol(c_snap_subset_sdq)], as.numeric) 
   
   c_snap_subset_sdq$no_columns <- c_snap_subset_sdq %>% select(matches('c_snap_')) %>% ncol() %>% as.numeric()
   c_snap_subset_sdq$NA_count <- c_snap_subset_sdq %>% select(matches('c_snap_')) %>% apply(., 1, count_na)
@@ -1562,21 +1584,21 @@
   
   c_snap_subset_clinical <- merge.default(clinical_DB_date, c_snap_subset_sdq, all=TRUE) %>% 
     rename(c_snap_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_snap_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_snap_date, desc(c_snap_tot), desc(c_snap_source)) %>%
+    group_by(Initials, c_snap_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_snap_date, desc(c_snap_tot), desc(c_snap_source)) %>%
     filter(1:n() == 1) %>% 
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, c_snap_source, matches('c_snap_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_snap_source, matches('c_snap_'))
   
   c_snap_subset_clinical$c_snap_TDiff <- as.numeric(difftime(c_snap_subset_clinical$Clinical_Visit_Date, c_snap_subset_clinical$c_snap_date, tz="", units = "days"))
   c_snap_subset_clinical <- c_snap_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(c_snap_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_snap_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_snap_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, c_snap_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_snap_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1587,7 +1609,7 @@
 
   ### clinician completed symptom assessment 
   
-  c_cybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, c_cybocs_date, matches('c_cybocs_ob_'), matches('c_cybocs_com_')) %>% 
+  c_cybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, c_cybocs_date, matches('c_cybocs_ob_'), matches('c_cybocs_com_')) %>% 
     distinct(., .keep_all = TRUE)
   
   c_cybocs_subset_sdq[,7:ncol(c_cybocs_subset_sdq)] <- sapply(c_cybocs_subset_sdq[,7:ncol(c_cybocs_subset_sdq)], as.numeric) 
@@ -1609,20 +1631,20 @@
   
   c_cybocs_subset_clinical <- merge.default(clinical_DB_date, c_cybocs_subset_sdq, all=TRUE) %>% 
     rename(c_cybocs_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_cybocs_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_cybocs_date, desc(c_cybocs_ob_tot)) %>%
+    group_by(Initials, c_cybocs_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_cybocs_date, desc(c_cybocs_ob_tot)) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, c_cybocs_date, c_cybocs_source, matches('c_cybocs_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_cybocs_date, c_cybocs_source, matches('c_cybocs_'))
   
   c_cybocs_subset_clinical$c_cybocs_TDiff <- as.numeric(difftime(c_cybocs_subset_clinical$Clinical_Visit_Date, c_cybocs_subset_clinical$c_cybocs_date, tz="", units = "days"))
   c_cybocs_subset_clinical <- c_cybocs_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(c_cybocs_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_cybocs_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_cybocs_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, c_cybocs_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_cybocs_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1630,7 +1652,7 @@
   
   ### self report symptom checklist 
   
-  s_cybocs_list_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_cybocs_list_')) %>% 
+  s_cybocs_list_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_cybocs_list_')) %>% 
     distinct(., .keep_all = TRUE)
   
   s_cybocs_list_subset_sdq$s_cybocs_list_date <- as.Date(s_cybocs_list_subset_sdq$s_cybocs_list_date)
@@ -1638,8 +1660,8 @@
   
   s_cybocs_list_subset_sdq <- s_cybocs_list_subset_sdq %>% select(PLUSID:source, s_cybocs_list_date, matches("s_cybocs_list_com_"), matches("s_cybocs_list_ob_"))
   
-  s_cybocs_list_subset_sdq[,6:ncol(s_cybocs_list_subset_sdq)]  <- lapply(s_cybocs_list_subset_sdq[,6:ncol(s_cybocs_list_subset_sdq)], as.character)
-  s_cybocs_list_subset_sdq[,6:ncol(s_cybocs_list_subset_sdq)]  <- lapply(s_cybocs_list_subset_sdq[,6:ncol(s_cybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `777`="Never", .missing = NULL))
+  s_cybocs_list_subset_sdq[,7:ncol(s_cybocs_list_subset_sdq)]  <- lapply(s_cybocs_list_subset_sdq[,7:ncol(s_cybocs_list_subset_sdq)], as.character)
+  s_cybocs_list_subset_sdq[,7:ncol(s_cybocs_list_subset_sdq)]  <- lapply(s_cybocs_list_subset_sdq[,7:ncol(s_cybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `777`="Never", .missing = NULL))
   
   s_cybocs_list_subset_sdq$no_columns <- s_cybocs_list_subset_sdq %>% select(matches("s_cybocs_list_com_"), matches("s_cybocs_list_ob_")) %>% ncol() %>% as.numeric()
   s_cybocs_list_subset_sdq$NA_count <- s_cybocs_list_subset_sdq %>% select(matches("s_cybocs_list_com_"), matches("s_cybocs_list_ob_")) %>% apply(., 1, count_na)
@@ -1648,20 +1670,20 @@
   
   s_cybocs_list_subset_clinical <- merge.default(clinical_DB_date, s_cybocs_list_subset_sdq, all=TRUE) %>% 
     rename(s_cybocs_list_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_cybocs_list_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_cybocs_list_date) %>%
+    group_by(Initials, s_cybocs_list_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_cybocs_list_date) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_cybocs_list_source, matches('s_cybocs_list_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_cybocs_list_source, matches('s_cybocs_list_'))
   
   s_cybocs_list_subset_clinical$s_cybocs_list_TDiff <- as.numeric(difftime(s_cybocs_list_subset_clinical$Clinical_Visit_Date, s_cybocs_list_subset_clinical$s_cybocs_list_date, tz="", units = "days"))
   s_cybocs_list_subset_clinical <- s_cybocs_list_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_cybocs_list_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_cybocs_list_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_cybocs_list_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, s_cybocs_list_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_cybocs_list_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1672,7 +1694,7 @@
   
   ### clinician completed symptom assessment 
   
-  c_bddybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('c_bddybocs_')) %>% 
+  c_bddybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_bddybocs_')) %>% 
     distinct(., .keep_all = TRUE)
   
   c_bddybocs_subset_sdq$c_bddybocs_date <- as.Date(c_bddybocs_subset_sdq$c_bddybocs_date)
@@ -1686,7 +1708,7 @@
            c_bddybocs_8_distress_activities, c_bddybocs_9_resistance_against_compulsions, c_bddybocs_10_control_over_behavior, c_bddybocs_11_insight, 
            c_bddybocs_12_avoidance)
 
-  c_bddybocs_subset_sdq[,13:ncol(c_bddybocs_subset_sdq)] <- sapply(c_bddybocs_subset_sdq[,13:ncol(c_bddybocs_subset_sdq)], as.numeric) 
+  c_bddybocs_subset_sdq[,14:ncol(c_bddybocs_subset_sdq)] <- sapply(c_bddybocs_subset_sdq[,14:ncol(c_bddybocs_subset_sdq)], as.numeric) 
   
   c_bddybocs_subset_sdq$no_columns <- c_bddybocs_subset_sdq %>% 
     select(c_bddybocs_1_time_thoughts_body_defect, c_bddybocs_2_interference_body_defectA, c_bddybocs_3_distress_body_defect,
@@ -1717,12 +1739,12 @@
   
   c_bddybocs_subset_clinical <- merge.default(clinical_DB_date, c_bddybocs_subset_sdq, all=TRUE) %>% 
     rename(c_bddybocs_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_bddybocs_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_bddybocs_date, desc(c_bddybocs_tot)) %>%
+    group_by(Initials, c_bddybocs_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_bddybocs_date, desc(c_bddybocs_tot)) %>%
     fill(c_bddybocs_Comments:c_bddybocs_7_interferenceB, .direction = "down") %>%
     fill(c_bddybocs_Comments:c_bddybocs_7_interferenceB, .direction = "up") %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, c_bddybocs_source, c_bddybocs_date, 
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_bddybocs_source, c_bddybocs_date, 
            c_bddybocs_1_time_thoughts_body_defect, c_bddybocs_2_interference_body_defectA, c_bddybocs_2_interference_body_defectB, 
            c_bddybocs_3_distress_body_defect, c_bddybocs_4_resistance_against_thoughts, c_bddybocs_5_control_over_thoughts, 
            c_bddybocs_5_control_over_thoughtsA, c_bddybocs_6789_activities, c_bddybocs_6789_other, c_bddybocs_6_timespent, 
@@ -1733,12 +1755,12 @@
   c_bddybocs_subset_clinical$c_bddybocs_TDiff <- as.numeric(difftime(c_bddybocs_subset_clinical$Clinical_Visit_Date, c_bddybocs_subset_clinical$c_bddybocs_date, tz="", units = "days"))
   c_bddybocs_subset_clinical <- c_bddybocs_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(c_bddybocs_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, c_bddybocs_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, c_bddybocs_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, c_bddybocs_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_bddybocs_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1746,15 +1768,15 @@
   
   ### self report symptom checklist 
   
-  s_bddybocs_list_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_bddybocs_list_')) %>% 
+  s_bddybocs_list_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_bddybocs_list_')) %>% 
     distinct(., .keep_all = TRUE)
 
   s_bddybocs_list_subset_sdq$s_bddybocs_list_date <- as.Date(s_bddybocs_list_subset_sdq$s_bddybocs_list_date)
   s_bddybocs_list_subset_sdq$s_bddybocs_list_date <- coalesce(s_bddybocs_list_subset_sdq$s_bddybocs_list_date, s_bddybocs_list_subset_sdq$Overall_date) 
   s_bddybocs_list_subset_sdq <- s_bddybocs_list_subset_sdq %>% select(-Overall_date)
   
-  s_bddybocs_list_subset_sdq[,6:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,6:ncol(s_bddybocs_list_subset_sdq)], as.character)
-  s_bddybocs_list_subset_sdq[,6:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,6:ncol(s_bddybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `777`="Never", .missing = NULL))
+  s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], as.character)
+  s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `777`="Never", .missing = NULL))
   
   s_bddybocs_list_subset_sdq$no_columns <- s_bddybocs_list_subset_sdq %>% select(s_bddybocs_list_face:s_bddybocs_list_height) %>% ncol() %>% as.numeric()
   s_bddybocs_list_subset_sdq$NA_count <- s_bddybocs_list_subset_sdq %>% select(s_bddybocs_list_face:s_bddybocs_list_height) %>% apply(., 1, count_na)
@@ -1763,20 +1785,20 @@
   
   s_bddybocs_list_subset_clinical <- merge.default(clinical_DB_date, s_bddybocs_list_subset_sdq, all=TRUE) %>% 
     rename(s_bddybocs_list_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_bddybocs_list_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_bddybocs_list_date) %>%
+    group_by(Initials, s_bddybocs_list_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_bddybocs_list_date) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_bddybocs_list_source, matches('s_bddybocs_list_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_bddybocs_list_source, matches('s_bddybocs_list_'))
   
   s_bddybocs_list_subset_clinical$s_bddybocs_list_TDiff <- as.numeric(difftime(s_bddybocs_list_subset_clinical$Clinical_Visit_Date, s_bddybocs_list_subset_clinical$s_bddybocs_list_date, tz="", units = "days"))
   s_bddybocs_list_subset_clinical <- s_bddybocs_list_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_bddybocs_list_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_bddybocs_list_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_bddybocs_list_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, s_bddybocs_list_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_bddybocs_list_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1792,11 +1814,11 @@
     # iter=1
   measure_name <- CHoCIR[iter]
   
-  measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches(measure_name)) %>% 
+  measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
     distinct(., .keep_all = TRUE)
 
-  measure_temp_sdq[,6:37] <- sapply(measure_temp_sdq[,6:37], as.numeric) 
-  measure_temp_sdq[,6:37] <- sapply(measure_temp_sdq[,6:37], na_if, '777') 
+  measure_temp_sdq[,7:38] <- sapply(measure_temp_sdq[,7:38], as.numeric) 
+  measure_temp_sdq[,7:38] <- sapply(measure_temp_sdq[,7:38], na_if, '777') 
   
   measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches("_1_washing_hands"):matches("_38_avoiding_because_of_thoughts")) %>% ncol() %>% as.numeric()
   measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches("_1_washing_hands"):matches("_38_avoiding_because_of_thoughts")) %>% apply(., 1, count_na)
@@ -1823,8 +1845,8 @@
   
   measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_sdq, all=TRUE) %>% 
     rename(measure_temp_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-    arrange(FIRST_NAME, LAST_NAME, date_temp, desc(temp_impairment_tot)) %>%
+    group_by(Initials, date_temp) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temp_impairment_tot)) %>%
     fill(matches("_habit_1"):matches("_thought_3"), .direction = "down") %>%
     fill(matches("_habit_1"):matches("_thought_3"), .direction = "up") %>%
     ungroup() 
@@ -1832,12 +1854,12 @@
   measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
   measure_temp_clinical <- measure_temp_clinical %>% 
     mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-    arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
+    group_by(Initials, date_temp) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1860,15 +1882,15 @@
 #####
 # CPSS - THE CHILD PTSD SYMPTOM SCALE
   
-  s_cpss_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, source, Overall_date, matches('s_cpss_')) %>% 
+  s_cpss_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_cpss_')) %>% 
     distinct(., .keep_all = TRUE)
   
   s_cpss_subset_sdq$s_cpss_date <- as.Date(s_cpss_subset_sdq$s_cpss_date)
   s_cpss_subset_sdq$s_cpss_date <- coalesce(s_cpss_subset_sdq$s_cpss_date, s_cpss_subset_sdq$Overall_date) 
-  s_cpss_subset_sdq <- s_cpss_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, s_cpss_date, source, s_cpss_event,
+  s_cpss_subset_sdq <- s_cpss_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, s_cpss_date, source, s_cpss_event,
                                                     s_cpss_time_since, s_cpss_1_thoughts:s_cpss_24_happiness)
   
-  s_cpss_subset_sdq[,8:ncol(s_cpss_subset_sdq)] <- sapply(s_cpss_subset_sdq[,8:ncol(s_cpss_subset_sdq)], as.numeric) 
+  s_cpss_subset_sdq[,9:ncol(s_cpss_subset_sdq)] <- sapply(s_cpss_subset_sdq[,9:ncol(s_cpss_subset_sdq)], as.numeric) 
   
   s_cpss_subset_sdq$no_columns <- s_cpss_subset_sdq %>% select(matches('s_cpss_')) %>% ncol() %>% as.numeric()
   s_cpss_subset_sdq$NA_count <- s_cpss_subset_sdq %>% select(matches('s_cpss_')) %>% apply(., 1, count_na)
@@ -1892,20 +1914,20 @@
   
   s_cpss_subset_clinical <- merge.default(clinical_DB_date, s_cpss_subset_sdq, all=TRUE) %>% 
     rename(s_cpss_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_cpss_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_cpss_date, desc(s_cpss_tot), desc(s_cpss_source)) %>%
+    group_by(Initials, s_cpss_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_cpss_date, desc(s_cpss_tot), desc(s_cpss_source)) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_cpss_source, matches('s_cpss_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_cpss_source, matches('s_cpss_'))
   
   s_cpss_subset_clinical$s_cpss_TDiff <- as.numeric(difftime(s_cpss_subset_clinical$Clinical_Visit_Date, s_cpss_subset_clinical$s_cpss_date, tz="", units = "days"))
   s_cpss_subset_clinical <- s_cpss_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_cpss_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_cpss_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_cpss_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, s_cpss_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_cpss_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1914,11 +1936,11 @@
 #####
 # ASCQ - ADOLESCENT SOCIAL COGNITIONS QUESTIONNAIRE
 
-  s_ascq_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Overall_date, source, matches('s_ascq_')) %>% 
+  s_ascq_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches('s_ascq_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_ascq_subset_sdq[,6:ncol(s_ascq_subset_sdq)] <- sapply(s_ascq_subset_sdq[,6:ncol(s_ascq_subset_sdq)], as.numeric) 
-  s_ascq_subset_sdq[,6:34]  <- lapply(s_ascq_subset_sdq[,6:34], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+  s_ascq_subset_sdq[,7:ncol(s_ascq_subset_sdq)] <- sapply(s_ascq_subset_sdq[,7:ncol(s_ascq_subset_sdq)], as.numeric) 
+  s_ascq_subset_sdq[,7:35]  <- lapply(s_ascq_subset_sdq[,7:35], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
   
   s_ascq_subset_sdq$no_columns <- s_ascq_subset_sdq %>% select(matches('s_ascq_')) %>% ncol() %>% as.numeric()
   s_ascq_subset_sdq$NA_count <- s_ascq_subset_sdq %>% select(matches('s_ascq_')) %>% apply(., 1, count_na)
@@ -1938,20 +1960,20 @@
   
   s_ascq_subset_clinical <- merge.default(clinical_DB_date, s_ascq_subset_sdq, all=TRUE) %>% 
     rename(s_ascq_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_ascq_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_ascq_date, desc(s_ascq_oten_tot)) %>%
+    group_by(Initials, s_ascq_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_ascq_date, desc(s_ascq_oten_tot)) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, s_ascq_source, s_ascq_date, matches('s_ascq_'))
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_ascq_source, s_ascq_date, matches('s_ascq_'))
   
   s_ascq_subset_clinical$s_ascq_TDiff <- as.numeric(difftime(s_ascq_subset_clinical$Clinical_Visit_Date, s_ascq_subset_clinical$s_ascq_date, tz="", units = "days"))
   s_ascq_subset_clinical <- s_ascq_subset_clinical %>% 
     mutate(measurement_TDiff_abs=abs(s_ascq_TDiff)) %>% 
-    group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
-    group_by(FIRST_NAME, LAST_NAME, s_ascq_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, s_ascq_date, measurement_TDiff_abs) %>% 
+    group_by(Initials, s_ascq_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_ascq_date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
@@ -1970,10 +1992,10 @@
     measure_name <- variables_no_scoring[iter]
     
     if (measure_name=="s_medsctdb_") {
-      measure_temp <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Protocol_CTDB, source, s_medsctdb_list, s_medsctdb_changes, s_medsctdb_date) %>% 
+      measure_temp <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, s_medsctdb_list, s_medsctdb_changes, s_medsctdb_date) %>% 
         filter(!is.na(s_medsctdb_date))
     } else {
-      measure_temp <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Overall_date, source, matches(measure_name)) %>% 
+      measure_temp <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
         filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
     }
@@ -2008,7 +2030,7 @@
       measure_temp <- measure_temp %>% select(-Overall_date)
     }  
     
-    measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, date_temp, source, matches(measure_name))
+    measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
     
     if (measure_name=="s_medsctdb_") {
       
@@ -2040,20 +2062,20 @@
       
       measure_temp_task <- merge.default(task_DB_date, measure_temp, all=TRUE) %>% 
         rename(measure_temp_source = source) %>% 
-        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, date_temp) %>%
+        group_by(Initials, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, date_temp) %>%
         ungroup() %>% 
-        select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source)
+        select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source)
       
       measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
       measure_temp_task <- measure_temp_task %>% 
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-        group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-        arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+        group_by(Initials, Task_Name, Task_Date) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
-        group_by(FIRST_NAME, LAST_NAME, Task_Name, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, Task_Name, date_temp, measurement_TDiff_abs) %>% 
+        group_by(Initials, Task_Name, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
         filter(measurement_TDiff_abs<=60) %>% 
@@ -2071,16 +2093,16 @@
       
       measure_temp_task <- merge.default(task_DB_date, measure_temp, all=TRUE) %>% 
         rename(measure_temp_source = source) %>% 
-        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, date_temp) %>%
+        group_by(Initials, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, date_temp) %>%
         ungroup() %>% 
-        select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
+        select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
       
       measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
       measure_temp_task <- measure_temp_task %>% 
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-        group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-        arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+        group_by(Initials, Task_Name, Task_Date) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
         select(-measurement_TDiff_abs)
@@ -2102,20 +2124,20 @@
       
       measure_temp_task <- merge.default(task_DB_date, measure_temp, all=TRUE) %>% 
         rename(measure_temp_source = source) %>% 
-        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, date_temp) %>%
+        group_by(Initials, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, date_temp) %>%
         ungroup() %>% 
-        select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
+        select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
       
       measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
       measure_temp_task <- measure_temp_task %>% 
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-        group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date) %>% 
-        arrange(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+        group_by(Initials, Task_Name, Task_Date) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
-        group_by(FIRST_NAME, LAST_NAME, Task_Name, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, Task_Name, date_temp, measurement_TDiff_abs) %>% 
+        group_by(Initials, Task_Name, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
         filter(measurement_TDiff_abs<=60) %>% 
@@ -2139,20 +2161,20 @@
       
       measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp, all=TRUE) %>% 
         rename(measure_temp_source = source) %>% 
-        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, date_temp) %>%
+        group_by(Initials, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, date_temp) %>%
         ungroup() %>% 
-        select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, date_temp, matches(measure_name), measure_temp_source)
+        select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, date_temp, matches(measure_name), measure_temp_source)
       
       measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
       measure_temp_clinical <- measure_temp_clinical %>% 
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-        group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-        arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+        group_by(Initials, Clinical_Visit_Date) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
-        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
+        group_by(Initials, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
         filter(measurement_TDiff_abs<=60) %>% 
@@ -2170,16 +2192,16 @@
       
       measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp, all=TRUE) %>% 
         rename(measure_temp_source = source) %>% 
-        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, date_temp) %>%
+        group_by(Initials, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, date_temp) %>%
         ungroup() %>% 
-        select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
+        select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
       
       measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
       measure_temp_clinical <- measure_temp_clinical %>% 
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-        group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-        arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+        group_by(Initials, Clinical_Visit_Date) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
         select(-measurement_TDiff_abs)
@@ -2201,20 +2223,20 @@
       
       measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp, all=TRUE) %>% 
         rename(measure_temp_source = source) %>% 
-        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, date_temp) %>%
+        group_by(Initials, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, date_temp) %>%
         ungroup() %>% 
-        select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
+        select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, date_temp, matches(measure_name), measure_temp_source, tempcomplete)
       
       measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
       measure_temp_clinical <- measure_temp_clinical %>% 
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-        group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>% 
-        arrange(FIRST_NAME, LAST_NAME, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+        group_by(Initials, Clinical_Visit_Date) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
-        group_by(FIRST_NAME, LAST_NAME, date_temp) %>% 
-        arrange(FIRST_NAME, LAST_NAME, date_temp, measurement_TDiff_abs) %>% 
+        group_by(Initials, date_temp) %>% 
+        arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
         filter(1:n() == 1) %>%
         ungroup() %>% 
         filter(measurement_TDiff_abs<=60) %>% 
@@ -2238,10 +2260,10 @@ clinic_sets <- mget(clinic_sets)
 
 # merge & tidy up
 
-Psychometrics_treatment <- reduce(clinic_sets, full_join) 
+Psychometrics_treatment <- reduce(clinic_sets, full_join)
 # str(Psychometrics_treatment, list.len=ncol(Psychometrics_treatment))
 Psychometrics_treatment <- Psychometrics_treatment %>%
-  group_by(FIRST_NAME, LAST_NAME, Clinical_Visit_Date) %>%
+  group_by(Initials, Clinical_Visit_Date) %>%
   fill(., names(Psychometrics_treatment), .direction = "down") %>%
   fill(., names(Psychometrics_treatment), .direction = "up") %>%
   ungroup() %>%
@@ -2261,7 +2283,7 @@ CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_
                                                  s_after_ba_sess_come_again,
                                                  matches("s_menstruation_"),
                                                  matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
-                                                 -matches("_source")) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>%
+                                                 -matches("_source")) %>% arrange(LAST_NAME, Initials, FIRST_NAME, Clinical_Visit_Date) %>%
   filter(Clinical_Visit_Code=="o") %>% select(-s_fua_date, -p_fua_date, -s_before_ba_date, -s_after_ba_date,
                                               -s_baexpout_date, -s_menstruation_date, -c_medsclin_date)
 
@@ -2302,8 +2324,9 @@ task_sets <- mget(task_sets)
 Psychometrics_behav <- reduce(task_sets, full_join) 
 # str(Psychometrics_behav, list.len=ncol(Psychometrics_behav))
 Psychometrics_behav <- Psychometrics_behav %>%
-  group_by(FIRST_NAME, LAST_NAME, Task_Name, Task_Date, Task_Number) %>%
-  fill(., names(Psychometrics_behav), .direction = c("down", "up")) %>%
+  group_by(Initials, Task_Name, Task_Date, Task_Number) %>%
+  fill(., names(Psychometrics_behav), .direction = c("down")) %>%
+  fill(., names(Psychometrics_behav), .direction = c("up")) %>%
   ungroup() %>%
   group_by(FIRST_NAME, LAST_NAME) %>%
   fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
