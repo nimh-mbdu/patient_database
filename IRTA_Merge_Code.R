@@ -3,9 +3,14 @@
 
 # to do: ------------------------------------------------------------------
 
-# script begins here:  ----------------------------------------------------
+# finish cleaning up the removed referrals
+# load & merge all ruled out referrals and merge, including those in the individual 'Unsuccessful_Screens' tabs of the IRTA trackers 
+# clean up empty rows in referral tracker 
+# edit names to remove at end of script - update 
 
-master_IRTA_template <- read_excel(paste0(IRTA_tracker_location, "MASTER_IRTA_DATABASE_blank.xlsx")) #96 variables 
+############ script begins here:  ----------------------------------------------------
+
+# loading all IRTA trackers -----------------------------------------------
 
 for(i in seq_along(current_IRTAs_full)) {
   iter <- as.numeric(i)
@@ -19,55 +24,61 @@ for(i in seq_along(current_IRTAs_full)) {
   # assign(paste0(current_IRTAs_init[iter], "_col"), temp_columns)
   # temp_columns %>% write.csv(file = paste0(IRTA_tracker_location,current_IRTAs_init[iter], "_col.csv"), na = " ", row.names = FALSE)
   
-  temp <- read_excel(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_Patient_List.xlsx")) %>% mutate_all(as.character) %>% mutate(IRTA_tracker=IRTA_init)
-  master_IRTA_template <- merge.default(master_IRTA_template, temp, all=TRUE) %>% mutate_all(as.character)
-  # assign(paste0(current_IRTAs_init[iter], "_data"), temp) # uncomment this row out if you would like to KEEP all individual IRTA trackers as well as merge them - useful for QC
+  temp <- read_excel(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_Patient_List.xlsx"), sheet = "Active_Participants") %>% 
+    mutate_all(as.character) %>% mutate(IRTA_tracker=IRTA_init)
+  assign(paste0(current_IRTAs_init[iter], "_active_data"), temp) 
   
 }
 
-temp <- read_excel(paste0(IRTA_tracker_location, "/Other/REMOVED_Patient_List.xlsx")) %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
-master_IRTA_template <- merge.default(master_IRTA_template, temp, all=TRUE) %>% mutate_all(as.character)
+temp <- read_excel(paste0(IRTA_tracker_location, "/Other/REMOVED_Patient_List.xlsx"), sheet = "Active_Participants") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
 
-######################################################################################
-######Tidying up
+# merge & tidy up
 
-master_IRTA_template <- master_IRTA_template %>% 
-                        select(FIRST_NAME, LAST_NAME, Initials, SDAN, MRN, DAWBA_ID, PLUSID, IRTA_tracker,
-                              SEX, DOB, Handedness, Age_at_visit,	Overall_date, Current, 
-                              Eligible, Eligibility_notes, Scheduling_status, Scheduling_status_notes, 
-                              Participant_Type, Participant_Type2, Treatment_Notes, Consent_Date, Protocol, Data_sharing, 
-                              Clinical_Visit_Type, Clinical_Visit_Date, NIMH_Clinician, Visit_Cancelled, 
-                              Parent_CTSS_username, Parent_CTSS_password, Child_CTSS_username, Child_CTSS_password, 
-                              parent_SDQplus_login, child_SDQplus_login, Child_Phone_Number, Child_Email, Primary_clinician,	
-                              Referral_Date,	Referral_Informant_Name,	Referral_Informant_Relationship,	Referral_Informant_Email,	Referral_Informant_Phone,	
-                              Referral_Source,	Referral_other_notes,	Screening_Start_Date,	Screening_initial_contact_successful,	Screening_number_contact_attempts,	
-                              Screening_notes,	Parent_e_consented,	Child_e_assented,	Parent_DAWBA_completed,	Child_DAWBA_completed,	DAWBA_MFQ,	DAWBA_completed,
-                              Important_Info, Marital_Status,	Sibling_Init,	Sibling_Type,
-                              Parent_Name, FIRST_NAME_P1,	LAST_NAME_P1, Parent_Contact_Number,	Parent_Email, Street_address,	City,	State,	Zip,
-                              Second_Parent_Name,	FIRST_NAME_P2,	LAST_NAME_P2, Second_Parent_Contact_Number,	Second_Parent_Email,	Second_Parent_Address, Parent_Consented,
-                              Scanner,	Glasses,	Glasses_Prescription,	Metal,	Clinicals,	Clinicals_date,
-                              Task1_Name:paste0("Task", max_tasks, "_Visit_Type")) #should have 82 variables after this (if max no. of tasks = 5)
-# way of exporting all column names to check for consistency: 
-# temp_columns <- colnames(master_IRTA_template)
-# temp_columns %>% write.csv(file = paste0(IRTA_tracker_location, "col.csv"), na = " ", row.names = FALSE)
+irta_sets <- ls(pattern="_active_data")
+irta_sets <- c("temp", irta_sets)
+irta_sets <- mget(irta_sets)
+master_IRTA_template <- reduce(irta_sets, full_join) %>% mutate(Participant_Type2 = NA)
+
+# loading all current screens ---------------------------------------------
+
+for(u in seq_along(current_IRTAs_full)) {
+  iter6 <- as.numeric(u)
+  # iter6=1
+  
+  IRTA_full <- current_IRTAs_full[iter6]
+  IRTA_init <- current_IRTAs_init[iter6]
+  
+  temp_screens <- read_excel(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_Patient_List.xlsx"), sheet = "Current_Screens") %>% 
+    mutate_all(as.character) %>% mutate(IRTA_tracker=IRTA_init)
+  assign(paste0(current_IRTAs_init[iter6], "_current_screens"), temp_screens) 
+  
+}
+
+# temp_screens <- read_excel(paste0(IRTA_tracker_location, "/Other/REMOVED_Patient_List.xlsx"), sheet = "Current_Screens") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
+
+# merge & tidy up
+irta_screen_sets <- ls(pattern="_current_screens")
+# irta_screen_sets <- c("temp_screens", irta_screen_sets)
+irta_screen_sets <- mget(irta_screen_sets)
+master_IRTA_screens_template <- reduce(irta_screen_sets, full_join) %>% mutate(Participant_Type2 = NA)
+
+# reordering and creating date variables ----------------------------------
+
+# reordering colunns based on list in following document 
+irta_tracker_columns <- read_excel(paste0(database_location, "other_data_never_delete/irta_tracker_columns.xlsx")) %>% filter(include!="Overall_date")
+master_IRTA_template <- master_IRTA_template %>% select(irta_tracker_columns$include)
+master_IRTA_screens_template <- master_IRTA_screens_template %>% select(irta_tracker_columns$include)
 
 # converting date variables to date format
-# if problem with dates in one or more individual trackers don't run these 3 lines - 
-# if you still want to create the dataset running this with improperly formatted dates will result in the removal of the dates from those columns. 
-# not running this line keeps them in character format (string)
 date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date")
 for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
 master_IRTA_template[date_variabes] <- lapply(master_IRTA_template[date_variabes], as.Date, "%Y-%m-%d")
+master_IRTA_screens_template[date_variabes] <- lapply(master_IRTA_screens_template[date_variabes], as.Date, "%Y-%m-%d")
 
-# creating an 'overall date' column, prioritizing task1 date, where this is missing, inserting the clinic visit date instead, if missing, try other task dates 
-master_IRTA_template$Overall_date <- coalesce(master_IRTA_template$Task1_Date, master_IRTA_template$Clinical_Visit_Date) 
-for(i in seq_len(max_tasks-1)) {
-  i <- as.numeric(i)
-  j=i+1
-  # temp1 <- paste0("Task", i, "_Date")
-  temp2 <- paste0("Task", j, "_Date")
-  master_IRTA_template$Overall_date <- coalesce(master_IRTA_template$Overall_date, master_IRTA_template$temp2)
-  }
+# creating an 'overall date' column, prioritizing clinic visit date for the main IRTA trackers, where this is missing, inserting the instead the task1 date
+master_IRTA_template$Overall_date <- coalesce(master_IRTA_template$Clinical_Visit_Date, master_IRTA_template$Task1_Date) 
+# creating an 'overall date' column, prioritizing screening start date from the screening tabs of the IRTA trackers, where this is missing, inserting the instead the referral date
+master_IRTA_screens_template$Overall_date <- coalesce(master_IRTA_screens_template$Screening_Start_Date, master_IRTA_screens_template$Referral_Date) 
 
 # filling in demographic information for each participant & removing exact duplicates 
 master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% arrange(LAST_NAME, FIRST_NAME, Overall_date)
@@ -105,40 +116,31 @@ master_IRTA_reordered <- cbind(master_IRTA_reordered, split1)
 
 # another reorder & sort 
 
-master_IRTA_latest <- master_IRTA_reordered %>% 
-  select(FIRST_NAME, LAST_NAME, Initials, SDAN, MRN, DAWBA_ID, PLUSID, IRTA_tracker, SEX, DOB, Handedness, Age_at_visit, Overall_date, Current, 
-            Eligible, Eligibility_notes, Scheduling_status, Scheduling_status_notes, 
-            Participant_Type, Participant_Type2, Treatment_Notes, Consent_Date, Protocol, Data_sharing, 
-            Clinical_Visit_Date, Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number, NIMH_Clinician, Visit_Cancelled, 
-            Parent_CTSS_username, Parent_CTSS_password, Child_CTSS_username, Child_CTSS_password, 
-            parent_SDQplus_login, child_SDQplus_login, Child_Phone_Number, Child_Email, Primary_clinician,
-            Referral_Date,	Referral_Informant_Name,	Referral_Informant_Relationship,	Referral_Informant_Email,	Referral_Informant_Phone,	
-            Referral_Source,	Referral_other_notes,	Screening_Start_Date,	Screening_initial_contact_successful,	Screening_number_contact_attempts,	
-            Screening_notes,	Parent_e_consented,	Child_e_assented,	Parent_DAWBA_completed,	Child_DAWBA_completed,	DAWBA_MFQ,	DAWBA_completed,
-            Important_Info, Marital_Status,	Sibling_Init,	Sibling_Type,
-            Parent_Name, FIRST_NAME_P1,	LAST_NAME_P1,	Parent_Contact_Number,	Parent_Email, Street_address,	City,	State,	Zip,
-            Second_Parent_Name,	FIRST_NAME_P2,	LAST_NAME_P2, Second_Parent_Contact_Number,	Second_Parent_Email,	Second_Parent_Address, Parent_Consented,
-            Scanner,	Glasses,	Glasses_Prescription,	Metal,	Clinicals,	Clinicals_date,
-            Task1_Name:paste0("Task", max_tasks, "_Visit_Type")) %>% # should have 86 variables
-  arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date)
+irta_tracker_columns <- read_excel(paste0(database_location, "other_data_never_delete/irta_tracker_columns.xlsx"))
+master_IRTA_screens_latest <- master_IRTA_screens_template %>% select(irta_tracker_columns$include) %>% arrange(LAST_NAME, FIRST_NAME, Referral_Date)
+irta_tracker_columns <- rbind(irta_tracker_columns, "Clinical_Visit_Code", "Clinical_Visit_Number")
+master_IRTA_latest <- master_IRTA_reordered %>% select(irta_tracker_columns$include) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date)
 
 ####################Chris's here..... 
 
-# suppressWarnings(source(paste0(scripts,"Schedule_script_functions.R")))
-# for (row in c(1:nrow(master_IRTA_latest))) {
-#   #print(paste0("Row: ",row))
-#   
-#   if (!is.na(master_IRTA_latest[row,"IRTA_tracker"]) & master_IRTA_latest[row, "IRTA_tracker"] != "REMOVED") {
-#     print_dates(row,master_IRTA_latest)
-#     
-#   }
-#   #print("completed")
-#   
-# }
-# 
-# master_IRTA_latest$Clinical_Visit_Date <- as.Date(master_IRTA_latest$Clinical_Visit_Date, origin = "1899-12-30")
-# master_IRTA_latest$Task1_Date <- as.Date(master_IRTA_latest$Task1_Date, origin = "1899-12-30")
-# master_IRTA_latest$Next_FU_date <- as.Date(master_IRTA_latest$Next_FU_date, origin = "1899-12-30")
+suppressWarnings(source(paste0(scripts,"Schedule_script_functions.R")))
+for (row in c(1:nrow(master_IRTA_latest))) {
+  #print(paste0("Row: ",row))
+  master_IRTA_latest$Next_FU_date <- NA
+  master_IRTA_latest$Next_FU_notes <- NA
+  if (!is.na(master_IRTA_latest[row,"IRTA_tracker"]) & master_IRTA_latest[row, "IRTA_tracker"] != "REMOVED") {
+    print("entering print dates")
+    print_dates(row,master_IRTA_latest)
+    assign('database',database,envir=.GlobalEnv)
+
+  }
+  #print("completed")
+
+}
+
+master_IRTA_latest$Clinical_Visit_Date <- as.Date(master_IRTA_latest$Clinical_Visit_Date, origin = "1899-12-30")
+master_IRTA_latest$Task1_Date <- as.Date(master_IRTA_latest$Task1_Date, origin = "1899-12-30")
+master_IRTA_latest$Next_FU_date <- as.Date(master_IRTA_latest$Next_FU_date, origin = "1899-12-30")
 
 ######################################################################################
 #######Creating tasks database
@@ -321,6 +323,12 @@ master_IRTA_latest %>% write_xlsx(paste0(backup_location,"MASTER_IRTA_DATABASE",
 
 task_reshape_master_QC %>% write_xlsx(paste0(IRTA_tracker_location,"TASKS_DATABASE_QC.xlsx"))
 task_reshape_master_QC %>% write_xlsx(paste0(backup_location,"TASKS_DATABASE_QC","_",todays_date_formatted,".xlsx"))
+
+######################################################################################
+#######Saving Screens Dataset
+
+master_IRTA_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"REFERRAL_AND_SCREENING_DATABASE.xlsx"))
+master_IRTA_screens_latest %>% write_xlsx(paste0(backup_location,"REFERRAL_AND_SCREENING_DATABASE","_",todays_date_formatted,".xlsx"))
 
 #####Removing unnecessary variables
 
