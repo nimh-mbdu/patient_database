@@ -1,6 +1,10 @@
 # Scripts to update the MBDU databases
 ---
-## Location of repository on the server: string-mbd/Database/Database_Scripts_Github/
+### Author: 
+Georgia O'Callaghan
+---
+## Location of repository on the server: 
+string-mbd/Database/Database_Scripts_Github/
 ---
 ## Description of scripts: 
 1. Master code needed to set up environmental variables & directories: 
@@ -10,12 +14,12 @@
 3. Code to create clinical, behavioural and treatment databases using information from the master IRTA tracker, CTDB and SDQ: 
 	Database_code.R
 ---
-## Created in RStudio: "R version 3.6.1 (2019-07-05)"
----
-## Author: Georgia O'Callaghan
+### Created in RStudio: 
+"R version 3.6.1 (2019-07-05)"
 ---
 Required R libraries (aka packages): 
 readxl
+writexl
 tidyr
 dplyr 
 summarytools 
