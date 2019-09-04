@@ -1,16 +1,18 @@
 # Scripts to update the MBDU databases
 ---
-Location of repository on the server: string-mbd/Database/Database_Scripts_Github/
+## Location of repository on the server: string-mbd/Database/Database_Scripts_Github/
 ---
-Master code needed to set up environmental variables & directories: Update_databases_master_script.R
+## Description of scripts: 
+1. Master code needed to set up environmental variables & directories: 
+	Update_databases_master_script.R
+2. Code to merge IRTA trackers to make a master patient list: 
+	IRTA_Merge_Code.R
+3. Code to create clinical, behavioural and treatment databases using information from the master IRTA tracker, CTDB and SDQ: 
+	Database_code.R
 ---
-Code to merge IRTA trackers to make a master patient list: IRTA_Merge_Code.R
+## Created in RStudio: "R version 3.6.1 (2019-07-05)"
 ---
-Code to create clinical, behavioural and treatment databases using information from the master IRTA tracker, CTDB and SDQ: Database_code.R
----
-Created in RStudio; "R version 3.6.1 (2019-07-05)"
----
-Author: Georgia O'Callaghan
+## Author: Georgia O'Callaghan
 ---
 Required R libraries (aka packages): 
 readxl
