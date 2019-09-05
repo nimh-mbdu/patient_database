@@ -1612,7 +1612,7 @@
   c_cybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, c_cybocs_date, matches('c_cybocs_ob_'), matches('c_cybocs_com_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  c_cybocs_subset_sdq[,7:ncol(c_cybocs_subset_sdq)] <- sapply(c_cybocs_subset_sdq[,7:ncol(c_cybocs_subset_sdq)], as.numeric) 
+  c_cybocs_subset_sdq[,8:ncol(c_cybocs_subset_sdq)] <- sapply(c_cybocs_subset_sdq[,8:ncol(c_cybocs_subset_sdq)], as.numeric) 
   
   c_cybocs_subset_sdq$no_columns <- c_cybocs_subset_sdq %>% select(matches('c_cybocs_')) %>% ncol() %>% as.numeric()
   c_cybocs_subset_sdq$NA_count <- c_cybocs_subset_sdq %>% select(matches('c_cybocs_')) %>% apply(., 1, count_na)
