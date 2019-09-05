@@ -2275,7 +2275,9 @@ Psychometrics_treatment <- Psychometrics_treatment %>%
   ungroup() %>% 
   distinct(., .keep_all = TRUE)
 
-# CBT subset
+############# CBT subset
+
+# selecting columns 
 
 cbt_columns <- read_excel(paste0(database_location, "other_data_never_delete/names_cbt_datebase.xlsx"))
 CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba_"),
@@ -2287,22 +2289,56 @@ CBT_report <- Psychometrics_treatment %>% select(cbt_columns$select, matches("s_
   filter(Clinical_Visit_Code=="o") %>% select(-s_fua_date, -p_fua_date, -s_before_ba_date, -s_after_ba_date,
                                               -s_baexpout_date, -s_menstruation_date, -c_medsclin_date)
 
+# recoding & calculating variables 
+
 CBT_report$Eligible <- recode(CBT_report$Eligible, "0"="Include", "5"="Excluded: does not meet criteria",
                               "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
                               "7"="Did not or withdrew assent/consent", "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
                               "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
                               "11"="Completed treatment", .missing = NULL)
 
-ba_rating_columns <- CBT_report %>% select(matches("s_before_ba_"), matches("s_after_ba_")) %>% colnames()
-ba_rating_columns <- ba_rating_columns[c(-1,-8)]
-CBT_report[ba_rating_columns] <- lapply(CBT_report[ba_rating_columns], as.numeric)
+parent_report <- select(CBT_report, matches("_parent")) %>% colnames()
+CBT_report[parent_report] <- lapply(CBT_report[parent_report], as.character)
+CBT_report[parent_report] <- lapply(CBT_report[parent_report], FUN = function(x) recode(x, "0"="Other", "1"="Mother", "2"="Father", .missing = "Unknown"))
+parent_report <- parent_report[parent_report != "p_fad_parent"]
 
+dummy <- tibble(Initials= c("DUMMY"), p_mfq_parent= c("Father", "Mother", "Unknown"), p_mfq1w_parent= c("Father", "Mother", "Unknown"), 
+                p_scared_parent= c("Father", "Mother", "Unknown"), p_ari1w_parent= c("Father", "Mother", "Unknown"), p_ari6m_parent= c("Father", "Mother", "Unknown"))
+CBT_report <- merge.default(CBT_report, dummy, all=TRUE)
+
+for(q in seq_along(parent_report)) {
+  iter6 <- as.numeric(q)
+  # iter6=1
+  parent_measure <- c(parent_report[iter6])
+  parent_measure_tot <- gsub("parent", "tot", parent_measure, fixed=TRUE)
+  
+  CBT_report <- CBT_report %>% spread(eval(parse(text=parent_measure)), eval(parse(text=parent_measure_tot)), fill=NA)
+  
+  father_report <- gsub("p_", "p_f_", parent_measure_tot, fixed=TRUE)
+  mother_report <- gsub("p_", "p_m_", parent_measure_tot, fixed=TRUE)
+  unknown_report <- gsub("p_", "p_u_", parent_measure_tot, fixed=TRUE)
+  names(CBT_report)[names(CBT_report) == "Father"] <- (paste0(father_report))
+  names(CBT_report)[names(CBT_report) == "Mother"] <- (paste0(mother_report))
+  names(CBT_report)[names(CBT_report) == "Unknown"] <- (paste0(unknown_report))
+}
+
+CBT_report <- CBT_report %>% filter(Initials!="DUMMY")
+
+ba_rating_columns <- CBT_report %>% select(matches("s_before_ba_"), matches("s_after_ba_")) %>% colnames()
+ba_rating_columns <- ba_rating_columns[ba_rating_columns != "s_before_ba_clinician_name"]
+ba_rating_columns <- ba_rating_columns[ba_rating_columns != "s_after_ba_clinician_name"]
+
+CBT_report[ba_rating_columns] <- lapply(CBT_report[ba_rating_columns], as.numeric)
 CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_ba_mood - s_after_ba_mood), s_ba_sess_difficulty_diff = (s_before_ba_difficult - s_after_ba_difficult), 
                                     s_ba_sess_enjoy_diff = (s_before_ba_enjoy - s_after_ba_enjoy), s_ba_sess_anxiety_diff = (s_before_ba_anx - s_after_ba_anx), 
                                     s_ba_sess_satisfaction_diff = (s_before_ba_sat - s_after_ba_sat)
                                     # s_ba_week_enjoy_diff = (s_after_ba_week_expected_enjoyment - s_before_ba_week_actual_enjoyment), # cannot include this until I resolve how I will have to 
                                     # take the expected weekly enjoyment from the previous week from the actual enjoyment of the present week - i.e. 1 row previous 
                                 ) 
+
+CBT_report <- CBT_report %>% select(Initials:c_ksadsdx_dx_detailed, matches("_mfq_"), matches("_mfq1w_"), matches("_scared_"), matches("_ari1w_"), matches("_ari6m_"), 
+                                    s_shaps_tot:s_rumination_tot, matches("s_fua_"), matches("p_fua_"), matches("_ba_sess_"), matches("s_baexpout_"), 
+                                    matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_")) %>% arrange(LAST_NAME, Initials, FIRST_NAME, Clinical_Visit_Date)
 
 # exporting
 
@@ -2363,14 +2399,15 @@ rm(list=ls(pattern="sdq"))
 rm(list=ls(pattern="clinical"))
 rm(list=ls(pattern="task"))
 rm(list=ls(pattern="subset"))
+rm(list=ls(pattern="iter"))
 
-rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, imported_data_23495, count_na, gen_functioning, hand_columns, iter5, 
-   measure_name, iter, panic, sep, social, gad, school, scared, iter2, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d, iter4,
+rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, imported_data_23495, count_na, gen_functioning, hand_columns, 
+   measure_name, panic, sep, social, gad, school, scared, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d,
    fix_var, remove_unknown, common_identifiers_child, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, 
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, 
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, 
    how_columns, numeric, of_interest, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, clinic_sets, task_sets, combined, 
-   imported_data_23544, measure_temp, parent, child, p, c)
+   imported_data_23544, measure_temp, parent, child, p, c, q)
 
 # rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)
