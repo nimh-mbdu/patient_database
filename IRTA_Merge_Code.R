@@ -20,22 +20,21 @@ for(i in seq_along(current_IRTAs_full)) {
   IRTA_init <- current_IRTAs_init[iter]
   
   ##### checking IRTA column names 
-  # temp_columns <- colnames(temp)
+  # temp_columns <- colnames(temp_active_data)
   # assign(paste0(current_IRTAs_init[iter], "_col"), temp_columns)
   # temp_columns %>% write.csv(file = paste0(IRTA_tracker_location,current_IRTAs_init[iter], "_col.csv"), na = " ", row.names = FALSE)
   
-  temp <- read_excel(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_Patient_List.xlsx"), sheet = "Active_Participants") %>% 
+  temp_active_data <- read_excel(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_Patient_List.xlsx"), sheet = "Active_Participants") %>% 
     mutate_all(as.character) %>% mutate(IRTA_tracker=IRTA_init)
-  assign(paste0(current_IRTAs_init[iter], "_active_data"), temp) 
+  assign(paste0(current_IRTAs_init[iter], "_active_data"), temp_active_data) 
   
 }
 
-temp <- read_excel(paste0(IRTA_tracker_location, "/Other/REMOVED_Patient_List.xlsx"), sheet = "Active_Participants") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
+temp_active_data <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/REMOVED_Patient_List.xlsx"), sheet = "Active_Participants") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
 
 # merge & tidy up
 
 irta_sets <- ls(pattern="_active_data")
-irta_sets <- c("temp", irta_sets)
 irta_sets <- mget(irta_sets)
 master_IRTA_template <- reduce(irta_sets, full_join) %>% mutate(Participant_Type2 = NA)
 
@@ -48,24 +47,24 @@ for(u in seq_along(current_IRTAs_full)) {
   IRTA_full <- current_IRTAs_full[iter6]
   IRTA_init <- current_IRTAs_init[iter6]
   
-  temp_screens <- read_excel(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_Patient_List.xlsx"), sheet = "Current_Screens") %>% 
+  temp_current_screens <- read_excel(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_Patient_List.xlsx"), sheet = "Current_Screens") %>% 
     mutate_all(as.character) %>% mutate(IRTA_tracker=IRTA_init)
-  assign(paste0(current_IRTAs_init[iter6], "_current_screens"), temp_screens) 
+  assign(paste0(current_IRTAs_init[iter6], "_current_screens"), temp_current_screens) 
   
 }
 
-# temp_screens <- read_excel(paste0(IRTA_tracker_location, "/Other/REMOVED_Patient_List.xlsx"), sheet = "Current_Screens") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
+# temp_current_screens <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/REMOVED_Patient_List.xlsx"), sheet = "Current_Screens") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
+rm(temp_current_screens)
 
 # merge & tidy up
-irta_screen_sets <- ls(pattern="_current_screens")
-# irta_screen_sets <- c("temp_screens", irta_screen_sets)
+irta_screen_s0ets <- ls(pattern="_current_screens")
 irta_screen_sets <- mget(irta_screen_sets)
 master_IRTA_screens_template <- reduce(irta_screen_sets, full_join) %>% mutate(Participant_Type2 = NA)
 
 # reordering and creating date variables ----------------------------------
 
 # reordering colunns based on list in following document 
-irta_tracker_columns <- read_excel(paste0(database_location, "other_data_never_delete/irta_tracker_columns.xlsx")) %>% 
+irta_tracker_columns <- read_excel(paste0(IRTA_tracker_location, "other_data_never_delete/irta_tracker_columns.xlsx")) %>% 
   filter(include!="Overall_date") %>% filter(include!="Clinical_Visit_Code") %>% filter(include!="Clinical_Visit_Number")
 master_IRTA_template <- master_IRTA_template %>% select(irta_tracker_columns$include)
 master_IRTA_screens_template <- master_IRTA_screens_template %>% select(irta_tracker_columns$include)
@@ -137,7 +136,7 @@ master_IRTA_reordered <- cbind(master_IRTA_reordered, split1)
 
 # another reorder & sort 
 
-irta_tracker_columns <- read_excel(paste0(database_location, "other_data_never_delete/irta_tracker_columns.xlsx"))
+irta_tracker_columns <- read_excel(paste0(IRTA_tracker_location, "other_data_never_delete/irta_tracker_columns.xlsx"))
 master_IRTA_latest <- master_IRTA_reordered %>% select(irta_tracker_columns$include) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date)
 irta_tracker_columns <- irta_tracker_columns %>% filter(include!="Clinical_Visit_Code") %>% filter(include!="Clinical_Visit_Number")
 master_IRTA_screens_latest <- master_IRTA_screens_reordered %>% select(irta_tracker_columns$include) %>% arrange(LAST_NAME, FIRST_NAME, Referral_Date)
@@ -145,11 +144,10 @@ master_IRTA_screens_latest <- master_IRTA_screens_reordered %>% select(irta_trac
 ####################Chris's here..... 
 
 suppressWarnings(source(paste0(scripts,"Schedule_script_functions.R")))
-master_IRTA_latest$Next_FU_date <- NA
+master_IRTA_latest$Next_FU_date <- as.Date(NA,origin = "1899-12-30")
 master_IRTA_latest$Next_FU_notes <- NA
 for (row in c(1:nrow(master_IRTA_latest))) {
   if (!is.na(master_IRTA_latest[row,"IRTA_tracker"]) & master_IRTA_latest[row, "IRTA_tracker"] != "REMOVED") {
-    print("entering print dates")
     print_dates(row,master_IRTA_latest)
     print_notes(row,master_IRTA_latest)
     assign('master_IRTA_latest',master_IRTA_latest,envir=.GlobalEnv)
@@ -355,9 +353,11 @@ master_IRTA_screens_latest %>% write_xlsx(paste0(backup_location,"REFERRAL_AND_S
 
 rm(list=ls(pattern="_active_data"))
 rm(list=ls(pattern="_current_screens"))
-rm(list=ls(pattern="temp"))
 rm(list=ls(pattern="iter"))
+rm(list=ls(pattern="age_"))
+rm(list=ls(pattern="_sets"))
 rm(list=ls(pattern="missing"))
-rm(IRTA_full, IRTA_init, age_dummy, age_dummy_screens, date_variabes, split1, task_reshape, i, eligibility_variables, x, row, u, numeric, of_interest)
-rm(MID_task_QC, MMI_task_QC, float, task_reshape_master, task_QC, irta_screen_sets, irta_sets, irta_tracker_columns)
-rm(master_IRTA_reordered, master_IRTA_screens_reordered, master_IRTA_template, master_IRTA_screens_template)
+rm(list=ls(pattern="_reordered"))
+rm(list=ls(pattern="_template"))
+rm(IRTA_full, IRTA_init, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest)
+rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, MID_temp)
