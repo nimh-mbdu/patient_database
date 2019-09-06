@@ -15,48 +15,48 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r echo=FALSE}
 
-# directories -------------------------------------------------------------
-
-todays_date_formatted <- as.Date("2019-09-04")
-computer = 'pc' # set this to either 'mac' or 'pc' (Georgia = W:/ as I have string mounted differently)
-
-Participant <- c("ANEN") # enter the initials of the participant you want to produce a summary report for
-Clinician <- c("Kathryn") # enter either "Kathryn", "Ken" or "Argyris"
-
-if (computer=="pc") {
-  string = 'W:/'
-  sdan1 = 'Y:/'
-} else if (computer=="mac") {
-  string = '/Volumes/string-mbd/'
-  sdan1 = '/Volumes/sdan1/'
-}
-
-database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here
-CBT_location = paste0(string, "Database/Master Psychometric Database/CBT/")
-CBT_backup = paste0(CBT_location, "Backup/")
-saving_reports = paste0(CBT_location, "Reports/")
-
-# packages ----------------------------------------------------------------
-
-suppressPackageStartupMessages(library(readxl))
-suppressPackageStartupMessages(library(writexl)) # new, testing as an alternativce to the xlsx package
-suppressPackageStartupMessages(library(tidyr))
-suppressPackageStartupMessages(library(dplyr))
-suppressPackageStartupMessages(library(rmarkdown))
-suppressPackageStartupMessages(library(eeptools))
-suppressPackageStartupMessages(library(openxlsx))
-suppressPackageStartupMessages(library(data.table))
-suppressPackageStartupMessages(library(reshape2))
-suppressPackageStartupMessages(library(stringr))
-suppressPackageStartupMessages(library(lubridate))
-suppressPackageStartupMessages(library(ggplot2))
-suppressPackageStartupMessages(library(rlang))
-suppressPackageStartupMessages(library(purrr))
-suppressPackageStartupMessages(library(tidyverse))
-suppressPackageStartupMessages(library(shiny))
-suppressPackageStartupMessages(library(knitr))
-
-# Loading data ------------------------------------------------------------
+# # directories -------------------------------------------------------------
+# 
+# todays_date_formatted <- as.Date("2019-09-06")
+# computer = 'pc' # set this to either 'mac' or 'pc' (Georgia = W:/ as I have string mounted differently)
+# 
+# Participant <- c("ANEN") # enter the initials of the participant you want to produce a summary report for
+# Clinician <- c("Kathryn") # enter either "Kathryn", "Ken" or "Argyris"
+# 
+# if (computer=="pc") {
+#   string = 'W:/'
+#   sdan1 = 'Y:/'
+# } else if (computer=="mac") {
+#   string = '/Volumes/string-mbd/'
+#   sdan1 = '/Volumes/sdan1/'
+# }
+# 
+# database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here
+# CBT_location = paste0(string, "Database/Master Psychometric Database/CBT/")
+# CBT_backup = paste0(CBT_location, "Backup/")
+# saving_reports = paste0(CBT_location, "Reports/")
+# 
+# # packages ----------------------------------------------------------------
+# 
+# suppressPackageStartupMessages(library(readxl))
+# suppressPackageStartupMessages(library(writexl)) # new, testing as an alternativce to the xlsx package
+# suppressPackageStartupMessages(library(tidyr))
+# suppressPackageStartupMessages(library(dplyr))
+# suppressPackageStartupMessages(library(rmarkdown))
+# suppressPackageStartupMessages(library(eeptools))
+# suppressPackageStartupMessages(library(openxlsx))
+# suppressPackageStartupMessages(library(data.table))
+# suppressPackageStartupMessages(library(reshape2))
+# suppressPackageStartupMessages(library(stringr))
+# suppressPackageStartupMessages(library(lubridate))
+# suppressPackageStartupMessages(library(ggplot2))
+# suppressPackageStartupMessages(library(rlang))
+# suppressPackageStartupMessages(library(purrr))
+# suppressPackageStartupMessages(library(tidyverse))
+# suppressPackageStartupMessages(library(shiny))
+# suppressPackageStartupMessages(library(knitr))
+# 
+# # Loading data ------------------------------------------------------------
 
 CBT_report <- read_excel(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
   
@@ -87,6 +87,12 @@ CBT_report <- CBT_report %>% select(-matches("_ari6m_"), -matches("_mfq_"))
 
 data <- CBT_report %>% filter(Initials==Participant)
 
+# changing date formats
+data$Clinical_Visit_Date2 <- format(data$Clinical_Visit_Date, "%B-%d")
+data$Clinical_Visit_Date3 <- format(data$Clinical_Visit_Date, "%B-%d-%Y")
+data$Clinical_Visit_Date4 <- factor(data$Clinical_Visit_Number, levels=data$Clinical_Visit_Number, labels=data$Clinical_Visit_Date2)
+todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
+
 # fixing name case
 f_name <- head(data$FIRST_NAME,1)
 l_name <- head(data$LAST_NAME,1)
@@ -101,8 +107,8 @@ p_f_name <- paste(substring(p_f_name, 1, 1), tolower(substring(p_f_name, 2)), se
 p_l_name <- paste(substring(p_l_name, 1, 1), tolower(substring(p_l_name, 2)), sep = "", collapse = " ")
 
 # treatment related 
-start <- data %>% arrange(Clinical_Visit_Number) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date()
-end <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date()
+start <- data %>% arrange(Clinical_Visit_Number) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
+end <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
 weeks_treat  <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Number) %>% pull()
 
 # provider <- head(data$Primary_clinician,1)
@@ -110,8 +116,9 @@ provider <- c("INSERT COMMUNITY PROVIDER")
 
 # basic demographics 
 gender <- head(data$SEX,1) %>% tolower()
-datebirth <- head(data$DOB,1) %>% as.Date()
-age <- age_calc(dob = datebirth, enddate = todays_date_formatted, units = "years", precise = TRUE) %>% round(., digits = 1) 
+datebirth <- head(data$DOB,1)
+age <- age_calc(dob = datebirth, enddate = todays_date_formatted, units = "years", precise = TRUE) %>% round(., digits = 1)
+datebirth <- format(datebirth, "%B-%d-%Y")
 dx <- head(data$c_ksadsdx_primary_dx,1)
 dx <- gsub("MDD", "Major Depressive Disorder", dx, fixed=TRUE)
 
@@ -163,7 +170,7 @@ if (Clinician=="Kathryn") {
 
 #### This letter is an update on `r f_name` `r l_name`'s ongoing participation in our outpatient treatment program.
 
-##### DATE: `r todays_date_formatted` (YYYY-MM-DD)  
+##### DATE: `r todays_date` 
 
 ***
 
@@ -227,18 +234,27 @@ MFQ (Mood & Feelings Questionnaire): 13 items rated 0-2, clinical cutoff score =
 
 ```{r, echo=FALSE, warning=FALSE}
 
+# data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_tot) | !is.na(p_u_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
+#   gather(Measure, value, s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot, p_u_mfq1w_tot) %>%
+#   ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+#   # geom_line() +
+#   geom_point(aes(shape=Measure, group=Measure), size=3) +
+#   geom_text(aes(label=value), hjust=0, vjust=-1) +
+#   labs(title="Depressive symptoms\n", x="\nCBT Visit Number", y="Depression Score\n") +
+#   ylim(0,27) +
+#   scale_shape_manual(labels = c("Father", "Mother", "Parent", "Child"), values=c(17, 16, 3, 5)) +
+#   theme_minimal() +
+#   guides(shape=guide_legend("Person reporting:"))
+
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_tot) | !is.na(p_u_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot, p_u_mfq1w_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
-    # ggplot(aes(x=Clinical_Visit_Number, y=value, colour=Measure), na.rm = TRUE) +
-  # geom_line() +
+  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
+  geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="Depressive symptoms\n", x="\nCBT Visit Number", y="Depression Score\n") + 
-  # scale_x_date(date_labels = "%m-%d-%Y") +
+  labs(title="Depressive symptoms\n", x="\nCBT Visit Date", y="Depression Score\n") +
   ylim(0,27) + 
-  # scale_color_manual(labels = c("Father", "Mother", "Parent - unknown", "Child"), values = c("#666666", "#666666", "#999999", "#000000")) +
-  scale_shape_manual(labels = c("Father", "Mother", "Parent: not recorded", "Child"), values=c(17, 16, 3, 5)) +
+  scale_shape_manual(labels = c("Father", "Mother", "Parent", "Child"), values=c(17, 16, 3, 5)) +
   theme_minimal() +
   guides(shape=guide_legend("Person reporting:")) 
 
@@ -249,8 +265,8 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 ```{r, echo=FALSE, warning=FALSE}
 
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_tot) | !is.na(p_u_mfq1w_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
-  select(Clinical_Visit_Date, Clinical_Visit_Number, s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot, p_u_mfq1w_tot) %>% mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% 
-  mutate(p_f_mfq1w_tot = replace_na(p_f_mfq1w_tot, " ")) %>% mutate(p_m_mfq1w_tot = replace_na(p_m_mfq1w_tot, " ")) %>% mutate(p_u_mfq1w_tot = replace_na(p_u_mfq1w_tot, " ")) %>% 
+  arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot, p_u_mfq1w_tot) %>% 
+  mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_f_mfq1w_tot = replace_na(p_f_mfq1w_tot, " ")) %>% mutate(p_m_mfq1w_tot = replace_na(p_m_mfq1w_tot, " ")) %>% mutate(p_u_mfq1w_tot = replace_na(p_u_mfq1w_tot, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child MFQ", "Father MFQ", "Mother MFQ", "Parent MFQ: not recorded"))
 
 ```
@@ -265,15 +281,27 @@ SCARED (Self-Report for Anxiety Related Emotional Disorders): 41 items rated 0-2
 
 ```{r, echo=FALSE, warning=FALSE}
 
+# data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot) | !is.na(p_u_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
+#   gather(Measure, value, s_scared_tot, p_f_scared_tot, p_m_scared_tot, p_u_scared_tot) %>%
+#   ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+#   # geom_line() +
+#   geom_point(aes(shape=Measure, group=Measure), size=3) +
+#   geom_text(aes(label=value), hjust=0, vjust=-1) +
+#   labs(title="General anxiety symptoms\n", x="\nCBT Visit Number", y="Anxiety Score\n") + 
+#   ylim(0,83) + 
+#   scale_shape_manual(labels = c("Father", "Mother", "Parent", "Child"), values=c(17, 16, 3, 5)) +
+#   theme_minimal() +
+#   guides(color=guide_legend("Person reporting:")) 
+
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot) | !is.na(p_u_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_scared_tot, p_f_scared_tot, p_m_scared_tot, p_u_scared_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
-  # geom_line() +
+  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
+  geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="General anxiety symptoms\n", x="\nCBT Visit Number", y="Anxiety Score\n") + 
+  labs(title="General anxiety symptoms\n", x="\nCBT Visit Date", y="Anxiety Score\n") + 
   ylim(0,83) + 
-  scale_shape_manual(labels = c("Father", "Mother", "Parent: not recorded", "Child"), values=c(17, 16, 3, 5)) +
+  scale_shape_manual(labels = c("Father", "Mother", "Parent", "Child"), values=c(17, 16, 3, 5)) +
   theme_minimal() +
   guides(color=guide_legend("Person reporting:")) 
 
@@ -284,8 +312,8 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 ```{r, echo=FALSE, warning=FALSE}
 
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot) | !is.na(p_u_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
-  select(Clinical_Visit_Date, Clinical_Visit_Number, s_scared_tot, p_f_scared_tot, p_m_scared_tot, p_u_scared_tot) %>% mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% 
-  mutate(p_f_scared_tot = replace_na(p_f_scared_tot, " ")) %>% mutate(p_m_scared_tot = replace_na(p_m_scared_tot, " ")) %>% mutate(p_u_scared_tot = replace_na(p_u_scared_tot, " ")) %>% 
+  arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_scared_tot, p_f_scared_tot, p_m_scared_tot, p_u_scared_tot) %>% 
+  mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_f_scared_tot = replace_na(p_f_scared_tot, " ")) %>% mutate(p_m_scared_tot = replace_na(p_m_scared_tot, " ")) %>% mutate(p_u_scared_tot = replace_na(p_u_scared_tot, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child SCARED", "Father SCARED", "Mother SCARED", "Parent SCARED: not recorded"))
 
 ```
@@ -300,13 +328,25 @@ SHAPS (Snaith-Hamilton Pleasure Scale): 14 items rated 0-3, higher scores reflec
 
 ```{r, echo=FALSE, warning=FALSE}
 
+# data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
+#   gather(Measure, value, s_shaps_tot) %>%
+#   ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+#   # geom_line() +
+#   geom_point(aes(shape=Measure, group=Measure), size=3) +
+#   geom_text(aes(label=value), hjust=0, vjust=-1) +
+#   labs(title="Anhedonia symptoms\n", x="\nCBT Visit Number)", y="Anhedonia Score\n") + 
+#   ylim(0,43) + 
+#   scale_shape_manual(labels = c("Child"), values=c(5)) +
+#   theme_minimal() +
+#   guides(color=guide_legend("Person reporting:")) 
+
 data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_shaps_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
-  # geom_line() +
+  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
+  geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="Anhedonia symptoms\n", x="\nCBT Visit Number)", y="Anhedonia Score\n") + 
+  labs(title="Anhedonia symptoms\n", x="\nCBT Visit Date", y="Anhedonia Score\n") + 
   ylim(0,43) + 
   scale_shape_manual(labels = c("Child"), values=c(5)) +
   theme_minimal() +
@@ -318,8 +358,8 @@ data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %
 
 ```{r, echo=FALSE, warning=FALSE}
 
-data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
-  select(Clinical_Visit_Date, Clinical_Visit_Number, s_shaps_tot) %>%
+data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%  arrange(Clinical_Visit_Number) %>% 
+  select(Clinical_Visit_Date3, Clinical_Visit_Number, s_shaps_tot) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child SHAPS"))
 
 ```
@@ -334,17 +374,29 @@ ARI (Affective Reactivity Index): 7 items rated 0-2, clinical cutoff = 2.
 
 ```{r, echo=FALSE, warning=FALSE}
 
-data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot) | !is.na(p_u_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
+# data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot) | !is.na(p_u_ari1w_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
+#   gather(Measure, value, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot, p_u_ari1w_tot) %>%
+#   ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+#   geom_point(aes(shape=Measure, group=Measure), size=3) +
+#   geom_line() +
+#   geom_text(aes(label=value), hjust=0, vjust=-1) +
+#   labs(title="Irritability symptoms\n", x="\nCBT Visit Number", y="Irritability Score\n") + 
+#   ylim(0,20) + 
+#   scale_shape_manual(labels = c("Father", "Mother", "Parent", "Child"), values=c(17, 16, 3, 5)) +
+#   theme_minimal() +
+#   guides(color=guide_legend("Person reporting:"))
+
+data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot) | !is.na(p_u_ari1w_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot, p_u_ari1w_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
-  # geom_line() +
+  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
+  geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="Irritability symptoms\n", x="\nCBT Visit Number", y="Irritability Score\n") + 
-  ylim(0,13) + 
-  scale_shape_manual(labels = c("Father", "Mother", "Parent: not recorded", "Child"), values=c(17, 16, 3, 5)) +
+  labs(title="Irritability symptoms\n", x="\nCBT Visit Date", y="Irritability Score\n") + 
+  ylim(0,15) + 
+  scale_shape_manual(labels = c("Father", "Mother", "Parent", "Child"), values=c(17, 16, 3, 5)) +
   theme_minimal() +
-  guides(color=guide_legend("Person reporting:")) 
+  guides(color=guide_legend("Person reporting:"))
 
 ```
 
@@ -353,8 +405,8 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 ```{r, echo=FALSE, warning=FALSE}
 
 data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot) | !is.na(p_u_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
-  select(Clinical_Visit_Date, Clinical_Visit_Number, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot, p_u_ari1w_tot) %>% mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% 
-  mutate(p_f_ari1w_tot = replace_na(p_f_ari1w_tot, " ")) %>% mutate(p_m_ari1w_tot = replace_na(p_m_ari1w_tot, " ")) %>% mutate(p_u_ari1w_tot = replace_na(p_u_ari1w_tot, " ")) %>% 
+  arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot, p_u_ari1w_tot) %>% 
+  mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_f_ari1w_tot = replace_na(p_f_ari1w_tot, " ")) %>% mutate(p_m_ari1w_tot = replace_na(p_m_ari1w_tot, " ")) %>% mutate(p_u_ari1w_tot = replace_na(p_u_ari1w_tot, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child ARI", "Father ARI", "Mother ARI", "Parent ARI: not recorded"))
 
 ```
@@ -369,13 +421,25 @@ LSAS (Liebowitz Social Anxiety Scale): 24 items rated 0-3, clinical cutoff = 30.
 
 ```{r, echo=FALSE, warning=FALSE}
 
+# data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
+#   gather(Measure, value, s_lsas_tot) %>%
+#   ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+#   # geom_line() +
+#   geom_point(aes(shape=Measure, group=Measure), size=3) +
+#   geom_text(aes(label=value), hjust=0, vjust=-1) +
+#   labs(title="Social anxiety symptoms\n", x="\nCBT Visit Number", y="Social Anxiety Score\n") + 
+#   ylim(0,150) + 
+#   scale_shape_manual(labels = c("Child"), values=c(5)) +
+#   theme_minimal() +
+#   guides(color=guide_legend("Person reporting:")) 
+
 data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_lsas_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
-  # geom_line() +
+  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
+  geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="Social anxiety symptoms\n", x="\nCBT Visit Number", y="Social Anxiety Score\n") + 
+  labs(title="Social anxiety symptoms\n", x="\nCBT Visit Date", y="Social Anxiety Score\n") + 
   ylim(0,150) + 
   scale_shape_manual(labels = c("Child"), values=c(5)) +
   theme_minimal() +
@@ -387,8 +451,8 @@ data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>
 
 ```{r, echo=FALSE, warning=FALSE}
 
-data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
-  select(Clinical_Visit_Date, Clinical_Visit_Number, s_lsas_tot) %>%
+data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Number) %>% 
+  select(Clinical_Visit_Date3, Clinical_Visit_Number, s_lsas_tot) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child LSAS"))
 
 ```
@@ -410,3 +474,11 @@ National Institute of Mental Health,
 National Institutes of Health,  
 Bethesda, MD  
 Tel: `r clinician_contact`
+
+```{r, echo=FALSE, warning=FALSE}
+
+rm(data, start, end, weeks_treat, provider, gender, datebirth, age, dx, pronoun, Participant)
+rm(list=ls(pattern="_name"))
+rm(list=ls(pattern="linician"))
+
+```

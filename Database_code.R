@@ -1042,7 +1042,7 @@
 
   for(i in seq_along(tot_sum_clin)) {
     iter <- as.numeric(i)
-    # iter=1
+    # iter=4
     measure_name <- tot_sum_clin[iter]
     
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
@@ -1103,16 +1103,16 @@
       
     } else if (measure_name=="c_cdrs_") {
       
-      measure_temp_sdq[,7:(ncol(measure_temp_sdq)-2)] <- sapply(measure_temp_sdq[,7:(ncol(measure_temp_sdq)-2)], as.numeric)
+      measure_temp_sdq[,10:(ncol(measure_temp_sdq))] <- sapply(measure_temp_sdq[,10:(ncol(measure_temp_sdq))], as.numeric)
       
-      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(c_cdrs_1_depress_feel:c_cdrs_9a_sleep_disturb_middl_night) %>% ncol() %>% as.numeric()
-      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(c_cdrs_1_depress_feel:c_cdrs_9a_sleep_disturb_middl_night) %>% apply(., 1, count_na)
+      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(c_cdrs_1_depress_feel:c_cdrs_18_mood_liability) %>% ncol() %>% as.numeric()
+      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(c_cdrs_1_depress_feel:c_cdrs_18_mood_liability) %>% apply(., 1, count_na)
       measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
 
       measure_temp_sdq <- measure_temp_sdq %>% rename(c_cdrs_tot_manual = c_cdrs_tot)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% 
-        select(matches(measure_name), -c_cdrs_tot_manual, -c_cdrs_8a_appetite_disturb_type, -c_cdrs_9a_sleep_disturb_middl_night) %>% rowSums(na.rm=TRUE)
+        select(c_cdrs_1_depress_feel:c_cdrs_18_mood_liability) %>% rowSums(na.rm=TRUE)
       
     } else {
       
@@ -2340,6 +2340,24 @@ CBT_report <- CBT_report %>% select(Initials:c_ksadsdx_dx_detailed, matches("_mf
                                     s_shaps_tot:s_rumination_tot, matches("s_fua_"), matches("p_fua_"), matches("_ba_sess_"), matches("s_baexpout_"), 
                                     matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_")) %>% arrange(LAST_NAME, Initials, FIRST_NAME, Clinical_Visit_Date)
 
+############# Inpatient subset
+
+# selecting columns 
+
+inpatient_columns <- read_excel(paste0(database_location, "other_data_never_delete/names_inpatient_datebase.xlsx"))
+MATCH_tracker <- Psychometrics_treatment %>% select(inpatient_columns$select, matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
+                                                 -matches("_source")) %>% arrange(LAST_NAME, Initials, FIRST_NAME, Clinical_Visit_Date) %>%
+  filter(Clinical_Visit_Code=="i") %>% select(-c_medsclin_date)
+
+# recoding & calculating variables 
+
+MATCH_tracker$Eligible <- recode(MATCH_tracker$Eligible, "0"="Include", "5"="Excluded: does not meet criteria",
+                              "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+                              "7"="Did not or withdrew assent/consent", "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
+                              "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
+                              "11"="Completed treatment", .missing = NULL)
+
+
 # exporting
 
 Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))
@@ -2347,6 +2365,9 @@ Psychometrics_treatment %>% write_xlsx(paste0(folder_backup, "MASTER_DATABASE_CL
 
 CBT_report %>% write_xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT.xlsx"))
 CBT_report %>% write_xlsx(paste0(database_location, "CBT/Backup/MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
+
+MATCH_tracker %>% write_xlsx(paste0(database_location, "Inpatient/MASTER_DATABASE_Inpatient.xlsx"))
+MATCH_tracker %>% write_xlsx(paste0(database_location, "Inpatient/Backup/MASTER_DATABASE_Inpatient_", todays_date_formatted, ".xlsx"))
 
 # Creating tasks database & exporting ------------------------------------
 
@@ -2407,7 +2428,7 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, import
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, 
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, 
-   how_columns, numeric, of_interest, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, clinic_sets, task_sets, combined, 
-   imported_data_23544, measure_temp, parent, child, p, c, q)
+   how_columns, numeric, of_interest, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, task_sets, combined, 
+   imported_data_23544, measure_temp, parent, child, p, c, q, incorrect, correct)
 
 # rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)

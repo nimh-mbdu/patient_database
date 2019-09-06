@@ -57,7 +57,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # suppressPackageStartupMessages(library(shiny))
 # suppressPackageStartupMessages(library(knitr))
 # 
-# Loading data ------------------------------------------------------------
+# # Loading data ------------------------------------------------------------
 
 CBT_report <- read_excel(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
   
@@ -84,6 +84,12 @@ CBT_report <- CBT_report %>% select(-matches("_ari6m_"), -matches("_mfq_"))
 
 data <- CBT_report %>% filter(Initials==Participant)
 
+# changing date formats
+data$Clinical_Visit_Date2 <- format(data$Clinical_Visit_Date, "%B-%d")
+data$Clinical_Visit_Date3 <- format(data$Clinical_Visit_Date, "%B-%d-%Y")
+data$Clinical_Visit_Date4 <- factor(data$Clinical_Visit_Number, levels=data$Clinical_Visit_Number, labels=data$Clinical_Visit_Date2)
+todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
+
 # fixing name case
 f_name <- head(data$FIRST_NAME,1)
 l_name <- head(data$LAST_NAME,1)
@@ -98,8 +104,8 @@ p_f_name <- paste(substring(p_f_name, 1, 1), tolower(substring(p_f_name, 2)), se
 p_l_name <- paste(substring(p_l_name, 1, 1), tolower(substring(p_l_name, 2)), sep = "", collapse = " ")
 
 # treatment related 
-start <- data %>% arrange(Clinical_Visit_Number) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date()
-end <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date()
+start <- data %>% arrange(Clinical_Visit_Number) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
+end <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
 weeks_treat  <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Number) %>% pull()
 
 # provider <- head(data$Primary_clinician,1)
@@ -109,7 +115,9 @@ provider <- c("INSERT COMMUNITY PROVIDER")
 gender <- head(data$SEX,1) %>% tolower()
 datebirth <- as.Date(head(data$DOB,1))
 age <- age_calc(dob = datebirth, enddate = todays_date_formatted, units = "years", precise = TRUE) %>% round(., digits = 1) 
+datebirth <- format(datebirth, "%B-%d-%Y")
 dx <- head(data$c_ksadsdx_primary_dx,1)
+dx <- gsub("MDD", "Major Depressive Disorder", dx, fixed=TRUE)
 
 if (head(data$SEX,1)=="FEMALE") {
   pronoun <- c("her")
@@ -157,7 +165,7 @@ if (Clinician=="Kathryn") {
 
 #### Treatment Summary: Behavioral Activation for Adolescent Depression
 
-##### DATE: `r todays_date_formatted` (YYYY-MM-DD)  
+##### DATE: `r todays_date`
 
 ***
 
@@ -242,3 +250,11 @@ Tel: `r clinician_contact`
 
 
 \pagebreak
+
+```{r, echo=FALSE, warning=FALSE}
+
+rm(data, start, end, weeks_treat, provider, gender, datebirth, age, dx, pronoun, Participant)
+rm(list=ls(pattern="_name"))
+rm(list=ls(pattern="linician"))
+
+```
