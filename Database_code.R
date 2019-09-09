@@ -1,13 +1,11 @@
   
 # to do: ------------------------------------------------------------------
   
-# merge manual database 
-
 # QC: export column names -------------------------------------------------
   
   # If you want to export the column names of any of the below, for QC or troubleshooting reasons, use the following & replace dataframe name: 
-  # temp_columns <- colnames(SDQ_Data_Download_raw)
-  # temp_columns %>% write.csv(file = paste0(sdq_pull, "dummy_", todays_date_formatted, ".csv"), na = " ", row.names = FALSE)
+  # temp_columns <- colnames(diagnosis_subset_sdq_old2)
+  # temp_columns %>% write.csv(file = paste0(sdq_pull, "dummy2_", todays_date_formatted, ".csv"), na = " ", row.names = FALSE)
   
 # Loading files -----------------------------------------------------------
   
@@ -48,12 +46,33 @@
   imported_data_23544 <- read_excel(data_23544)
   imported_data_22279 <- read_excel(data_22279)
   
-  # old_ksads_checlist <- read.delim(paste0(data_old_dx_checklist),  quote="", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
-  # old_mdd_form <- read.delim(paste0(data_old_mdd_form),  quote="", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
-  
   SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_data_23495, all=TRUE)
   SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_data_23544, all=TRUE)
   SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_data_22279, all=TRUE)
+  
+  #****** old dx checklist & mdd form (from before these were combined on sdq & the mdd form removed)
+
+  old_ksads_checklist <- read.delim(paste0(data_old_dx_checklist),  quote="", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
+  old_mdd_form <- read.delim(paste0(data_old_mdd_form),  quote="", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
+  
+  old_dx_temp <- merge.default(old_ksads_checklist, old_mdd_form, all=TRUE)
+  
+  old_dx_temp$yfu_clin_name <- coalesce(old_dx_temp$yfu_clin_name, old_dx_temp$ksads_dx_clin_name)
+  old_dx_temp$yfu1_today_date <- coalesce(old_dx_temp$yfu1_today_date, old_dx_temp$ksads_dx_today_date)
+  old_dx_temp$yfu2_visit_type <- coalesce(old_dx_temp$yfu2_visit_type, old_dx_temp$ksads_dx_visit_type)
+  
+  old_dx_temp$yfu_comorbid_dx <- gsub("[", "", old_dx_temp$yfu_comorbid_dx, fixed=TRUE)
+  old_dx_temp$yfu_comorbid_dx <- gsub("]", "", old_dx_temp$yfu_comorbid_dx, fixed=TRUE)
+  old_dx_temp$yfu_comorbid_dx <- gsub("',", ";", old_dx_temp$yfu_comorbid_dx, fixed=TRUE)
+  old_dx_temp$yfu_comorbid_dx <- gsub("'", "", old_dx_temp$yfu_comorbid_dx, fixed=TRUE)
+  
+  old_dx_temp$yfu_other_comorbid_dx <- paste(old_dx_temp$yfu_comorbid_dx, "; ", old_dx_temp$yfu_other_comorbid_dx)
+  old_dx_temp$yfu_other_comorbid_dx <- gsub("None ;", "None", old_dx_temp$yfu_other_comorbid_dx, fixed=TRUE)
+  old_dx_temp$yfu_other_comorbid_dx <- gsub(" ;", ";", old_dx_temp$yfu_other_comorbid_dx, fixed=TRUE)
+  old_dx_temp$yfu_other_comorbid_dx <- gsub("NA;  NA", "None", old_dx_temp$yfu_other_comorbid_dx, fixed=TRUE)
+  old_dx_temp$yfu_other_comorbid_dx <- gsub("None ", "None", old_dx_temp$yfu_other_comorbid_dx, fixed=TRUE)
+  
+  SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, old_dx_temp, all=TRUE)
   
   # fix date conversion below, check format & specify 
   
@@ -171,7 +190,7 @@
   
   common_identifiers_child <- master_IRTA_latest %>% select(PLUSID, FIRST_NAME, LAST_NAME, SDAN, Initials) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% 
-    fill(PLUSID, .direction = "down") %>% fill(PLUSID, .direction = "up") %>% 
+    fill(PLUSID, SDAN, Initials, .direction = "down") %>% fill(PLUSID, SDAN, Initials, .direction = "up") %>% 
     ungroup() %>% 
     distinct(., .keep_all = TRUE)
   ctdb_w_plusid_child <- left_join(common_identifiers_child, ctdb_Data_Download_reduced, all=TRUE)
@@ -179,7 +198,9 @@
   #****** CTDB parent name prep
 
   parent_names <- master_IRTA_latest %>% select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, FIRST_NAME_P1, LAST_NAME_P1, FIRST_NAME_P2, LAST_NAME_P2) %>%
-    distinct(., .keep_all = TRUE)
+    group_by(FIRST_NAME, LAST_NAME) %>% 
+    fill(PLUSID, SDAN, Initials:LAST_NAME_P2, .direction = "down") %>% fill(PLUSID, SDAN, Initials:LAST_NAME_P2, .direction = "up") %>% 
+    ungroup() %>% distinct(., .keep_all = TRUE)
   parent_names[3:9] <- lapply(parent_names[3:9], str_to_upper)
   
   # parent 1:
@@ -242,18 +263,17 @@
            Eligible, Clinical_Visit_Date, Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number,
            Scheduling_status, Protocol)
   
-  clinical_DB_date <- clinical_DB %>% select(FIRST_NAME, LAST_NAME, PLUSID, Clinical_Visit_Date)
+  clinical_DB_date <- clinical_DB %>% select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date)
   
   task_DB <- task_reshape_master_QC %>% 
     select(FIRST_NAME, LAST_NAME, Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker,
            SEX, DOB, Handedness, Participant_Type, Participant_Type2, Age_at_visit,
            Eligible, Clinical_Visit_Date, Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number,
-           Scheduling_status, Protocol, 
-           Task_Name, Task_Number, Task_Date, Task_Visit_Type, QC_tracker_tab_no, Include)
+           Scheduling_status, Protocol, Task_Name, Task_Number, Task_Date, Task_Visit_Type, QC_tracker_tab_no, Include)
   
   task_DB$Task_Number <- lapply(task_DB$Task_Number, replace_na, '-9')
   task_DB_date <- task_DB %>% filter(Task_Number !="999" & Task_Number !="777") %>% 
-    select(FIRST_NAME, LAST_NAME, PLUSID, Task_Name, Task_Date)
+    select(FIRST_NAME, LAST_NAME, PLUSID, Initials, Task_Name, Task_Date)
   task_DB$Task_Number <- lapply(task_DB$Task_Number, na_if, '-9')
   task_DB$Task_Number <- as.character(task_DB$Task_Number)
 
@@ -2357,7 +2377,6 @@ MATCH_tracker$Eligible <- recode(MATCH_tracker$Eligible, "0"="Include", "5"="Exc
                               "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
                               "11"="Completed treatment", .missing = NULL)
 
-
 # exporting
 
 Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))
@@ -2429,6 +2448,6 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, import
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, 
    how_columns, numeric, of_interest, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, task_sets, combined, 
-   imported_data_23544, measure_temp, parent, child, p, c, q, incorrect, correct)
+   imported_data_23544, measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form)
 
 # rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)

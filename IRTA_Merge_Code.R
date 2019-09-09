@@ -57,7 +57,7 @@ for(u in seq_along(current_IRTAs_full)) {
 rm(temp_current_screens)
 
 # merge & tidy up
-irta_screen_s0ets <- ls(pattern="_current_screens")
+irta_screen_sets <- ls(pattern="_current_screens")
 irta_screen_sets <- mget(irta_screen_sets)
 master_IRTA_screens_template <- reduce(irta_screen_sets, full_join) %>% mutate(Participant_Type2 = NA)
 
