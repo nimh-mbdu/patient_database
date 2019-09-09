@@ -2379,6 +2379,7 @@ MATCH_tracker$Eligible <- recode(MATCH_tracker$Eligible, "0"="Include", "5"="Exc
 
 # exporting
 
+Psychometrics_treatment <- Psychometrics_treatment %>% select(-FIRST_NAME_P1, -LAST_NAME_P1, -FIRST_NAME_P2, -LAST_NAME_P2)
 Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))
 Psychometrics_treatment %>% write_xlsx(paste0(folder_backup, "MASTER_DATABASE_CLINICAL_", todays_date_formatted, ".xlsx"))
 
