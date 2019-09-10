@@ -4,8 +4,8 @@
 # QC: export column names -------------------------------------------------
   
   # If you want to export the column names of any of the below, for QC or troubleshooting reasons, use the following & replace dataframe name: 
-  # temp_columns <- colnames(diagnosis_subset_sdq_old2)
-  # temp_columns %>% write.csv(file = paste0(sdq_pull, "dummy2_", todays_date_formatted, ".csv"), na = " ", row.names = FALSE)
+  # temp_columns <- colnames(SDQ_Data_Download_raw)
+  # temp_columns %>% write.csv(file = paste0(sdq_pull, "dummy_", todays_date_formatted, ".csv"), na = " ", row.names = FALSE)
   
 # Loading files -----------------------------------------------------------
   
@@ -1058,11 +1058,11 @@
 #####
 # straightforward total sum
   
-  tot_sum_clin <- c('c_cadam_', 's_chs_', 's_vadis_', 'c_cdrs_', 's_rumination_', 's_promis_', 's_mpss_', 's_bads_', 's_asswr_', 's_aai_')
+  tot_sum_clin <- c('c_cadam_', 's_chs_', 's_vadis_', 'c_cdrs_', 's_rumination_', 's_promis_', 's_mpss_', 's_bads_', 's_asswr_', 's_aai_', 'p_conners_', 's_cfs_')
 
   for(i in seq_along(tot_sum_clin)) {
     iter <- as.numeric(i)
-    # iter=4
+    # iter=12
     measure_name <- tot_sum_clin[iter]
     
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
@@ -1133,6 +1133,17 @@
       measure_temp_sdq <- measure_temp_sdq %>% rename(c_cdrs_tot_manual = c_cdrs_tot)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% 
         select(c_cdrs_1_depress_feel:c_cdrs_18_mood_liability) %>% rowSums(na.rm=TRUE)
+      
+    } else if (measure_name=="p_conners_") {
+      
+      measure_temp_sdq[,10:(ncol(measure_temp_sdq))] <- sapply(measure_temp_sdq[,10:(ncol(measure_temp_sdq))], as.numeric)
+      
+      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(p_conners_1_angry:p_conners_80_blurts_answers) %>% ncol() %>% as.numeric()
+      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(p_conners_1_angry:p_conners_80_blurts_answers) %>% apply(., 1, count_na)
+      measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
+      measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(p_conners_1_angry:p_conners_80_blurts_answers) %>% rowSums(na.rm=TRUE)
       
     } else {
       
@@ -2377,7 +2388,7 @@ MATCH_tracker$Eligible <- recode(MATCH_tracker$Eligible, "0"="Include", "5"="Exc
                               "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
                               "11"="Completed treatment", .missing = NULL)
 
-# exporting
+############# exporting
 
 Psychometrics_treatment <- Psychometrics_treatment %>% select(-FIRST_NAME_P1, -LAST_NAME_P1, -FIRST_NAME_P2, -LAST_NAME_P2)
 Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))

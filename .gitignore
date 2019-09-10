@@ -1,9 +1,6 @@
-.RData
-.Rhistory
-to_change_before_running_master_script.xlsx
-CBT_scripts/.RData
-CBT_scripts/.Rhistory
-CBT_scripts/cbt_reports_to_produce.xlsx
-Instructions on updating the dababase and creating CBT reports.pdf
-~$to_change_before_running_master_script.xlsx
-.Rapp.history
+*.R*
+*.xlsx
+CBT_scripts/*.R*
+CBT_scripts/*.xlsx
+CBT_scripts/*.html
+CBT_scripts/*.pdf
