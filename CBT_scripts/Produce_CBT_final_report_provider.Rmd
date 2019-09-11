@@ -11,9 +11,10 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# !diagnostics off
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 # # directories -------------------------------------------------------------
 # 
@@ -231,7 +232,7 @@ During `r pronoun` treatment, we monitored `r f_name`'s symptoms through weekly 
 
 MFQ (Mood & Feelings Questionnaire): 13 items rated 0-2, clinical cutoff score = 12.
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_tot) | !is.na(p_u_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot, p_u_mfq1w_tot) %>%
@@ -249,7 +250,7 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 
 ***
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_tot) | !is.na(p_u_mfq1w_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot, p_u_mfq1w_tot) %>% 
@@ -266,7 +267,7 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 
 SCARED (Self-Report for Anxiety Related Emotional Disorders): 41 items rated 0-2, clinical cutoff = 25.
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot) | !is.na(p_u_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_scared_tot, p_f_scared_tot, p_m_scared_tot, p_u_scared_tot) %>%
@@ -284,7 +285,7 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 
 ***
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot) | !is.na(p_u_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_scared_tot, p_f_scared_tot, p_m_scared_tot, p_u_scared_tot) %>% 
@@ -301,7 +302,7 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 
 SHAPS (Snaith-Hamilton Pleasure Scale): 14 items rated 0-3, higher scores reflecting less pleasure.
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_shaps_tot) %>%
@@ -319,7 +320,7 @@ data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %
 
 ***
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%  arrange(Clinical_Visit_Number) %>% 
   select(Clinical_Visit_Date3, Clinical_Visit_Number, s_shaps_tot) %>%
@@ -335,7 +336,7 @@ data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %
 
 ARI (Affective Reactivity Index): 7 items rated 0-2, clinical cutoff = 2.
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot) | !is.na(p_u_ari1w_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot, p_u_ari1w_tot) %>%
@@ -353,7 +354,7 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 
 ***
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot) | !is.na(p_u_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
   arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot, p_u_ari1w_tot) %>% 
@@ -370,7 +371,7 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 
 LSAS (Liebowitz Social Anxiety Scale): 24 items rated 0-3, clinical cutoff = 30.
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_lsas_tot) %>%
@@ -388,7 +389,7 @@ data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>
 
 ***
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Number) %>% 
   select(Clinical_Visit_Date3, Clinical_Visit_Number, s_lsas_tot) %>%
@@ -406,7 +407,7 @@ data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>
 
 CDRS (Children's Depression Rating Scale): 20 items. Each question is asked of both parent and child and then a consensus score reached by the clinician. Items range between 1-5 and 1-7, depending on the question.
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>% 
   ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
@@ -423,7 +424,7 @@ data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>%
 
 ***
 
-```{r, echo=FALSE, warning=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(c_cdrs_tot)) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, c_cdrs_tot) %>% arrange(Clinical_Visit_Number) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "CDRS"))
@@ -433,11 +434,3 @@ data %>% filter(!is.na(c_cdrs_tot)) %>% select(Clinical_Visit_Date3, Clinical_Vi
 \pagebreak
 
 ***
-
-```{r, echo=FALSE, warning=FALSE}
-
-rm(data, start, end, weeks_treat, provider, gender, datebirth, age, dx, pronoun, Participant)
-rm(list=ls(pattern="_name"))
-rm(list=ls(pattern="linician"))
-
-```

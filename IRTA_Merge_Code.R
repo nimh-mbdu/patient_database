@@ -79,15 +79,15 @@ master_IRTA_screens_template[date_variabes] <- lapply(master_IRTA_screens_templa
 master_IRTA_template$Overall_date <- coalesce(master_IRTA_template$Clinical_Visit_Date, master_IRTA_template$Task1_Date) 
 # creating an 'overall date' column, prioritizing screening start date from the screening tabs of the IRTA trackers, where this is missing, inserting the instead the referral date
 master_IRTA_screens_template$Overall_date <- coalesce(master_IRTA_screens_template$Screening_Start_Date, master_IRTA_screens_template$Referral_Date) 
-master_IRTA_screens_reordered <- master_IRTA_screens_template %>% arrange(LAST_NAME, FIRST_NAME, Overall_date)
+master_IRTA_screens_reordered <- master_IRTA_screens_template %>% arrange(Initials, Overall_date)
 
 # filling in demographic information for each participant & removing exact duplicates - master IRTA tracker
-master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% arrange(LAST_NAME, FIRST_NAME, Overall_date)
-master_IRTA_reordered <- master_IRTA_reordered %>% group_by(LAST_NAME, FIRST_NAME) %>% 
-  fill(Initials:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "down") %>% 
-  fill(Initials:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "up") %>% 
+master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% arrange(Initials, Overall_date)
+master_IRTA_reordered <- master_IRTA_reordered %>% group_by(Initials) %>% 
+  fill(FIRST_NAME:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "down") %>% 
+  fill(FIRST_NAME:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "up") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
-master_IRTA_reordered <- master_IRTA_reordered %>% group_by(LAST_NAME, FIRST_NAME) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>% 
+master_IRTA_reordered <- master_IRTA_reordered %>% group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
   fill(Eligible:Scheduling_status_notes, Consent_Date, Protocol, Data_sharing, Clinicals_date, .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 
@@ -128,9 +128,9 @@ master_IRTA_reordered <- cbind(master_IRTA_reordered, split1)
 # another reorder & sort 
 
 irta_tracker_columns <- read_excel(paste0(IRTA_tracker_location, "other_data_never_delete/irta_tracker_columns.xlsx"))
-master_IRTA_latest <- master_IRTA_reordered %>% select(irta_tracker_columns$include) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date)
+master_IRTA_latest <- master_IRTA_reordered %>% select(irta_tracker_columns$include) %>% arrange(Initials, Clinical_Visit_Date)
 irta_tracker_columns <- irta_tracker_columns %>% filter(include!="Clinical_Visit_Code") %>% filter(include!="Clinical_Visit_Number")
-master_IRTA_screens_latest <- master_IRTA_screens_reordered %>% select(irta_tracker_columns$include) %>% arrange(LAST_NAME, FIRST_NAME, Referral_Date)
+master_IRTA_screens_latest <- master_IRTA_screens_reordered %>% select(irta_tracker_columns$include) %>% arrange(Initials, Referral_Date)
 
 ####################Chris's here..... 
 
@@ -200,7 +200,7 @@ task_reshape_master <- task_reshape_master %>%
          Eligible, Clinical_Visit_Date, Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number,
          Scheduling_status, Protocol, Scanner, 
          Task_Name, Task_Number, Task_Date, Task_Visit_Type) %>% 
-  arrange(LAST_NAME, FIRST_NAME, Overall_date) %>% 
+  arrange(Initials, Overall_date) %>% 
   filter(!is.na(Task_Name)) %>% 
   distinct(., .keep_all = TRUE) 
 # %>% select(-FIRST_NAME, -LAST_NAME)
@@ -352,3 +352,4 @@ rm(list=ls(pattern="_reordered"))
 rm(list=ls(pattern="_template"))
 rm(IRTA_full, IRTA_init, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest)
 rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, MID_temp)
+rm(get_last_scan, get_last_visit, has_scan, is_last_v, print_dates, print_notes)

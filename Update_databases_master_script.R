@@ -177,7 +177,7 @@ if (modules2run==7 | modules2run==8) {
   
   for(a in seq_len(nrow(cbt_participants))) {
   iter9 <- as.numeric(a)
-    # iter9 = 5
+    # iter9 = 1
     
     Participant <- as.character(cbt_participants[iter9, 1])
     Clinician <- as.character(cbt_participants[iter9, 2])
@@ -205,15 +205,23 @@ if (modules2run==7 | modules2run==8) {
     # creating individual patient BA tracker:
     CBT_report %>% filter(Initials==Participant) %>% 
       select(FIRST_NAME:DOB, Age_at_visit:Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed,
-             s_mfq1w_tot, p_mfq1w_tot, s_ari1w_tot, p_ari1w_tot, s_scared_tot, p_scared_tot, s_shaps_tot,
-             s_lsas_tot, c_cadam_tot, s_vadis_tot, c_cgi_severity, c_cgi_global, c_cdrs_tot, matches("s_fua_"),
+             s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot, p_u_mfq1w_tot, 
+             s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot, p_u_ari1w_tot,
+             s_scared_tot, p_f_scared_tot, p_m_scared_tot, p_u_scared_tot, 
+             s_shaps_tot, s_lsas_tot, c_cadam_tot, s_vadis_tot, c_cgi_severity, c_cgi_global, c_cdrs_tot, matches("s_fua_"),
              matches("p_fua_"), s_ba_sess_mood_diff, s_ba_sess_difficulty_diff, s_ba_sess_enjoy_diff,
              s_ba_sess_anxiety_diff, s_ba_sess_satisfaction_diff, s_after_ba_sess_come_again, 
              # matches("c_medsclin_"),
              matches("s_baexpout_act_1_")) %>% 
       write_xlsx(paste0(out_file, "/", Participant, "_BA_TRACKER.xlsx"))
       
-  }
+}
+
+rm(data, start, end, weeks_treat, provider, gender, datebirth, age, dx, pronoun, Participant, CBT_report, date_variabes, numeric_variables, 
+   report_type, out_file, iter9, cbt_participants, a)
+rm(list=ls(pattern="f_name"))
+rm(list=ls(pattern="l_name"))
+rm(list=ls(pattern="linician"))
 
 } else {
 
@@ -223,4 +231,4 @@ if (modules2run==7 | modules2run==8) {
 
 # end ---------------------------------------------------------------------
 
-
+rm(to_change)

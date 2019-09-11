@@ -11,9 +11,10 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# !diagnostics off
 ```
 
-```{r echo=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 # # directories -------------------------------------------------------------
 # 
@@ -250,11 +251,3 @@ Tel: `r clinician_contact`
 
 
 \pagebreak
-
-```{r, echo=FALSE, warning=FALSE}
-
-rm(data, start, end, weeks_treat, provider, gender, datebirth, age, dx, pronoun, Participant)
-rm(list=ls(pattern="_name"))
-rm(list=ls(pattern="linician"))
-
-```
