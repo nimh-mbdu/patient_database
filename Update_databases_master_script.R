@@ -102,7 +102,7 @@ current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
 
 modules2run <- c(to_change$modules2run)
 # to overwrite the above, uncomment the below and enter number that you want to run isntead - reference the list below
-# modules2run <- c(8)
+# modules2run <- c(1)
 
 # description of modules: 
 # 0 = none

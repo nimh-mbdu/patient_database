@@ -79,6 +79,7 @@ master_IRTA_screens_template[date_variabes] <- lapply(master_IRTA_screens_templa
 master_IRTA_template$Overall_date <- coalesce(master_IRTA_template$Clinical_Visit_Date, master_IRTA_template$Task1_Date) 
 # creating an 'overall date' column, prioritizing screening start date from the screening tabs of the IRTA trackers, where this is missing, inserting the instead the referral date
 master_IRTA_screens_template$Overall_date <- coalesce(master_IRTA_screens_template$Screening_Start_Date, master_IRTA_screens_template$Referral_Date) 
+master_IRTA_screens_reordered <- master_IRTA_screens_template %>% arrange(LAST_NAME, FIRST_NAME, Overall_date)
 
 # filling in demographic information for each participant & removing exact duplicates - master IRTA tracker
 master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% arrange(LAST_NAME, FIRST_NAME, Overall_date)
@@ -87,16 +88,6 @@ master_IRTA_reordered <- master_IRTA_reordered %>% group_by(LAST_NAME, FIRST_NAM
   fill(Initials:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "up") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 master_IRTA_reordered <- master_IRTA_reordered %>% group_by(LAST_NAME, FIRST_NAME) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>% 
-  fill(Eligible:Scheduling_status_notes, Consent_Date, Protocol, Data_sharing, Clinicals_date, .direction = "down") %>% 
-  ungroup() %>% distinct(., .keep_all = TRUE)
-
-# filling in demographic information for each participant & removing exact duplicates - current referrals
-master_IRTA_screens_reordered <- master_IRTA_screens_template %>% arrange(LAST_NAME, FIRST_NAME, Overall_date)
-master_IRTA_screens_reordered <- master_IRTA_screens_reordered %>% group_by(LAST_NAME, FIRST_NAME) %>% 
-  fill(Initials:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "down") %>% 
-  fill(Initials:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "up") %>% 
-  ungroup() %>% distinct(., .keep_all = TRUE)
-master_IRTA_screens_reordered <- master_IRTA_screens_reordered %>% group_by(LAST_NAME, FIRST_NAME) %>% arrange(LAST_NAME, FIRST_NAME, Clinical_Visit_Date) %>% 
   fill(Eligible:Scheduling_status_notes, Consent_Date, Protocol, Data_sharing, Clinicals_date, .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 
@@ -333,7 +324,7 @@ task_reshape_master_QC <- left_join(task_reshape_master, task_QC, all=TRUE)
 ######################################################################################
 #######Saving Master IRTA sheet in typical format
 
-master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE.xlsx")) # will not save if someone else has this dataset open 
+master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE_updated.xlsx")) # will not save if someone else has this dataset open 
 master_IRTA_latest %>% write_xlsx(paste0(backup_location,"MASTER_IRTA_DATABASE","_",todays_date_formatted,".xlsx"))
 # also an option to add a password to a saved excel, e.g. = password = "string"
 
