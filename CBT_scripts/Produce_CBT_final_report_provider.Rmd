@@ -212,9 +212,22 @@ Respectfully yours,
 `r clinician_position`,  
 `r clinician_location`,  
 National Institute of Mental Health,  
-National Institutes of Health,  
+National Institutes of Health (NIH),  
 Bethesda, MD  
 Tel: `r clinician_contact`  
+
+Kathryn DeLonga, Psy.D,
+Licensed Clinical Psychologist, 
+Director of Psychological Treatment,
+Mood Brain & Development Unit, NIH
+
+Kenneth E. Towbin, MD,
+Chief of Clinical Child and Adolescent Psychiatry
+Emotion and Development Branch, NIH
+
+Argyris Stringaris, MD, PhD, FRCPsych,
+Chief and Principal Investigator
+Mood Brain & Development Unit, NIH
 
 CC': `r p_f_name` `r p_l_name`; parent.
 
