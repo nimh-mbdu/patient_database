@@ -205,9 +205,7 @@ if (modules2run==7 | modules2run==8) {
     # creating individual patient BA tracker:
     CBT_report %>% filter(Initials==Participant) %>% 
       select(FIRST_NAME:DOB, Age_at_visit:Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed,
-             s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot, p_u_mfq1w_tot, 
-             s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot, p_u_ari1w_tot,
-             s_scared_tot, p_f_scared_tot, p_m_scared_tot, p_u_scared_tot, 
+             s_mfq1w_tot, p_mfq1w_tot, p_mfq1w_parent, s_ari1w_tot, p_ari1w_tot, p_ari1w_parent, s_scared_tot, p_scared_tot, p_scared_parent,
              s_shaps_tot, s_lsas_tot, c_cadam_tot, s_vadis_tot, c_cgi_severity, c_cgi_global, c_cdrs_tot, matches("s_fua_"),
              matches("p_fua_"), s_ba_sess_mood_diff, s_ba_sess_difficulty_diff, s_ba_sess_enjoy_diff,
              s_ba_sess_anxiety_diff, s_ba_sess_satisfaction_diff, s_after_ba_sess_come_again, 

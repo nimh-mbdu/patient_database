@@ -68,14 +68,6 @@ CBT_report[date_variabes] <- lapply(CBT_report[date_variabes], as.Date)
 numeric_variables <- CBT_report %>% select(matches("_tot")) %>% colnames() 
 CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], as.numeric)
 CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], round)
-                                                
-# because there are 2 versions of the MFQ and ARI, coalescing these to fill in missing data: 
-CBT_report$p_mfq1w_tot <- coalesce(CBT_report$p_mfq1w_tot, CBT_report$p_mfq_tot)
-CBT_report$s_mfq1w_tot <- coalesce(CBT_report$s_mfq1w_tot, CBT_report$s_mfq_tot)
-CBT_report$p_ari1w_tot <- coalesce(CBT_report$p_ari1w_tot, CBT_report$p_ari6m_tot)
-CBT_report$s_ari1w_tot <- coalesce(CBT_report$s_ari1w_tot, CBT_report$s_ari6m_tot)
-
-CBT_report <- CBT_report %>% select(-matches("_ari6m_"), -matches("_mfq_"))
 
 # if you want to check that the variable types have been successfully transformed: 
 # str(CBT_report, list.len=ncol(CBT_report))
@@ -97,7 +89,6 @@ f_name <- paste(substring(f_name, 1, 1), tolower(substring(f_name, 2)), sep = ""
 l_name <- paste(substring(l_name, 1, 1), tolower(substring(l_name, 2)), sep = "", collapse = " ")
 
 # parent name
-
 p_f_name <- head(data$FIRST_NAME_P1,1,)
 p_l_name <- head(data$LAST_NAME_P1,1)
 p_f_name <- paste(substring(p_f_name, 1, 1), tolower(substring(p_f_name, 2)), sep = "", collapse = " ")
