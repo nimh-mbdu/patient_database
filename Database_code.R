@@ -2368,9 +2368,9 @@ ba_rating_columns <- ba_rating_columns[ba_rating_columns != "s_before_ba_clinici
 ba_rating_columns <- ba_rating_columns[ba_rating_columns != "s_after_ba_clinician_name"]
 
 CBT_report[ba_rating_columns] <- lapply(CBT_report[ba_rating_columns], as.numeric)
-CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_before_ba_mood - s_after_ba_mood), s_ba_sess_difficulty_diff = (s_before_ba_difficult - s_after_ba_difficult),
-                                    s_ba_sess_enjoy_diff = (s_before_ba_enjoy - s_after_ba_enjoy), s_ba_sess_anxiety_diff = (s_before_ba_anx - s_after_ba_anx),
-                                    s_ba_sess_satisfaction_diff = (s_before_ba_sat - s_after_ba_sat)
+CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_after_ba_mood - s_before_ba_mood), s_ba_sess_difficulty_diff = (s_after_ba_difficult - s_before_ba_difficult),
+                                    s_ba_sess_enjoy_diff = (s_after_ba_enjoy - s_before_ba_enjoy), s_ba_sess_anxiety_diff = (s_after_ba_anx - s_before_ba_anx),
+                                    s_ba_sess_satisfaction_diff = (s_after_ba_sat - s_before_ba_sat)
                                     # s_ba_week_enjoy_diff = (s_after_ba_week_expected_enjoyment - s_before_ba_week_actual_enjoyment), # cannot include this until I resolve how I will have to
                                     # take the expected weekly enjoyment from the previous week from the actual enjoyment of the present week - i.e. 1 row previous
                                 )
