@@ -324,7 +324,7 @@ task_reshape_master_QC <- left_join(task_reshape_master, task_QC, all=TRUE)
 ######################################################################################
 #######Saving Master IRTA sheet in typical format
 
-master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE_updated.xlsx")) # will not save if someone else has this dataset open 
+master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE.xlsx")) # will not save if someone else has this dataset open 
 master_IRTA_latest %>% write_xlsx(paste0(backup_location,"MASTER_IRTA_DATABASE","_",todays_date_formatted,".xlsx"))
 # also an option to add a password to a saved excel, e.g. = password = "string"
 

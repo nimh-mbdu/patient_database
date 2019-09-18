@@ -252,10 +252,9 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% 
-  # filter(Clinical_Visit_Number != '0') %>% 
+data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
   arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_mfq1w_tot, p_mfq1w_tot, p_mfq1w_parent) %>%
-  # mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_f_mfq1w_tot = replace_na(p_f_mfq1w_tot, " ")) %>% mutate(p_m_mfq1w_tot = replace_na(p_m_mfq1w_tot, " ")) %>%
+  mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_mfq1w_tot = replace_na(p_mfq1w_tot, " ")) %>% mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
@@ -300,9 +299,9 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
-  arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_scared_tot, p_f_scared_tot, p_m_scared_tot) %>%
-  mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_f_scared_tot = replace_na(p_f_scared_tot, " ")) %>% mutate(p_m_scared_tot = replace_na(p_m_scared_tot, " ")) %>%
+data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
+  arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_scared_tot, p_scared_tot, p_scared_parent) %>%
+  mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_scared_tot = replace_na(p_scared_tot, " ")) %>% mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Father reporting on child", "Mother reporting on child"))
 
 ```
@@ -393,9 +392,9 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
-  arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot) %>%
-  mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_f_ari1w_tot = replace_na(p_f_ari1w_tot, " ")) %>% mutate(p_m_ari1w_tot = replace_na(p_m_ari1w_tot, " ")) %>%
+data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
+  arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_ari1w_tot, p_ari1w_tot, p_ari1w_parent) %>%
+  mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_ari1w_tot = replace_na(p_ari1w_tot, " ")) %>% mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Father reporting on child", "Mother reporting on child"))
 
 ```
