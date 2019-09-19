@@ -1562,13 +1562,8 @@
     group_by(Initials, s_baexpout_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_baexpout_date, desc(s_baexpout_act_1_enjoyment_diff)) %>%
     ungroup() %>% 
-    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_baexpout_source, s_baexpout_date:s_baexpout_act_1_type, 
-           s_baexpout_act_1_mood_diff:s_baexpout_act_1_satisfaction_diff, s_baexpout_act_1_again, s_baexpout_act_1_notes,
-           s_baexpout_act_2_descrip, s_baexpout_act_2_type, s_baexpout_act_2_mood_diff:s_baexpout_act_2_satisfaction_diff, s_baexpout_act_2_again, s_baexpout_act_2_notes,
-           s_baexpout_act_3_descrip, s_baexpout_act_3_type, s_baexpout_act_1_mood_diff:s_baexpout_act_3_satisfaction_diff, s_baexpout_act_3_again, s_baexpout_act_3_notes,
-           s_baexpout_act_4_descrip, s_baexpout_act_4_type, s_baexpout_act_1_mood_diff:s_baexpout_act_4_satisfaction_diff, s_baexpout_act_4_again, s_baexpout_act_4_notes,
-           s_baexpout_act_5_descrip, s_baexpout_act_5_type, s_baexpout_act_1_mood_diff:s_baexpout_act_5_satisfaction_diff, s_baexpout_act_5_again, s_baexpout_act_5_notes,
-           s_baexpout_other_notes)
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_baexpout_source, s_baexpout_date, s_baexpout_clinician_name, s_baexpout_weeks_treat,
+           matches("_act_1_"), matches("_act_2_"), matches("_act_3_"), matches("_act_4_"), matches("_act_5_"), s_baexpout_other_notes)
   
   s_baexpout_subset_clinical$s_baexpout_TDiff <- as.numeric(difftime(s_baexpout_subset_clinical$Clinical_Visit_Date, s_baexpout_subset_clinical$s_baexpout_date, tz="", units = "days"))
   s_baexpout_subset_clinical <- s_baexpout_subset_clinical %>% 
@@ -2376,8 +2371,10 @@ CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_after_ba_mood - s_b
                                 )
 
 CBT_report <- CBT_report %>% select(Initials, FIRST_NAME:Eligible, Clinical_Visit_Date:Clinical_Visit_Number, Scheduling_status:c_ksadsdx_dx_detailed, matches("_mfq"), 
-                                    matches("_scared"), matches("_ari"), s_shaps_tot:s_rumination_tot, matches("s_fua_"), matches("p_fua_"), matches("_ba_sess_"), matches("s_baexpout_"),
-                                    matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_")) %>% arrange(LAST_NAME, Initials, Clinical_Visit_Date)
+                                    matches("_scared"), matches("_ari"), s_shaps_tot:s_rumination_tot, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba_"), 
+                                    matches("s_after_ba_"), matches("_ba_sess_"), matches("s_baexpout_"), matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_")) %>%
+  select(-matches("s_baexpout_act_3_"), -matches("s_baexpout_act_4_"), -matches("s_baexpout_act_5_")) %>% 
+  arrange(LAST_NAME, Initials, Clinical_Visit_Date)
 
 parent_report <- select(CBT_report, matches("_parent")) %>% colnames()
 CBT_report[parent_report] <- lapply(CBT_report[parent_report], na_if, "Unknown")
