@@ -24,7 +24,7 @@
   
   if (exists("master_IRTA_latest")==FALSE) {
         master_IRTA_latest <- read_excel(paste0(IRTA_tracker_location, "MASTER_IRTA_DATABASE.xlsx"))
-        date_variabes <- c("DOB", "Screening_Start_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
+        date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
         for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
         master_IRTA_latest[date_variabes] <- lapply(master_IRTA_latest[date_variabes], as.Date)
         rm(i, date_variabes)
@@ -2471,7 +2471,8 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, count_
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, 
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation,
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, 
-   how_columns, numeric, of_interest, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, task_sets, combined, 
+   how_columns, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, 
    measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs)
+# numeric, of_interest
 
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)

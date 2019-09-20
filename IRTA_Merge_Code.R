@@ -59,78 +59,139 @@ rm(temp_current_screens)
 # merge & tidy up
 irta_screen_sets <- ls(pattern="_current_screens")
 irta_screen_sets <- mget(irta_screen_sets)
-master_IRTA_screens_template <- reduce(irta_screen_sets, full_join) %>% mutate(Participant_Type2 = NA)
+master_IRTA_screens_template <- reduce(irta_screen_sets, full_join) %>% mutate(Participant_Type2 = NA, Clinical_Visit_Number = NA, Clinical_Visit_Code = NA)
+
+# loading all old and unsuccessful screens ---------------------------------------------
+
+for(o in seq_along(current_IRTAs_full)) {
+  iter4 <- as.numeric(o)
+  # iter4=1
+  
+  IRTA_full <- current_IRTAs_full[iter4]
+  IRTA_init <- current_IRTAs_init[iter4]
+  
+  temp_old_screens <- read_excel(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_Patient_List.xlsx"), sheet = "Unsuccessful_Screens") %>% 
+    mutate_all(as.character) %>% mutate(IRTA_tracker=IRTA_init)
+  assign(paste0(current_IRTAs_init[iter4], "_old_screens"), temp_old_screens) 
+  
+}
+
+temp_old_screens <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/REMOVED_Patient_List.xlsx"), sheet = "Unsuccessful_Screens") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
+
+# merge & tidy up
+irta_old_screen_sets <- ls(pattern="_old_screens")
+irta_old_screen_sets <- mget(irta_old_screen_sets)
+master_IRTA_old_screens_template <- reduce(irta_old_screen_sets, full_join) %>% mutate(Participant_Type2 = NA)
 
 # reordering and creating date variables ----------------------------------
 
 # reordering colunns based on list in following document 
-irta_tracker_columns <- read_excel(paste0(IRTA_tracker_location, "other_data_never_delete/irta_tracker_columns.xlsx")) %>% 
-  filter(include!="Overall_date") %>% filter(include!="Clinical_Visit_Code") %>% filter(include!="Clinical_Visit_Number")
+irta_tracker_columns <- read_excel(paste0(IRTA_tracker_location, "other_data_never_delete/irta_tracker_columns.xlsx")) %>% filter(include!="Overall_date")
 master_IRTA_template <- master_IRTA_template %>% select(irta_tracker_columns$include)
 master_IRTA_screens_template <- master_IRTA_screens_template %>% select(irta_tracker_columns$include)
+master_IRTA_old_screens_template <- master_IRTA_old_screens_template %>% select(irta_tracker_columns$include)
 
 # converting date variables to date format
 date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date")
 for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
 master_IRTA_template[date_variabes] <- lapply(master_IRTA_template[date_variabes], as.Date, "%Y-%m-%d")
 master_IRTA_screens_template[date_variabes] <- lapply(master_IRTA_screens_template[date_variabes], as.Date, "%Y-%m-%d")
+master_IRTA_old_screens_template[date_variabes] <- lapply(master_IRTA_old_screens_template[date_variabes], as.Date, "%Y-%m-%d")
 
 # creating an 'overall date' column, prioritizing clinic visit date for the main IRTA trackers, where this is missing, inserting the instead the task1 date
-master_IRTA_template$Overall_date <- coalesce(master_IRTA_template$Clinical_Visit_Date, master_IRTA_template$Task1_Date) 
-# creating an 'overall date' column, prioritizing screening start date from the screening tabs of the IRTA trackers, where this is missing, inserting the instead the referral date
-master_IRTA_screens_template$Overall_date <- coalesce(master_IRTA_screens_template$Screening_Start_Date, master_IRTA_screens_template$Referral_Date) 
-master_IRTA_screens_reordered <- master_IRTA_screens_template %>% arrange(Initials, Overall_date)
-
+master_IRTA_template$Overall_date <- coalesce(master_IRTA_template$Clinical_Visit_Date, master_IRTA_template$Task1_Date)
 # filling in demographic information for each participant & removing exact duplicates - master IRTA tracker
-master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% arrange(Initials, Overall_date)
-master_IRTA_reordered <- master_IRTA_reordered %>% group_by(Initials) %>% 
-  fill(FIRST_NAME:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "down") %>% 
-  fill(FIRST_NAME:Handedness, Participant_Type:Treatment_Notes, Parent_CTSS_username:Metal, .direction = "up") %>% 
+master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% group_by(Initials) %>% arrange(Initials, Overall_date) %>% 
+  fill(FIRST_NAME:Handedness, Parent_CTSS_username:Metal, .direction = "down") %>% 
+  fill(FIRST_NAME:Handedness, Parent_CTSS_username:Metal, .direction = "up") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
-master_IRTA_reordered <- master_IRTA_reordered %>% group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
-  fill(Eligible:Scheduling_status_notes, Consent_Date, Protocol, Data_sharing, Clinicals_date, .direction = "down") %>% 
+master_IRTA_reordered <- master_IRTA_reordered %>% group_by(Initials) %>% arrange(Initials, Overall_date) %>% 
+  fill(Current:Treatment_Notes, Clinicals, Clinicals_date, .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
+
+# creating an 'overall date' column, prioritizing referral date from the screening tabs of the IRTA trackers, where this is missing, inserting the screening start date instead
+master_IRTA_screens_template$Overall_date <- coalesce(master_IRTA_screens_template$Referral_Date, master_IRTA_screens_template$Screening_Start_Date) 
+master_IRTA_old_screens_template$Overall_date <- coalesce(master_IRTA_old_screens_template$Referral_Date, master_IRTA_old_screens_template$Screening_Start_Date) 
+# arranging by referral date
+master_IRTA_screens_reordered <- master_IRTA_screens_template %>% arrange(Initials, Overall_date)
+master_IRTA_old_screens_reordered <- master_IRTA_old_screens_template %>% arrange(Overall_date)
 
 # calculating age at visit - IRTA tracker 
 age_dummy <- master_IRTA_reordered %>% filter(!is.na(DOB)) %>% filter(!is.na(Overall_date)) %>% 
   select(FIRST_NAME, LAST_NAME, Initials, SDAN, DOB, Overall_date) %>% distinct(., .keep_all = TRUE)
-age_dummy$Age_at_visit2 <- age_calc(dob = age_dummy$DOB, enddate = age_dummy$Overall_date, units = "years", precise = TRUE) %>% 
-  round(., digits = 2) 
+age_dummy$Age_at_visit2 <- age_calc(dob = age_dummy$DOB, enddate = age_dummy$Overall_date, units = "years", precise = TRUE) %>% round(., digits = 2) 
 # merging age variable back into master dataset 
 master_IRTA_reordered$Age_at_visit <- as.numeric(master_IRTA_reordered$Age_at_visit)
 master_IRTA_reordered <- left_join(master_IRTA_reordered, age_dummy, all=TRUE)
 master_IRTA_reordered$Age_at_visit <- coalesce(master_IRTA_reordered$Age_at_visit, master_IRTA_reordered$Age_at_visit2)
 master_IRTA_reordered <- master_IRTA_reordered %>% select(-Age_at_visit2)
 
-# calculating age at visit - referrals tracker 
+# calculating age at visit - current referrals tracker 
 age_dummy_screens <- master_IRTA_screens_reordered %>% filter(!is.na(DOB)) %>% filter(!is.na(Overall_date)) %>% 
   select(FIRST_NAME, LAST_NAME, Initials, SDAN, DOB, Overall_date) %>% distinct(., .keep_all = TRUE)
-age_dummy_screens$Age_at_visit2 <- age_calc(dob = age_dummy_screens$DOB, enddate = age_dummy_screens$Overall_date, units = "years", precise = TRUE) %>% 
-  round(., digits = 2)
+age_dummy_screens$Age_at_visit2 <- age_calc(dob = age_dummy_screens$DOB, enddate = age_dummy_screens$Overall_date, units = "years", precise = TRUE) %>% round(., digits = 2)
 # merging age variable back into master dataset 
 master_IRTA_screens_reordered$Age_at_visit <- as.numeric(master_IRTA_screens_reordered$Age_at_visit)
 master_IRTA_screens_reordered <- left_join(master_IRTA_screens_reordered, age_dummy_screens, all=TRUE)
 master_IRTA_screens_reordered$Age_at_visit <- coalesce(master_IRTA_screens_reordered$Age_at_visit, master_IRTA_screens_reordered$Age_at_visit2)
 master_IRTA_screens_reordered <- master_IRTA_screens_reordered %>% select(-Age_at_visit2)
 
+# calculating age at visit - old referrals tracker 
+age_dummy_old_screens <- master_IRTA_old_screens_reordered %>% filter(!is.na(DOB)) %>% filter(!is.na(Overall_date)) %>% 
+  select(FIRST_NAME, LAST_NAME, Initials, SDAN, DOB, Overall_date) %>% distinct(., .keep_all = TRUE)
+age_dummy_old_screens$Age_at_visit2 <- age_calc(dob = age_dummy_old_screens$DOB, enddate = age_dummy_old_screens$Overall_date, units = "years", precise = TRUE) %>% round(., digits = 2)
+# merging age variable back into master dataset 
+master_IRTA_old_screens_reordered$Age_at_visit <- as.numeric(master_IRTA_old_screens_reordered$Age_at_visit)
+master_IRTA_old_screens_reordered <- left_join(master_IRTA_old_screens_reordered, age_dummy_old_screens, all=TRUE)
+master_IRTA_old_screens_reordered$Age_at_visit <- coalesce(master_IRTA_old_screens_reordered$Age_at_visit, master_IRTA_old_screens_reordered$Age_at_visit2)
+master_IRTA_old_screens_reordered <- master_IRTA_old_screens_reordered %>% select(-Age_at_visit2)
+
+# creating participant type 2 variable
+
+# active participants
 master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'HV')] <- 'HV'
 master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'MDD')] <- 'MDD'
 master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'DMDD')] <- 'DMDD'
 master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'ANX')] <- 'Anxious'
 master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'xious')] <- 'Anxious'
 master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'ADHD')] <- 'ADHD'
-
+master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'UNSURE')] <- 'UNSURE'
+master_IRTA_reordered$Participant_Type2[str_detect(master_IRTA_reordered$Participant_Type, 'Unsure')] <- 'UNSURE'
 master_IRTA_reordered$SDAN[master_IRTA_reordered$SDAN=='999'] <- NA
+# current referrals
+master_IRTA_screens_reordered$Participant_Type2[str_detect(master_IRTA_screens_reordered$Participant_Type, 'HV')] <- 'HV'
+master_IRTA_screens_reordered$Participant_Type2[str_detect(master_IRTA_screens_reordered$Participant_Type, 'MDD')] <- 'MDD'
+master_IRTA_screens_reordered$Participant_Type2[str_detect(master_IRTA_screens_reordered$Participant_Type, 'DMDD')] <- 'DMDD'
+master_IRTA_screens_reordered$Participant_Type2[str_detect(master_IRTA_screens_reordered$Participant_Type, 'ANX')] <- 'Anxious'
+master_IRTA_screens_reordered$Participant_Type2[str_detect(master_IRTA_screens_reordered$Participant_Type, 'xious')] <- 'Anxious'
+master_IRTA_screens_reordered$Participant_Type2[str_detect(master_IRTA_screens_reordered$Participant_Type, 'ADHD')] <- 'ADHD'
+master_IRTA_screens_reordered$Participant_Type2[str_detect(master_IRTA_screens_reordered$Participant_Type, 'UNSURE')] <- 'UNSURE'
+master_IRTA_screens_reordered$Participant_Type2[str_detect(master_IRTA_screens_reordered$Participant_Type, 'Unsure')] <- 'UNSURE'
+master_IRTA_screens_reordered$SDAN[master_IRTA_screens_reordered$SDAN=='999'] <- NA
+# old referrals 
+master_IRTA_old_screens_reordered$Participant_Type2[str_detect(master_IRTA_old_screens_reordered$Participant_Type, 'HV')] <- 'HV'
+master_IRTA_old_screens_reordered$Participant_Type2[str_detect(master_IRTA_old_screens_reordered$Participant_Type, 'MDD')] <- 'MDD'
+master_IRTA_old_screens_reordered$Participant_Type2[str_detect(master_IRTA_old_screens_reordered$Participant_Type, 'DMDD')] <- 'DMDD'
+master_IRTA_old_screens_reordered$Participant_Type2[str_detect(master_IRTA_old_screens_reordered$Participant_Type, 'ANX')] <- 'Anxious'
+master_IRTA_old_screens_reordered$Participant_Type2[str_detect(master_IRTA_old_screens_reordered$Participant_Type, 'xious')] <- 'Anxious'
+master_IRTA_old_screens_reordered$Participant_Type2[str_detect(master_IRTA_old_screens_reordered$Participant_Type, 'ADHD')] <- 'ADHD'
+master_IRTA_old_screens_reordered$Participant_Type2[str_detect(master_IRTA_old_screens_reordered$Participant_Type, 'UNSURE')] <- 'UNSURE'
+master_IRTA_old_screens_reordered$Participant_Type2[str_detect(master_IRTA_old_screens_reordered$Participant_Type, 'Unsure')] <- 'UNSURE'
+master_IRTA_old_screens_reordered$SDAN[master_IRTA_old_screens_reordered$SDAN=='999'] <- NA
 
-split1 <- colsplit(master_IRTA_reordered$Clinical_Visit_Type, "", names = c("Clinical_Visit_Code", "Clinical_Visit_Number"))
-master_IRTA_reordered <- cbind(master_IRTA_reordered, split1) 
+# splitting clinicial visit type into code & numeric columns 
+split1 <- colsplit(master_IRTA_reordered$Clinical_Visit_Type, "", names = c("Clinical_Visit_Code2", "Clinical_Visit_Number2"))
+master_IRTA_reordered <- cbind(master_IRTA_reordered, split1)
+master_IRTA_reordered$Clinical_Visit_Code <- coalesce(master_IRTA_reordered$Clinical_Visit_Code, master_IRTA_reordered$Clinical_Visit_Code2)
+master_IRTA_reordered$Clinical_Visit_Number <- coalesce(master_IRTA_reordered$Clinical_Visit_Number, master_IRTA_reordered$Clinical_Visit_Number2)
+master_IRTA_reordered <- master_IRTA_reordered %>% select(-Clinical_Visit_Code2, -Clinical_Visit_Number2)
 
 # another reorder & sort 
 
 irta_tracker_columns <- read_excel(paste0(IRTA_tracker_location, "other_data_never_delete/irta_tracker_columns.xlsx"))
 master_IRTA_latest <- master_IRTA_reordered %>% select(irta_tracker_columns$include) %>% arrange(Initials, Clinical_Visit_Date)
-irta_tracker_columns <- irta_tracker_columns %>% filter(include!="Clinical_Visit_Code") %>% filter(include!="Clinical_Visit_Number")
 master_IRTA_screens_latest <- master_IRTA_screens_reordered %>% select(irta_tracker_columns$include) %>% arrange(Initials, Referral_Date)
+master_IRTA_old_screens_latest <- master_IRTA_old_screens_reordered %>% select(irta_tracker_columns$include) %>% arrange(Referral_Date)
 
 ####################Chris's here..... 
 
@@ -340,16 +401,23 @@ task_reshape_master_QC %>% write_xlsx(paste0(backup_location,"TASKS_DATABASE_QC"
 master_IRTA_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"REFERRAL_AND_SCREENING_DATABASE.xlsx"))
 master_IRTA_screens_latest %>% write_xlsx(paste0(backup_location,"REFERRAL_AND_SCREENING_DATABASE","_",todays_date_formatted,".xlsx"))
 
+######################################################################################
+#######Saving Old Screens Dataset
+
+master_IRTA_old_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"OLD_REFERRALS_DATABASE.xlsx"))
+master_IRTA_old_screens_latest %>% write_xlsx(paste0(backup_location,"OLD_REFERRALS_DATABASE","_",todays_date_formatted,".xlsx"))
+
 #####Removing unnecessary variables
 
 rm(list=ls(pattern="_active_data"))
 rm(list=ls(pattern="_current_screens"))
+rm(list=ls(pattern="_old"))
 rm(list=ls(pattern="iter"))
 rm(list=ls(pattern="age_"))
 rm(list=ls(pattern="_sets"))
 rm(list=ls(pattern="missing"))
 rm(list=ls(pattern="_reordered"))
 rm(list=ls(pattern="_template"))
-rm(IRTA_full, IRTA_init, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest)
+rm(IRTA_full, IRTA_init, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest, o)
 rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, MID_temp)
 rm(get_last_scan, get_last_visit, has_scan, is_last_v, print_dates, print_notes)
