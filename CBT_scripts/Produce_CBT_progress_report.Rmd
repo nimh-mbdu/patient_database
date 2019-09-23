@@ -1,12 +1,16 @@
 ---
 title: "MOOD BRAIN & DEVELOPMENT UNIT"
 output:
-  html_document:
-    df_print: paged
   word_document:
     fig_caption: yes
     fig_height: 5
     fig_width: 7
+  html_document:
+    df_print: paged
+# header-includes:
+# - \usepackage{fancyhdr}
+# - \pagestyle{fancy}
+# - \pagenumbering
 ---
 
 ```{r setup, include=FALSE}
@@ -57,19 +61,21 @@ knitr::opts_chunk$set(echo = TRUE)
 # suppressPackageStartupMessages(library(shiny))
 # suppressPackageStartupMessages(library(knitr))
 # 
+# # fancyhdr
+# 
 # # Loading data ------------------------------------------------------------
 
 CBT_report <- read_excel(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
-  
-date_variabes <- CBT_report %>% select(matches("_date")) %>% colnames() 
-date_variabes <- c(date_variabes, "DOB")
-CBT_report[date_variabes] <- lapply(CBT_report[date_variabes], as.Date) 
 
-numeric_variables <- CBT_report %>% select(matches("_tot")) %>% colnames() 
+date_variabes <- CBT_report %>% select(matches("_date")) %>% colnames()
+date_variabes <- c(date_variabes, "DOB")
+CBT_report[date_variabes] <- lapply(CBT_report[date_variabes], as.Date)
+
+numeric_variables <- CBT_report %>% select(matches("_tot")) %>% colnames()
 CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], as.numeric)
 CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], round)
 
-# if you want to check that the variable types have been successfully transformed: 
+# if you want to check that the variable types have been successfully transformed:
 # str(CBT_report, list.len=ncol(CBT_report))
 
 # Patient specific data ------------------------------------------------------------
@@ -188,14 +194,14 @@ Behavioral Activation (BA) for Adolescent Depression, Completed Visit # `r weeks
 
 1. Safety
     + To Self - 
-      + Past: *INSERT*
       + Present: *INSERT*
+      + Past: *INSERT*
     + To Others - 
-      + Past: *INSERT*
       + Present: *INSERT*
+      + Past: *INSERT*
     + To Family - 
-      + Past: *INSERT*
       + Present: *INSERT*
+      + Past: *INSERT*
 2. Consent/assent/suitability
     + *INSERT*
 3. Impressions/Progress in Treatment
