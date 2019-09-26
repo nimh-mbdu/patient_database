@@ -143,15 +143,15 @@ if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
 
 # update DAWBA database & deletion list -----------------------------------
 
-# if (modules2run==3 | modules2run==5) {
-#   
-#   suppressWarnings(source(paste0(georgia, 'DAWBA_database_and_deletions_06192019.R')))
-# 
-# } else {
-#   
-#   print("DAWBA database & deletion list not updated - NA")
-#   
-# }
+if (modules2run==3 | modules2run==5) {
+
+  suppressWarnings(source(paste0(scripts, 'DAWBA_database_and_deletions.R')))
+
+} else {
+
+  print("DAWBA database & deletion list not updated - NA")
+
+}
 
 # produce weekly numbers --------------------------------------------------
 

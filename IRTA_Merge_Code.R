@@ -411,7 +411,7 @@ master_IRTA_old_screens_latest %>% write_xlsx(paste0(backup_location,"OLD_REFERR
 
 rm(list=ls(pattern="_active_data"))
 rm(list=ls(pattern="_current_screens"))
-rm(list=ls(pattern="_old"))
+rm(list=ls(pattern="_old_screens"))
 rm(list=ls(pattern="iter"))
 rm(list=ls(pattern="age_"))
 rm(list=ls(pattern="_sets"))

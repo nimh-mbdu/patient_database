@@ -78,7 +78,7 @@ CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], round)
 data <- CBT_report %>% filter(Initials==Participant)
 
 # changing date formats
-data$Clinical_Visit_Date2 <- format(data$Clinical_Visit_Date, "%B-%d")
+data$Clinical_Visit_Date2 <- format(data$Clinical_Visit_Date, "%b-%d")
 data$Clinical_Visit_Date3 <- format(data$Clinical_Visit_Date, "%B-%d-%Y")
 data$Clinical_Visit_Date4 <- factor(data$Clinical_Visit_Number, levels=data$Clinical_Visit_Number, labels=data$Clinical_Visit_Date2)
 todays_date <- todays_date_formatted %>% format(., "%B %d %Y")

@@ -77,7 +77,7 @@ CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], round)
 data <- CBT_report %>% filter(Initials==Participant)
 
 # changing date formats
-data$Clinical_Visit_Date2 <- format(data$Clinical_Visit_Date, "%B-%d")
+data$Clinical_Visit_Date2 <- format(data$Clinical_Visit_Date, "%b-%d")
 data$Clinical_Visit_Date3 <- format(data$Clinical_Visit_Date, "%B-%d-%Y")
 data$Clinical_Visit_Date4 <- factor(data$Clinical_Visit_Number, levels=data$Clinical_Visit_Number, labels=data$Clinical_Visit_Date2)
 todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
@@ -283,7 +283,7 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
   ylim(0,83) +
   scale_shape_manual(labels = c("Father", "Mother", "Child"), values=c(17, 16, 5)) +
   theme_minimal() +
-  guides(color=guide_legend("Person reporting:"))
+  guides(shape=guide_legend("Person reporting:"))
 
 ```
 
@@ -294,7 +294,7 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
   arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_scared_tot, p_scared_tot, p_scared_parent) %>%
   mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_scared_tot = replace_na(p_scared_tot, " ")) %>% mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>%
-  kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Father reporting on child", "Mother reporting on child"))
+  kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
 
@@ -318,7 +318,7 @@ data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %
   ylim(0,43) + 
   scale_shape_manual(labels = c("Child"), values=c(5)) +
   theme_minimal() +
-  guides(color=guide_legend("Person reporting:"))
+  guides(shape=guide_legend("Person reporting:"))
 
 ```
 
@@ -352,7 +352,7 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
   ylim(0,15) +
   scale_shape_manual(labels = c("Father", "Mother", "Child"), values=c(17, 16, 5)) +
   theme_minimal() +
-  guides(color=guide_legend("Person reporting:"))
+  guides(shape=guide_legend("Person reporting:"))
 
 ```
 
@@ -363,7 +363,7 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
   arrange(Clinical_Visit_Number) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_ari1w_tot, p_ari1w_tot, p_ari1w_parent) %>%
   mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_ari1w_tot = replace_na(p_ari1w_tot, " ")) %>% mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>%
-  kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Father reporting on child", "Mother reporting on child"))
+  kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
 
@@ -387,7 +387,7 @@ data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>
   ylim(0,150) + 
   scale_shape_manual(labels = c("Child"), values=c(5)) +
   theme_minimal() +
-  guides(color=guide_legend("Person reporting:")) 
+  guides(shape=guide_legend("Person reporting:"))
 
 ```
 
@@ -422,7 +422,7 @@ data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>%
   ylim(0,125) + 
   scale_shape_manual(labels = c("Consensus"), values=c(5)) +
   theme_minimal() +
-  guides(color=guide_legend("Person reporting:")) 
+  guides(shape=guide_legend("Person reporting:"))
 
 ```
 
