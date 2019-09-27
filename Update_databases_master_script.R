@@ -5,7 +5,7 @@ rm(list = ls()) # command to clear all variables from R environment
 # directories -------------------------------------------------------------
 
 # what device are you running this script on? 
-computer = 'pc' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
+computer = 'mac' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
 
 if (computer=="pc") {
   string = 'W:/'
@@ -51,9 +51,7 @@ saving_reports = paste0(CBT_location, "Reports/")
 # task related, e.g. tracker locations 
 MID_tracker_location = paste0(sdan1, "Data/MID1/")
 MMI_tracker_location = paste0(sdan1, "Data/MMI/")
-# to add once these are in use: 
-# ReACT_tracker_location = paste0(string, "ReACT/")
-# MEG_tracker_location = paste0(string, "MEG/")
+MEG_tracker_location = paste0(string, "Tasks/MEG/")
 
 # packages ----------------------------------------------------------------
 
@@ -88,6 +86,7 @@ todays_date_formatted <- as.Date(todays_date_formatted)
 max_tasks <- c(to_change$max_tasks)
 max_MID <- c(to_change$max_MID)
 max_MMI <- c(to_change$max_MMI)
+max_MEG <- c(to_change$max_MEG)
 
 # database related - update with names of latest pulls (without file extension)
 latest_ctdb_pull <- c(to_change$latest_ctdb_pull)

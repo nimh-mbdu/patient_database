@@ -377,6 +377,55 @@ MID_missing[of_interest] <- lapply(MID_missing[of_interest], na_if, '666')
 
 MID_missing %>% write_xlsx(paste0(IRTA_tracker_location,"MID_check.xlsx")) # if file empty, everything is perfect 
 
+######################################################################################
+#######Adding MRI QC information
+
+MEG_tasks <- c("MEG_MMI", "Booster", "RL_GNG")
+
+for(i in seq_along(MEG_tasks)) {
+  iter <- as.numeric(i)
+  # iter=1
+  
+  temp_MEG_data <- read_excel(paste0(MEG_tracker_location, "MEG_Tracker.xlsx"), sheet = MEG_tasks[iter]) %>% 
+    mutate_all(as.character) %>% mutate(MEG_tab=meg_task_name) 
+  assign(paste0("task_", iter, "_meg_data"), temp_MEG_data) 
+  
+}
+
+# merge & tidy up
+
+rm(temp_MEG_data)
+meg_sets <- ls(pattern="_meg_data")
+meg_sets <- mget(meg_sets)
+meg_combined <- reduce(meg_sets, full_join) %>% rename(Participant_Type = "Group") %>% rename(Task_Date = "taskDate") %>% 
+  rename(Task_Time = "taskTime") %>% rename(SEX = "Sex") %>% rename(Age_at_visit = "Age") %>% rename(IRTA_tracker = "IRTA Contact") %>% 
+  rename(TI_moved = "T1 moved to MEG directory") %>% rename(T1_notes = "T1 Image Notes")
+
+meg_reshape_master = data.frame(matrix(ncol = 23, nrow = 0))
+x <- c("Initials", "SDAN", "MRN", "SEX", "Age_at_visit", "Participant_Type", "MEG_tab", "IRTA_tracker", "Experimenter1", "Experimenter2", 
+       "Photo_PII_Removal", "Earnings", "Scan_Notes", "Scheduling_Notes", "Recent_MPRAGE", 
+       "TI_moved", "T1_notes", "GNGNotes", "Task_Name", "Task_Number", "Task_Date", "Task_Time", "Include")
+colnames(meg_reshape_master) <- x
+
+for(j in seq_len(max_MEG)) {
+  iter <- as.numeric(j)
+  # iter=1
+  
+  meg_reshape <- meg_combined %>% 
+      select(Initials, SDAN, MRN, SEX, Age_at_visit, Participant_Type, MEG_tab, IRTA_tracker, Experimenter1, Experimenter2, 
+             Photo_PII_Removal, Earnings, Scan_Notes, Scheduling_Notes, Recent_MPRAGE, TI_moved, T1_notes, GNGNotes, 
+             Task_Date, Task_Time, paste0("Task", iter, "_Name"), paste0("Task", iter, "_Number"), paste0("Task", iter, "_Include")) 
+    
+    names(meg_reshape)[names(meg_reshape) == paste0("Task", iter, "_Name")] <- "Task_Name"
+    names(meg_reshape)[names(meg_reshape) == paste0("Task", iter, "_Number")] <- "Task_Number"
+    names(meg_reshape)[names(meg_reshape) == paste0("Task", iter, "_Include")] <- "Include"
+    
+    meg_reshape_master <- merge.default(meg_reshape_master, meg_reshape, all=TRUE)
+  }
+
+# meg_reshape_master %>% write_xlsx(paste0(IRTA_tracker_location,"meg_tracker_rough.xlsx")) 
+
+######################################################################################
 #####Merge of QC information with main task tracker, drops inconsistencies, hence why accuracy is so important 
 
 task_QC <- rbind(MID_task_QC, MMI_task_QC)
