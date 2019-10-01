@@ -27,11 +27,11 @@ if (exists("master_IRTA_screens_latest")==FALSE) {
   print("master current screens tracker already imported")
 }
 
-if (exists("master_IRTA_old_screens_latest")==FALSE) {
-  master_IRTA_old_screens_latest <- read_excel(paste0(IRTA_tracker_location, "OLD_REFERRALS_DATABASE.xlsx"))
+if (exists("master_IRTA_oldest_screens_latest")==FALSE) {
+  master_IRTA_oldest_screens_latest <- read_excel(paste0(IRTA_tracker_location, "OLD_REFERRALS_DATABASE.xlsx"))
   date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
   for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
-  master_IRTA_old_screens_latest[date_variabes] <- lapply(master_IRTA_old_screens_latest[date_variabes], as.Date)
+  master_IRTA_oldest_screens_latest[date_variabes] <- lapply(master_IRTA_oldest_screens_latest[date_variabes], as.Date)
   rm(i, date_variabes)
 } else {
   print("master old referrals tracker already imported")
@@ -55,7 +55,7 @@ master_current_screen_identifiers <- master_IRTA_screens_latest %>%
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, DAWBA_completed) %>% 
   mutate(Source = "Current screens") %>% filter(!is.na(DAWBA_ID) | !is.na(PLUSID))
 
-master_old_screen_identifiers <- master_IRTA_old_screens_latest %>% 
+master_old_screen_identifiers <- master_IRTA_oldest_screens_latest %>% 
   select(FIRST_NAME, LAST_NAME, Initials, DAWBA_ID, PLUSID, SDAN, IRTA_tracker, Participant_Type2, 
          Clinical_Visit_Date, Screening_Start_Date, Referral_Date, Overall_date, 
          Eligible, Eligibility_notes, Scheduling_status, Scheduling_status_notes, 

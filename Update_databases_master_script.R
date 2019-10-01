@@ -5,7 +5,7 @@ rm(list = ls()) # command to clear all variables from R environment
 # directories -------------------------------------------------------------
 
 # what device are you running this script on? 
-computer = 'mac' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
+computer = 'pc' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
 
 if (computer=="pc") {
   string = 'W:/'
@@ -73,6 +73,7 @@ suppressPackageStartupMessages(library(purrr))
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(shiny))
 suppressPackageStartupMessages(library(knitr))
+suppressPackageStartupMessages(library(ggpubr))
 
 # things to check and may need to modify before running -------------------
 
