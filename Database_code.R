@@ -2133,14 +2133,17 @@
         ungroup() %>% 
         select(-measurement_TDiff_abs)
       
-      names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
-      names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
-      names(measure_temp_task)[names(measure_temp_task) == "date_temp"] <- (paste0(measure_name, "date"))
-      names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0(measure_name, "source"))
-      
       if (measure_name=="ksads_") {
+        names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0("c_", measure_name, "complete"))
+        names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0("c_", measure_name, "TDiff"))
+        names(measure_temp_task)[names(measure_temp_task) == "date_temp"] <- (paste0("c_", measure_name, "date"))
+        names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0("c_", measure_name, "source"))
         assign(paste0("c_", measure_name, "subset_task"), measure_temp_task)
       } else {
+        names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
+        names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
+        names(measure_temp_task)[names(measure_temp_task) == "date_temp"] <- (paste0(measure_name, "date"))
+        names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0(measure_name, "source"))
         assign(paste0(measure_name, "subset_task"), measure_temp_task)
       }
     
@@ -2232,14 +2235,17 @@
         ungroup() %>% 
         select(-measurement_TDiff_abs)
       
-      names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0("c_", measure_name, "complete"))
-      names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0("c_", measure_name, "TDiff"))
-      names(measure_temp_clinical)[names(measure_temp_clinical) == "date_temp"] <- (paste0("c_", measure_name, "date"))
-      names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0("c_", measure_name, "source"))
-      
       if (measure_name=="ksads_") {
+        names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0("c_", measure_name, "complete"))
+        names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0("c_", measure_name, "TDiff"))
+        names(measure_temp_clinical)[names(measure_temp_clinical) == "date_temp"] <- (paste0("c_", measure_name, "date"))
+        names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0("c_", measure_name, "source"))
         assign(paste0("c_", measure_name, "subset_clinical"), measure_temp_clinical)
       } else {
+        names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
+        names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
+        names(measure_temp_clinical)[names(measure_temp_clinical) == "date_temp"] <- (paste0(measure_name, "date"))
+        names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0(measure_name, "source"))
         assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
       }
       
