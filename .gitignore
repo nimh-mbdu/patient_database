@@ -1,7 +1,9 @@
 *.RData
+*.Rhistory
 *.Rapp.history
 *.xlsx
 CBT_scripts/*.RData
+CBT_scripts/*.Rhistory
 CBT_scripts/*.Rapp.history
 CBT_scripts/*.xlsx
 CBT_scripts/*.html
