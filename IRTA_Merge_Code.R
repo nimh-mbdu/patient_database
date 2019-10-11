@@ -398,10 +398,11 @@ meg_sets <- ls(pattern="_meg_data")
 meg_sets <- mget(meg_sets)
 meg_combined <- reduce(meg_sets, full_join) %>% rename(Participant_Type = "Group") %>% rename(Task_Date = "Date") %>%
   rename(Task_Time = "taskTime") %>% rename(IRTA_tracker = "IRTA Contact") %>% rename(MEG_Scan_Notes = "Scan_Notes") %>% 
-  select(-Age, -MRN, -Sex, -Earnings, -Recent_MPRAGE, -IRTA_tracker, -Participant_Type, -`T1 moved to MEG directory`, -`T1 Image Notes`)
+  select(-Age, -MRN, -Sex, -Earnings, -Task_Time, -Recent_MPRAGE, -IRTA_tracker, -Participant_Type, -`T1 moved to MEG directory`, -`T1 Image Notes`)
+meg_combined$Days_since_scan <- as.numeric(difftime(meg_combined$Task_Date, todays_date_formatted, tz="", units = "days")) %>% round(., digits=0)
 
 meg_reshape_master = data.frame(matrix(ncol = 12, nrow = 0))
-x <- c("Initials", "SDAN", "MEG_tab", "Task_Date", "Task_Time", "Task_Name", "Task_Number", "Include",
+x <- c("Initials", "SDAN", "MEG_tab", "Task_Date", "Days_since_scan", "Task_Name", "Task_Number", "Include",
        "Experimenter1", "Experimenter2", "MEG_Scan_Notes", "Photo_PII_Removal")
 colnames(meg_reshape_master) <- x
 
@@ -410,45 +411,50 @@ for(j in seq_len(max_MEG)) {
   # iter=1
 
   meg_reshape <- meg_combined %>%
-      select(Initials, SDAN, MEG_tab, Task_Date, Task_Time, paste0("Task", iter, "_Name"), paste0("Task", iter, "_Number"), paste0("Task", iter, "_Include"),
+      select(Initials, SDAN, MEG_tab, Task_Date, Days_since_scan, paste0("Task", iter, "_Name"), paste0("Task", iter, "_Number"), paste0("Task", iter, "_Include"),
              Experimenter1, Experimenter2, MEG_Scan_Notes, Photo_PII_Removal)
 
     names(meg_reshape)[names(meg_reshape) == paste0("Task", iter, "_Name")] <- "Task_Name"
     names(meg_reshape)[names(meg_reshape) == paste0("Task", iter, "_Number")] <- "Task_Number"
     names(meg_reshape)[names(meg_reshape) == paste0("Task", iter, "_Include")] <- "Include"
 
-    meg_reshape_master <- merge.default(meg_reshape_master, meg_reshape, all=TRUE)
-  }
+    meg_reshape_master <- merge.default(meg_reshape_master, meg_reshape, all=TRUE) %>% filter(!is.na(Task_Name))
+}
 
-meg_reshape_master$Todays_Date <- as.Date(todays_date_formatted)
-meg_reshape_master$Days_since_scan <- as.numeric(difftime(meg_reshape_master$Task_Date, meg_reshape_master$Todays_Date, tz="", units = "days")) %>% round(., digits=0)
-of_interest <- c('Task_Name', 'Task_Number', 'Include', 'Days_since_scan')
-meg_reshape_master[of_interest] <- lapply(meg_reshape_master[of_interest], replace_na, '666')
+MEG_task_QC <- meg_reshape_master %>% select(Initials, SDAN, Task_Name, Task_Date, Task_Number, Include, Days_since_scan)
 
-meg_missing_name <- meg_reshape_master %>% filter(Task_Number != '777' & Task_Number != '999') %>% 
-  filter(Days_since_scan<0) %>% 
-  filter(Task_Name=='666') %>% mutate(reason1 = "missing name")
-meg_missing_number <- meg_reshape_master %>% 
-  filter(Days_since_scan<0) %>% 
-  filter(Task_Number == '666') %>% mutate(reason2 = "missing number")
-meg_missing_qc <- meg_reshape_master %>% filter(Task_Number != '777' & Task_Number != '999') %>% 
-  filter(Days_since_scan<0) %>% 
-  filter(Include=='666') %>% mutate(reason3 = "missing qc")
-meg_missing_date <- meg_reshape_master %>% filter(Task_Number != '777' & Task_Number != '999') %>% 
-  filter(is.na(Task_Date)) %>% 
-  filter(Task_Number != '666') %>% mutate(reason4 = "missing date")
+##### checking for merge conflicts/missing MMIs: 
+MEG_task_QC <- merge.default(task_reshape_master, MEG_task_QC, all=TRUE) %>%
+  filter(str_detect(Task_Name, "MEG")) %>%
+  select(Initials, SDAN, IRTA_tracker, SEX, DOB, Handedness, Participant_Type2, Protocol,
+         Eligible, Scheduling_status, Clinical_Visit_Type, Task_Name, Task_Number, Task_Date, Include, Days_since_scan) %>% 
+  arrange(Initials, Task_Date) 
+# %>% group_by(Initials) %>% fill(SDAN:Protocol, .direction = "down") %>% fill(SDAN:Protocol, .direction = "up") %>% 
+  # group_by(Initials, Task_Date) %>% fill(Eligible:Clinical_Visit_Type, .direction = "down") %>% ungroup() 
 
-MEG_missing <- merge.default(meg_missing_name, meg_missing_number, all=TRUE) %>% 
-  merge.default(., meg_missing_qc, all=TRUE) %>% merge.default(., meg_missing_date, all=TRUE) %>% 
-  select(-Experimenter1, -Experimenter2, -MEG_Scan_Notes, -Photo_PII_Removal)
+of_interest <- c('Task_Number', 'Include', 'Days_since_scan')
+MEG_task_QC[of_interest] <- lapply(MEG_task_QC[of_interest], replace_na, '666')
+numeric <- c('Eligible', 'Scheduling_status', 'Task_Number', 'Include', 'Days_since_scan')
+MEG_task_QC[numeric] <- lapply(MEG_task_QC[numeric], as.numeric)
+
+meg_missing_number <- MEG_task_QC %>% filter(Days_since_scan<0 | Days_since_scan=='666') %>% filter(Task_Number=='666')
+meg_missing_qc <- MEG_task_QC %>% filter(Task_Number != '777' & Task_Number != '999') %>% filter(Include=='666')
+meg_missing_date <- MEG_task_QC %>% filter(Task_Number != '777' & Task_Number != '999') %>% filter(is.na(Task_Date)) 
+meg_missing_irta_tracker <- MEG_task_QC %>% filter(is.na(IRTA_tracker))
+
+MEG_missing <- merge.default(meg_missing_date, meg_missing_number, all=TRUE) %>%
+  merge.default(., meg_missing_qc, all=TRUE) %>% merge.default(., meg_missing_irta_tracker, all=TRUE) 
 MEG_missing[of_interest] <- lapply(MEG_missing[of_interest], na_if, '666')
+MEG_missing <- MEG_missing %>% arrange(Task_Date) %>% arrange(Initials, Task_Name)
 
-MEG_missing %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/meg_tracker_qc.xlsx"))
+MEG_task_QC <- meg_reshape_master %>% select(SDAN, Task_Name, Task_Date, Task_Number, Include)
+
+MEG_missing %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MEG_check.xlsx"))
 
 ######################################################################################
 #####Merge of QC information with main task tracker, drops inconsistencies, hence why accuracy is so important 
 
-task_QC <- rbind(MID_task_QC, MMI_task_QC)
+task_QC <- merge.default(MID_task_QC, MMI_task_QC, all=TRUE) %>% merge.default(., MEG_task_QC, all=TRUE)
 task_reshape_master_QC <- left_join(task_reshape_master, task_QC, all=TRUE)
 
 ######################################################################################

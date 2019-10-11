@@ -2423,7 +2423,7 @@ task_sets <- mget(task_sets)
 
 # merge & tidy up
 
-Psychometrics_behav <- reduce(task_sets, full_join) 
+Psychometrics_behav <- reduce(task_sets, full_join)
 # str(Psychometrics_behav, list.len=ncol(Psychometrics_behav))
 Psychometrics_behav <- Psychometrics_behav %>%
   group_by(Initials, Task_Name, Task_Date, Task_Number) %>%
@@ -2435,7 +2435,7 @@ Psychometrics_behav <- Psychometrics_behav %>%
        matches("c_ksadsdx_"), matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
   fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
        matches("c_ksadsdx_"), matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "up") %>%
-  ungroup() %>% 
+  ungroup() %>%
   distinct(., .keep_all = TRUE)
 
 # exporting
