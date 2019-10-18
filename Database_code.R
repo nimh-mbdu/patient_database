@@ -632,6 +632,17 @@
   s_shaps_subset_sdq$NA_count <- s_shaps_subset_sdq %>% select(matches('s_shaps_')) %>% apply(., 1, count_na)
   s_shaps_subset_sdq$diff <- c(s_shaps_subset_sdq$no_columns - s_shaps_subset_sdq$NA_count)
   s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  
+  # recoding SHAPS scores from SDQ that were obtained before June 20th 2018
+  s_shaps_subset_sdq$temp_date <- s_shaps_subset_sdq$Overall_date
+  s_shaps_subset_sdq$temp_date_diff <- as.numeric(difftime(as.Date("2018-06-20"), s_shaps_subset_sdq$temp_date, tz="", units = "days"))
+  temp_before <- s_shaps_subset_sdq %>% filter(temp_date_diff>0 & source=="SDQ") %>% select(-temp_date, -temp_date_diff)
+  s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(temp_date_diff<1 | source=="MANUAL") %>% select(-temp_date, -temp_date_diff)
+  
+  temp_before[,7:20]  <- lapply(temp_before[,7:20], FUN = function(x) recode(x, `3`=5, `2`=6, `1`=2, `0`=3, .missing = NULL))
+  temp_before[,7:20]  <- lapply(temp_before[,7:20], FUN = function(x) recode(x, `5`=0, `6`=1, `2`=2, `3`=3, .missing = NULL))
+
+  s_shaps_subset_sdq <- merge.default(s_shaps_subset_sdq, temp_before, all=TRUE)
 
   s_shaps_binary <- s_shaps_subset_sdq
   s_shaps_binary[,7:20]  <- lapply(s_shaps_binary[,7:20], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=1, `3`=1, .missing = NULL))
@@ -2478,7 +2489,7 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, count_
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation,
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, 
    how_columns, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, 
-   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs)
+   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before)
 # numeric, of_interest
 
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)
