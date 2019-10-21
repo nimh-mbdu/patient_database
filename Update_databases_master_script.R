@@ -22,7 +22,7 @@ if (computer=="pc") {
 scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful directory while scripts are still under development 
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here 
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
-# weekly_numbers_location = paste0(georgia, "IRTA tracker merge/creating weekly meeting sheet/") # to change with server restructuring 
+weekly_numbers_location = paste0(string, "Minutes and conversation archives\Weekly Meeting Sheet/")
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring 
 graphs_location = paste0(database_location, "graphs/")
 
@@ -74,6 +74,11 @@ suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(shiny))
 suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(ggpubr))
+
+# suppressPackageStartupMessages(library(DT))
+# suppressPackageStartupMessages(library(kableExtra))
+# suppressPackageStartupMessages(library(stargazer))
+# suppressPackageStartupMessages(library(tables))
 
 # things to check and may need to modify before running -------------------
 

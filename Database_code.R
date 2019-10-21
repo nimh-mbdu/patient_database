@@ -633,11 +633,11 @@
   s_shaps_subset_sdq$diff <- c(s_shaps_subset_sdq$no_columns - s_shaps_subset_sdq$NA_count)
   s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
-  # recoding SHAPS scores from SDQ that were obtained before June 20th 2018
+  # recoding SHAPS scores from SDQ that were obtained before June 22nd 2018
   s_shaps_subset_sdq$temp_date <- s_shaps_subset_sdq$Overall_date
-  s_shaps_subset_sdq$temp_date_diff <- as.numeric(difftime(as.Date("2018-06-20"), s_shaps_subset_sdq$temp_date, tz="", units = "days"))
-  temp_before <- s_shaps_subset_sdq %>% filter(temp_date_diff>0 & source=="SDQ") %>% select(-temp_date, -temp_date_diff)
-  s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(temp_date_diff<1 | source=="MANUAL") %>% select(-temp_date, -temp_date_diff)
+  s_shaps_subset_sdq$temp_date_diff <- as.numeric(difftime(as.Date("2018-06-22"), s_shaps_subset_sdq$temp_date, tz="", units = "days"))
+  temp_before <- s_shaps_subset_sdq %>% filter(temp_date_diff>-1 & source=="SDQ") %>% select(-temp_date, -temp_date_diff)
+  s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(temp_date_diff<0 | source=="MANUAL") %>% select(-temp_date, -temp_date_diff)
   
   temp_before[,7:20]  <- lapply(temp_before[,7:20], FUN = function(x) recode(x, `3`=5, `2`=6, `1`=2, `0`=3, .missing = NULL))
   temp_before[,7:20]  <- lapply(temp_before[,7:20], FUN = function(x) recode(x, `5`=0, `6`=1, `2`=2, `3`=3, .missing = NULL))
