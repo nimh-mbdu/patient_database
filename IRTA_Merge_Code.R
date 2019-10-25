@@ -485,6 +485,7 @@ master_IRTA_oldest_screens_latest %>% write_xlsx(paste0(backup_location,"OLD_REF
 #####Removing unnecessary variables
 
 rm(list=ls(pattern="_active_data"))
+rm(list=ls(pattern="_meg_data"))
 rm(list=ls(pattern="_current_screens"))
 rm(list=ls(pattern="_old_screens"))
 rm(list=ls(pattern="iter"))

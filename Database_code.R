@@ -633,15 +633,13 @@
   s_shaps_subset_sdq$diff <- c(s_shaps_subset_sdq$no_columns - s_shaps_subset_sdq$NA_count)
   s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
-  # recoding SHAPS scores from SDQ that were obtained before June 22nd 2018
-  s_shaps_subset_sdq$temp_date <- s_shaps_subset_sdq$Overall_date
-  s_shaps_subset_sdq$temp_date_diff <- as.numeric(difftime(as.Date("2018-06-22"), s_shaps_subset_sdq$temp_date, tz="", units = "days"))
-  temp_before <- s_shaps_subset_sdq %>% filter(temp_date_diff>-1 & source=="SDQ") %>% select(-temp_date, -temp_date_diff)
-  s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(temp_date_diff<0 | source=="MANUAL") %>% select(-temp_date, -temp_date_diff)
-  
-  temp_before[,7:20]  <- lapply(temp_before[,7:20], FUN = function(x) recode(x, `3`=5, `2`=6, `1`=2, `0`=3, .missing = NULL))
-  temp_before[,7:20]  <- lapply(temp_before[,7:20], FUN = function(x) recode(x, `5`=0, `6`=1, `2`=2, `3`=3, .missing = NULL))
-
+  # recoding SHAPS scores from SDQ that were obtained before June 22nd 2018: coding went from 'strongly disagree'=0 - 'strongly agree'=3 -> 'strongly disagree'=3 - 'strongly agree'=0
+  s_shaps_subset_sdq$date_temp <- s_shaps_subset_sdq$Overall_date
+  s_shaps_subset_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), s_shaps_subset_sdq$date_temp, tz="", units = "days"))
+  temp_before <- s_shaps_subset_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp, -date_temp_diff)
+  s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp, -date_temp_diff)
+  temp_before[,7:ncol(temp_before)]  <- lapply(temp_before[,7:ncol(temp_before)], FUN = function(x) recode(x, `3`=5, `2`=6, `1`=2, `0`=3, .missing = NULL))
+  temp_before[,7:ncol(temp_before)]  <- lapply(temp_before[,7:ncol(temp_before)], FUN = function(x) recode(x, `5`=0, `6`=1, `2`=2, `3`=3, .missing = NULL))
   s_shaps_subset_sdq <- merge.default(s_shaps_subset_sdq, temp_before, all=TRUE)
 
   s_shaps_binary <- s_shaps_subset_sdq
@@ -1073,7 +1071,7 @@
 
   for(i in seq_along(tot_sum_clin)) {
     iter <- as.numeric(i)
-    # iter=12
+    # iter=2
     measure_name <- tot_sum_clin[iter]
     
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
@@ -1117,6 +1115,14 @@
                s_bads_25_felt_bad)
       measure_temp_sdq[,14:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,14:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `0`=7, `1`=8, `2`=9, `3`=3, `4`=2, `5`=1, `6`=0, .missing = NULL))
       measure_temp_sdq[,14:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,14:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `7`=6, `8`=5, `9`=4, `3`=3, `2`=2, `1`=1, `0`=0, .missing = NULL))
+    } else if (measure_name=="s_chs_") {
+      print("recoding measure")
+      # recoding CHS scores from SDQ that were obtained before June 22nd 2018: coding went from 0-5 -> 1-6
+      measure_temp_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), measure_temp_sdq$date_temp, tz="", units = "days"))
+      temp_before <- measure_temp_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp_diff)
+      measure_temp_sdq <- measure_temp_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp_diff)
+      temp_before[,7:ncol(temp_before)] <- lapply(temp_before[,7:ncol(temp_before)], FUN = function(x) recode(x, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+      measure_temp_sdq <- merge.default(measure_temp_sdq, temp_before, all=TRUE)
     } else {
       print("no recoding necessary for this measure")
     }
@@ -1221,19 +1227,27 @@
     
     measure_temp_sdq$date_temp <- measure_temp_sdq$Overall_date
     measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, date_temp, matches(measure_name))
-    measure_temp_sdq[,7:(ncol(measure_temp_sdq)-1)] <- sapply(measure_temp_sdq[,7:(ncol(measure_temp_sdq)-1)], as.numeric) 
+    measure_temp_sdq[,8:(ncol(measure_temp_sdq)-1)] <- sapply(measure_temp_sdq[,8:(ncol(measure_temp_sdq)-1)], as.numeric) 
 
     measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches("_if")) %>% ncol() %>% as.numeric()
     measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches("_if")) %>% apply(., 1, count_na)
     measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
     measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
     
-    measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches("_if")) %>% rowSums(na.rm=TRUE)
-    
     how_columns <- measure_temp_sdq %>% select(matches("_how")) %>% colnames()
     if_columns <- measure_temp_sdq %>% select(matches("_if")) %>% colnames()
     combined <- cbind(how_columns, if_columns)
     
+    # recoding CASE scores from SDQ that were obtained before June 22nd 2018: '_how' item coding went from 0-5 -> 3, 2, 1, -1, -2, -3
+    measure_temp_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), measure_temp_sdq$date_temp, tz="", units = "days"))
+    temp_before <- measure_temp_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp_diff)
+    measure_temp_sdq <- measure_temp_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp_diff)
+    temp_before[how_columns] <- lapply(temp_before[how_columns], FUN = function(x) recode(x, `5`=-3, `4`=-2, `3`=-1, `2`=8, `1`=2, `0`=3, .missing = NULL))
+    temp_before[how_columns] <- lapply(temp_before[how_columns], FUN = function(x) recode(x, `-3`=-3, `-2`=-2, `-1`=-1, `8`=1, `2`=2, `3`=3, .missing = NULL))
+    measure_temp_sdq <- merge.default(measure_temp_sdq, temp_before, all=TRUE)
+
+    measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches("_if")) %>% rowSums(na.rm=TRUE)
+  
     for(j in seq_along(how_columns)) {
       iter2 <- as.numeric(j)
       # iter2=3
@@ -1329,6 +1343,14 @@
   s_seq_subset_sdq$NA_count <- s_seq_subset_sdq %>% select(matches('s_seq_')) %>% apply(., 1, count_na)
   s_seq_subset_sdq$diff <- c(s_seq_subset_sdq$no_columns - s_seq_subset_sdq$NA_count)
   s_seq_subset_sdq <- s_seq_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  
+  # recoding SEQ scores from SDQ that were obtained before June 22nd 2018: coding went from 0-4 -> 1-5
+  s_seq_subset_sdq$date_temp <- s_seq_subset_sdq$Overall_date
+  s_seq_subset_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), s_seq_subset_sdq$date_temp, tz="", units = "days"))
+  temp_before <- s_seq_subset_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp, -date_temp_diff)
+  s_seq_subset_sdq <- s_seq_subset_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp, -date_temp_diff)
+  temp_before[,7:ncol(temp_before)]  <- lapply(temp_before[,7:ncol(temp_before)], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+  s_seq_subset_sdq <- merge.default(s_seq_subset_sdq, temp_before, all=TRUE)
   
   s_seq_subset_sdq$s_seq_tot <- s_seq_subset_sdq %>% select(matches('s_seq_')) %>% rowSums(na.rm=TRUE)
   
@@ -2328,6 +2350,10 @@ CBT_report <- Psychometrics_treatment %>%
          s_after_ba_sess_come_again, matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"), 
          -matches("_source")) %>% arrange(LAST_NAME, Initials, FIRST_NAME, Clinical_Visit_Date) %>%
   filter(str_detect(Clinical_Visit_Code, "o")) %>% select(-s_fua_date, -p_fua_date, -s_before_ba_date, -s_after_ba_date, -s_baexpout_date, -s_menstruation_date, -c_medsclin_date)
+
+# insert code to filter out future dates
+CBT_report$TDiff <- as.numeric(difftime(CBT_report$Clinical_Visit_Date, todays_date_formatted, tz="", units = "days"))
+CBT_report <- CBT_report %>% filter(TDiff<1) %>% select(-TDiff)
 
 CBT_report$s_mfq1w_tot <- coalesce(CBT_report$s_mfq1w_tot, CBT_report$s_mfq_tot)
 CBT_report$s_ari1w_tot <- coalesce(CBT_report$s_ari1w_tot, CBT_report$s_ari6m_tot)

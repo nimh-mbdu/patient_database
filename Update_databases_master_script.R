@@ -74,9 +74,8 @@ suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(shiny))
 suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(ggpubr))
-
+suppressPackageStartupMessages(library(kableExtra))
 # suppressPackageStartupMessages(library(DT))
-# suppressPackageStartupMessages(library(kableExtra))
 # suppressPackageStartupMessages(library(stargazer))
 # suppressPackageStartupMessages(library(tables))
 
