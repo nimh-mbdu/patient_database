@@ -178,9 +178,7 @@
   
   common_identifiers_child <- master_IRTA_latest %>% select(PLUSID, FIRST_NAME, LAST_NAME, SDAN, Initials) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% fill(PLUSID, SDAN, Initials, .direction = "down") %>% fill(PLUSID, SDAN, Initials, .direction = "up") %>% ungroup() %>% 
-    group_by(Initials) %>% fill(PLUSID, SDAN, .direction = "down") %>% fill(PLUSID, SDAN, .direction = "up") %>% ungroup() %>%
-    slice(n())
-    # distinct(., .keep_all = TRUE)
+    group_by(Initials) %>% fill(PLUSID, SDAN, .direction = "down") %>% fill(PLUSID, SDAN, .direction = "up") %>% ungroup() %>% distinct(., .keep_all = TRUE)
   ctdb_w_plusid_child <- left_join(common_identifiers_child, ctdb_Data_Download_reduced, all=TRUE)
   
   #****** CTDB parent name prep
@@ -281,7 +279,7 @@
   
   for(i in seq_along(tot_sum)) {
     iter <- as.numeric(i)
-    # iter=1
+    # iter=2
     measure_name <- tot_sum[iter]
     
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
@@ -2431,7 +2429,7 @@ CBT_report[parent_report] <- lapply(CBT_report[parent_report], FUN = function(x)
 parent_report <- parent_report[parent_report != "p_fad_parent"]
 
 parent_col_spread <- CBT_report %>% select(Initials, Clinical_Visit_Date, Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number, 
-                                           matches("p_mfq"), matches("p_ari"), matches("p_scared"))
+                                           matches("p_mfq"), matches("p_ari"), matches("p_scared")) %>% distinct(., .keep_all = TRUE)
 dummy <- tibble(Initials= c("DUMMY"), p_mfq1w_parent= c("Father", "Mother", "Unknown"), p_scared_parent= c("Father", "Mother", "Unknown"), p_ari1w_parent= c("Father", "Mother", "Unknown"))
 parent_col_spread <- merge.default(parent_col_spread, dummy, all=TRUE)
 
@@ -2529,7 +2527,7 @@ Psychometrics_behav <- Psychometrics_behav %>%
 
 # exporting
 
-Psychometrics_behav %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL_updated.xlsx"))
+Psychometrics_behav %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL.xlsx"))
 Psychometrics_behav %>% write_xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_", todays_date_formatted, ".xlsx"))
 
 # Identifying missing cases -----------------------------------------------

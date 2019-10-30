@@ -22,7 +22,7 @@ if (computer=="pc") {
 scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful directory while scripts are still under development 
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here 
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
-weekly_numbers_location = paste0(string, "Minutes and conversation archives\Weekly Meeting Sheet/")
+weekly_numbers_location = paste0(string, "Minutes and conversation archives/Weekly Meeting Sheet/")
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring 
 graphs_location = paste0(database_location, "graphs/")
 
@@ -74,10 +74,6 @@ suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(shiny))
 suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(ggpubr))
-suppressPackageStartupMessages(library(kableExtra))
-# suppressPackageStartupMessages(library(DT))
-# suppressPackageStartupMessages(library(stargazer))
-# suppressPackageStartupMessages(library(tables))
 
 # things to check and may need to modify before running -------------------
 
@@ -114,8 +110,6 @@ modules2run <- c(to_change$modules2run)
 # 2 = "update master database" = string-mbd/Database/Database_Scripts_Github/Database code.R
 # 3 = "update DAWBA database & deletion list" = W:/Georgia/Analysis_Georgia/Database/DAWBA_database_and_deletions_06192019.R     ***UPDATE!!!
 # 4 = "produce weekly numbers" 
-#         updates the dataset for this = W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/rough work extracted from IRTA master tracker code_04182019.R
-#         updates the webpage for this = W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/attempt1.Rmd
 # 5 = all of the above
 # 6 = modules 1 & 2
 # 7 = update master database & create CBT progress report - remember to change input the initials of the participant above & specify whether you want a progress or final report 
@@ -126,7 +120,11 @@ modules2run <- c(to_change$modules2run)
 if (modules2run==1 | modules2run==5 | modules2run==6) {
   
   suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
-
+  
+  # Note - check that the file has saved with a new date - this won't happen if someone else has the file open.
+  # If it has not exported properly, uncomment out and run the line below, which will save it under a new name: 
+  # master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE_updated.xlsx")) # will not save if someone else has this dataset open 
+  
 } else {
   
   print("master IRTA tracker and tasks database not updated - NA")
@@ -138,6 +136,13 @@ if (modules2run==1 | modules2run==5 | modules2run==6) {
 if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
 
   suppressWarnings(source(paste0(scripts, 'Database_code.R')))
+  
+  # Note - check that the file has saved with a new date - this won't happen if someone else has the file open.
+  # Similar to the above, if any of the database files have not exported properly, uncomment out and run the relevant line below, which will save it under a new name: 
+  # Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL_updated.xlsx"))
+  # CBT_report %>% write_xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT_updated.xlsx"))
+  # MATCH_tracker %>% write_xlsx(paste0(database_location, "Inpatient/MASTER_DATABASE_Inpatient_updated.xlsx"))
+  # Psychometrics_behav %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL_updated.xlsx"))
 
 } else {
 
@@ -159,16 +164,18 @@ if (modules2run==3 | modules2run==5) {
 
 # produce weekly numbers --------------------------------------------------
 
-# if (modules2run==4 | modules2run==5) {
-# 
-#   suppressWarnings(source(paste0(weekly_numbers_location, 'rough work extracted from IRTA master tracker code_04182019.R')))
-#   render(paste0(weekly_numbers_location, "attempt1_04182019.Rmd"))
-# 
-# } else {
-# 
-#   print("weekly numbers not produced - NA")
-# 
-# }
+if (modules2run==4 | modules2run==5) {
+  
+  suppressPackageStartupMessages(library(kableExtra))
+  render('W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/attempt2/rough_work_10232019.Rmd', output_format = "word_document", 
+         output_file = paste0("Weekly_Numbers_", todays_date_formatted), output_dir = weekly_numbers_location)
+  detach(package:kableExtra)
+  
+} else {
+
+  print("weekly numbers not produced - NA")
+
+}
 
 # Produce CBT report ------------------------------------------------------
 
