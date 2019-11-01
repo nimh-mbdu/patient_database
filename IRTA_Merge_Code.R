@@ -102,8 +102,8 @@ master_IRTA_old_screens_template[date_variabes] <- lapply(master_IRTA_old_screen
 master_IRTA_template$Overall_date <- coalesce(master_IRTA_template$Clinical_Visit_Date, master_IRTA_template$Task1_Date)
 # filling in demographic information for each participant & removing exact duplicates - master IRTA tracker
 master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% group_by(Initials) %>% arrange(Initials, Overall_date) %>% 
-  fill(FIRST_NAME:Handedness, Parent_CTSS_username:Metal, .direction = "down") %>% 
-  fill(FIRST_NAME:Handedness, Parent_CTSS_username:Metal, .direction = "up") %>% 
+  fill(FIRST_NAME, LAST_NAME, SDAN:Handedness, Parent_CTSS_username:Metal, .direction = "down") %>% 
+  fill(FIRST_NAME, LAST_NAME, SDAN:Handedness, Parent_CTSS_username:Metal, .direction = "up") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 master_IRTA_reordered <- master_IRTA_reordered %>% group_by(Initials) %>% arrange(Initials, Overall_date) %>% 
   fill(Current:Treatment_Notes, Clinicals, Clinicals_date, .direction = "down") %>% 
@@ -234,11 +234,13 @@ for(i in seq_len(max_tasks)) {
            paste0("Task", iter, "_Name"), paste0("Task", iter, "_Number"), 
            paste0("Task", iter, "_Date"), paste0("Task", iter, "_Visit_Type")) 
   
+  if(iter==1) {task_reshape$Task1_Name <- replace_na(task_reshape$Task1_Name, "No_Task")}
+  
   names(task_reshape)[names(task_reshape) == paste0("Task", iter, "_Name")] <- "Task_Name"
   names(task_reshape)[names(task_reshape) == paste0("Task", iter, "_Number")] <- "Task_Number"
   names(task_reshape)[names(task_reshape) == paste0("Task", iter, "_Date")] <- "Task_Date"
   names(task_reshape)[names(task_reshape) == paste0("Task", iter, "_Visit_Type")] <- "Task_Visit_Type"
- 
+  
   task_reshape <- task_reshape %>% filter(!is.na(Task_Name)) %>% distinct(., .keep_all = TRUE)
   # assign(paste0("task", iter), task_reshape) # uncomment this row if you would like to KEEP all individual files from loop to QC them
 
@@ -252,9 +254,8 @@ eligibility_variables <- master_IRTA_latest %>%
   arrange(Initials, Overall_date, desc(Clinical_Visit_Type)) %>%
   distinct(., Initials, SDAN, Overall_date, .keep_all = TRUE)
 
-# check <- eligibility_variables %>% filter(is.na(Clinical_Visit_Type)) %>% filter(Scheduling_status=='3')
-
 task_reshape_master <- left_join(task_reshape_master, eligibility_variables, all=TRUE)
+task_reshape_master$Task_Date <- coalesce(task_reshape_master$Task_Date, task_reshape_master$Overall_date)
 task_reshape_master <- task_reshape_master %>% 
   select(FIRST_NAME, LAST_NAME, Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker,
          SEX, DOB, Handedness, Participant_Type, Participant_Type2, Age_at_visit, Overall_date, 
@@ -262,8 +263,11 @@ task_reshape_master <- task_reshape_master %>%
          Scheduling_status, Protocol, Scanner, 
          Task_Name, Task_Number, Task_Date, Task_Visit_Type) %>% 
   arrange(Initials, Overall_date) %>% 
-  filter(!is.na(Task_Name)) %>% 
+  filter(!is.na(Task_Name)) %>% filter(!is.na(Task_Date)) %>% 
   distinct(., .keep_all = TRUE) 
+
+# check <- eligibility_variables %>% filter(is.na(Clinical_Visit_Type)) %>% filter(Scheduling_status=='3')
+# check <- table(task_reshape_master$Task_Name, task_reshape_master$IRTA_tracker) %>% as.data.frame() %>% filter(Freq!='0')
 
 ######################################################################################
 #######Adding MRI QC information
@@ -494,6 +498,6 @@ rm(list=ls(pattern="_sets"))
 rm(list=ls(pattern="missing"))
 rm(list=ls(pattern="_reordered"))
 rm(list=ls(pattern="_template"))
-rm(IRTA_full, IRTA_init, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest, o)
+rm(IRTA_full, IRTA_init, j, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest, o)
 rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, MID_temp, meg_reshape_master, meg_reshape, MEG_tasks, meg_combined,  MEG_task_QC)
 rm(get_last_scan, get_last_visit, has_scan, is_last_v, print_dates, print_notes)

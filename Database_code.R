@@ -130,18 +130,23 @@
     select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
   manual_scared <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SCARED", skip=2) %>% 
     select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
-
+  manual_ksadsdx <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "KSADS Dx checklist", skip=2) %>% 
+    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+  
   manual_sets <- ls(pattern="manual_")
   manual_sets <- mget(manual_sets)
   manual_combined <- reduce(manual_sets, full_join) %>% select(-Entry_date)
+  fill_names <- manual_combined %>% select(-SDAN) %>% colnames()
   manual_combined <- manual_combined %>% 
     group_by(SDAN, Overall_date) %>% 
-    fill(., names(manual_combined), .direction = "down") %>%
-    fill(., names(manual_combined), .direction = "up") %>%
+    fill(., names(fill_names), .direction = "down") %>%
+    fill(., names(fill_names), .direction = "up") %>%
     ungroup() %>% 
     distinct(., .keep_all = TRUE)
+  
   manual_combined$Overall_date <- as.Date(manual_combined$Overall_date)
-
+  manual_combined$c_ksadsdx_date <- as.Date(manual_combined$c_ksadsdx_date, "%d-%m-%Y")
+  
   # Clean up -------------------------------------------
   
   # ****** SDQ+
@@ -697,6 +702,9 @@
                "c_ksadsdx_ongoing_other_comorbid_dx")
   
   diagnosis_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx')) 
+  
+  diagnosis_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx'))
+  diagnosis_subset_sdq <- merge.default(diagnosis_subset_sdq, diagnosis_manual, all=TRUE)
   diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], as.character)
   diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], na_if, '')
 
@@ -704,8 +712,10 @@
   diagnosis_subset_sdq$c_ksadsdx_date <- coalesce(diagnosis_subset_sdq$c_ksadsdx_date, diagnosis_subset_sdq$Overall_date) 
   diagnosis_subset_sdq <- diagnosis_subset_sdq %>% select(-Overall_date)
   
-  diagnosis_subset_sdq$no_columns <- diagnosis_subset_sdq %>% select(c_ksadsdx_eligibility:c_ksadsdx_dx_detailed) %>% ncol() %>% as.numeric()
-  diagnosis_subset_sdq$NA_count <- diagnosis_subset_sdq %>% select(c_ksadsdx_eligibility:c_ksadsdx_dx_detailed) %>% apply(., 1, count_na)
+  diagnosis_subset_sdq$no_columns <- diagnosis_subset_sdq %>% select(c_ksadsdx_eligibility, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, c_ksadsdx_comorbid_dx_old, c_ksadsdx_ongoing_other_comorbid_dx) %>% 
+    ncol() %>% as.numeric()
+  diagnosis_subset_sdq$NA_count <- diagnosis_subset_sdq %>% select(c_ksadsdx_eligibility, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, c_ksadsdx_comorbid_dx_old, c_ksadsdx_ongoing_other_comorbid_dx) %>% 
+    apply(., 1, count_na)
   diagnosis_subset_sdq$diff <- c(diagnosis_subset_sdq$no_columns - diagnosis_subset_sdq$NA_count)
   diagnosis_subset_sdq <- diagnosis_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
@@ -719,8 +729,9 @@
   diagnosis_subset_sdq[fix_var[14]] <- lapply(diagnosis_subset_sdq[fix_var[14]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
   diagnosis_subset_sdq[fix_var[15]] <- lapply(diagnosis_subset_sdq[fix_var[15]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
   
-  diagnosis_subset_sdq <- diagnosis_subset_sdq %>% group_by(Initials, c_ksadsdx_date) %>% fill(., names(diagnosis_subset_sdq), .direction = c("down")) %>%
-    fill(., names(diagnosis_subset_sdq), .direction = c("up")) %>% ungroup() %>% distinct(., .keep_all = TRUE)
+  fill_names <- diagnosis_subset_sdq %>% select(-Initials, -c_ksadsdx_date) %>% colnames()
+  diagnosis_subset_sdq <- diagnosis_subset_sdq %>% group_by(Initials, c_ksadsdx_date) %>% fill(., names(fill_names), .direction = c("down")) %>%
+    fill(., names(fill_names), .direction = c("up")) %>% ungroup() %>% distinct(., .keep_all = TRUE)
   
   # collapsing comorbid diagnoses into one variable 
   comorbid <- diagnosis_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, c_ksadsdx_date, matches("_ongoing_"), c_ksadsdx_comorbid_dx_old) %>% 
@@ -730,7 +741,7 @@
   comorbid$c_ksadsdx_comorbid_dx_old <- gsub("]", "", comorbid$c_ksadsdx_comorbid_dx_old, fixed=TRUE)
   comorbid$c_ksadsdx_comorbid_dx_old <- gsub("'", "", comorbid$c_ksadsdx_comorbid_dx_old, fixed=TRUE)
 
-  comorbid$c_ksadsdx_ongoing_mdd <- recode(comorbid$c_ksadsdx_ongoing_mdd, "1"="MDD", "0"=" ", .missing = NULL)
+  comorbid$c_ksadsdx_ongoing_mdd <- recode(comorbid$c_ksadsdx_ongoing_mdd, "1"="MDD", "0"="None", .missing = NULL)
   comorbid$c_ksadsdx_ongoing_submdd <- recode(comorbid$c_ksadsdx_ongoing_submdd, "1"="Sub-MDD", "0"=" ", .missing = NULL)
   comorbid$c_ksadsdx_ongoing_mania <- recode(comorbid$c_ksadsdx_ongoing_mania, "1"="Mania", "0"=" ", .missing = NULL)
   comorbid$c_ksadsdx_ongoing_hypomania <- recode(comorbid$c_ksadsdx_ongoing_hypomania, "1"="Hypomania", "0"=" ", .missing = NULL)
@@ -755,7 +766,7 @@
   comorbid$c_ksadsdx_ongoing_ocd <- recode(comorbid$c_ksadsdx_ongoing_ocd, "1"="OCD", "0"=" ", .missing = NULL)
   comorbid$c_ksadsdx_ongoing_eat <- recode(comorbid$c_ksadsdx_ongoing_eat, "1"="Eating", "0"=" ", .missing = NULL)
 
-  comorbid$c_ksadsdx_ongoing_comorbid_combined <- paste("aaa", comorbid$c_ksadsdx_ongoing_mdd, comorbid$c_ksadsdx_ongoing_submdd, comorbid$c_ksadsdx_ongoing_mania, comorbid$c_ksadsdx_ongoing_hypomania, 
+  comorbid$c_ksadsdx_ongoing_comorbid_combined <- paste(comorbid$c_ksadsdx_ongoing_mdd, comorbid$c_ksadsdx_ongoing_submdd, comorbid$c_ksadsdx_ongoing_mania, comorbid$c_ksadsdx_ongoing_hypomania, 
                          comorbid$c_ksadsdx_ongoing_psychosis, comorbid$c_ksadsdx_ongoing_panic, comorbid$c_ksadsdx_ongoing_sep_anx, comorbid$c_ksadsdx_ongoing_social, 
                          comorbid$c_ksadsdx_ongoing_specific, comorbid$c_ksadsdx_ongoing_gad, comorbid$c_ksadsdx_ongoing_enuresis, comorbid$c_ksadsdx_ongoing_encopresis, 
                          comorbid$c_ksadsdx_ongoing_anorexia, comorbid$c_ksadsdx_ongoing_adhd, comorbid$c_ksadsdx_ongoing_odd, comorbid$c_ksadsdx_ongoing_cd, 
@@ -763,26 +774,27 @@
                          comorbid$c_ksadsdx_ongoing_ptsd, comorbid$c_ksadsdx_ongoing_bdd, comorbid$c_ksadsdx_ongoing_ocd, comorbid$c_ksadsdx_ongoing_eat, sep=", ")
 
   for(i in seq_along(1:24)) {
-    comorbid$c_ksadsdx_ongoing_comorbid_combined <- gsub("aaa, ", "", comorbid$c_ksadsdx_ongoing_comorbid_combined, fixed=TRUE)
     comorbid$c_ksadsdx_ongoing_comorbid_combined <- gsub("NA, ", "", comorbid$c_ksadsdx_ongoing_comorbid_combined, fixed=TRUE)
     comorbid$c_ksadsdx_ongoing_comorbid_combined <- gsub(" , ", "", comorbid$c_ksadsdx_ongoing_comorbid_combined, fixed=TRUE)
   }
   
   comorbid$c_ksadsdx_ongoing_comorbid_combined <- na_if(comorbid$c_ksadsdx_ongoing_comorbid_combined, "NA")
-  comorbid$c_ksadsdx_ongoing_comorbid_combined <- na_if(comorbid$c_ksadsdx_ongoing_comorbid_combined, " ")
   comorbid$c_ksadsdx_ongoing_comorbid_combined <- gsub('.{3}$', '', comorbid$c_ksadsdx_ongoing_comorbid_combined)
-  
+  comorbid$c_ksadsdx_ongoing_comorbid_combined <- gsub('None, ', '', comorbid$c_ksadsdx_ongoing_comorbid_combined)
   comorbid$c_ksadsdx_comorbid_dx_combined <- paste("From KSADS DX checklist: 1) meeting full ongoing criteria: ", comorbid$c_ksadsdx_ongoing_comorbid_combined, "; 2) Other: ", comorbid$c_ksadsdx_ongoing_other_comorbid_dx, 
                           ". From old MDD form: ", comorbid$c_ksadsdx_comorbid_dx_old, sep="")
   
   comorbid$c_ksadsdx_comorbid_dx_combined <- gsub("From KSADS DX checklist: 1) meeting full ongoing criteria: NA; 2) Other: NA. From old MDD form: None", "None", comorbid$c_ksadsdx_comorbid_dx_combined, fixed=TRUE)
+  comorbid$c_ksadsdx_comorbid_dx_combined <- gsub("From KSADS DX checklist: 1) meeting full ongoing criteria: None; 2) Other: NA. From old MDD form: NA", "None", comorbid$c_ksadsdx_comorbid_dx_combined, fixed=TRUE)
   comorbid$c_ksadsdx_comorbid_dx_combined <- na_if(comorbid$c_ksadsdx_comorbid_dx_combined, "From KSADS DX checklist: 1) meeting full ongoing criteria: NA; 2) Other: NA. From old MDD form: NA")
+  
   comorbid$c_ksadsdx_comorbid_dx_combined <- gsub("From KSADS DX checklist: 1) meeting full ongoing criteria: NA; 2) Other: NA. ", "", comorbid$c_ksadsdx_comorbid_dx_combined, fixed=TRUE)
   comorbid$c_ksadsdx_comorbid_dx_combined <- gsub(": 1) meeting full ongoing criteria: NA; 2) Other:", " under 'other comorbid disorders':", comorbid$c_ksadsdx_comorbid_dx_combined, fixed=TRUE)
   comorbid$c_ksadsdx_comorbid_dx_combined <- gsub(" From old MDD form: NA", "", comorbid$c_ksadsdx_comorbid_dx_combined, fixed=TRUE)
   comorbid$c_ksadsdx_comorbid_dx_combined <- gsub("; 2) Other: NA.", "", comorbid$c_ksadsdx_comorbid_dx_combined, fixed=TRUE)
   
-  comorbid <- comorbid %>% select(PLUSID, Initials, c_ksadsdx_date, c_ksadsdx_comorbid_dx_combined, c_ksadsdx_ongoing_comorbid_combined) %>% group_by(Initials, c_ksadsdx_date) %>% slice(1) %>% ungroup()
+  comorbid <- comorbid %>% select(PLUSID, Initials, c_ksadsdx_date, c_ksadsdx_comorbid_dx_combined, c_ksadsdx_ongoing_comorbid_combined, c_ksadsdx_comorbid_dx_old) %>% 
+    group_by(Initials, c_ksadsdx_date) %>% slice(1) %>% ungroup()
   diagnosis_subset_sdq <- merge.default(diagnosis_subset_sdq, comorbid, all=TRUE) %>% group_by(PLUSID, c_ksadsdx_date) %>% slice(1) %>% ungroup()
 
   diagnosis_subset_task <- merge.default(task_DB_date, diagnosis_subset_sdq, all=TRUE) %>% 
@@ -2376,11 +2388,12 @@ clinic_sets <- mget(clinic_sets)
 # merge & tidy up
 
 Psychometrics_treatment <- reduce(clinic_sets, full_join)
+fill_names <- Psychometrics_treatment %>% select(-Initials, -Clinical_Visit_Date) %>% colnames()
 # str(Psychometrics_treatment, list.len=ncol(Psychometrics_treatment))
 Psychometrics_treatment <- Psychometrics_treatment %>%
   group_by(Initials, Clinical_Visit_Date) %>%
-  fill(., names(Psychometrics_treatment), .direction = "down") %>%
-  fill(., names(Psychometrics_treatment), .direction = "up") %>%
+  fill(., names(fill_names), .direction = "down") %>%
+  fill(., names(fill_names), .direction = "up") %>%
   ungroup() %>%
   group_by(Initials) %>%
   fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
@@ -2511,11 +2524,12 @@ task_sets <- mget(task_sets)
 # merge & tidy up
 
 Psychometrics_behav <- reduce(task_sets, full_join)
+fill_names <- Psychometrics_behav %>% select(-Initials, -Task_Name, -Task_Date, -Task_Number) %>% colnames()
 # str(Psychometrics_behav, list.len=ncol(Psychometrics_behav))
 Psychometrics_behav <- Psychometrics_behav %>%
   group_by(Initials, Task_Name, Task_Date, Task_Number) %>%
-  fill(., names(Psychometrics_behav), .direction = c("down")) %>%
-  fill(., names(Psychometrics_behav), .direction = c("up")) %>%
+  fill(., names(fill_names), .direction = c("down")) %>%
+  fill(., names(fill_names), .direction = c("up")) %>%
   ungroup() %>%
   group_by(Initials) %>%
   fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
