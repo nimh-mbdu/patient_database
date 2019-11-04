@@ -804,9 +804,9 @@
     ungroup() %>% 
     select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, c_ksadsdx_date, matches("c_ksadsdx_"))
   
-  diagnosis_subset_task$diagnosis_TDiff <- as.numeric(difftime(diagnosis_subset_task$Task_Date, diagnosis_subset_task$c_ksadsdx_date, tz="", units = "days"))
+  diagnosis_subset_task$c_ksadsdx_TDiff <- as.numeric(difftime(diagnosis_subset_task$Task_Date, diagnosis_subset_task$c_ksadsdx_date, tz="", units = "days"))
   diagnosis_subset_task <- diagnosis_subset_task %>% 
-    mutate(measurement_TDiff_abs=abs(diagnosis_TDiff)) %>% 
+    mutate(measurement_TDiff_abs=abs(c_ksadsdx_TDiff)) %>% 
     group_by(Initials, Task_Name, Task_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
@@ -820,9 +820,9 @@
     ungroup() %>% 
     select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_ksadsdx_date, matches('c_ksadsdx_'))
   
-  diagnosis_subset_clinical$diagnosis_TDiff <- as.numeric(difftime(diagnosis_subset_clinical$Clinical_Visit_Date, diagnosis_subset_clinical$c_ksadsdx_date, tz="", units = "days"))
+  diagnosis_subset_clinical$c_ksadsdx_TDiff <- as.numeric(difftime(diagnosis_subset_clinical$Clinical_Visit_Date, diagnosis_subset_clinical$c_ksadsdx_date, tz="", units = "days"))
   diagnosis_subset_clinical <- diagnosis_subset_clinical %>% 
-    mutate(measurement_TDiff_abs=abs(diagnosis_TDiff)) %>% 
+    mutate(measurement_TDiff_abs=abs(c_ksadsdx_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
@@ -1356,8 +1356,8 @@
     names(measure_temp_task)[names(measure_temp_task) == "date_temp"] <- (paste0(measure_name, "date"))
     names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0(measure_name, "source"))
     names(measure_temp_task)[names(measure_temp_task) == "temptotal"] <- (paste0(measure_name, "tot"))
-    names(measure_temp_task)[names(measure_temp_task) == "temp_pos_tot"] <- (paste0(measure_name, "_pos_tot"))
-    names(measure_temp_task)[names(measure_temp_task) == "temp_neg_tot"] <- (paste0(measure_name, "_neg_tot"))
+    names(measure_temp_task)[names(measure_temp_task) == "temp_pos_tot"] <- (paste0(measure_name, "pos_tot"))
+    names(measure_temp_task)[names(measure_temp_task) == "temp_neg_tot"] <- (paste0(measure_name, "neg_tot"))
     assign(paste0(measure_name, "subset_task"), measure_temp_task)
     
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_sdq, all=TRUE) %>% 
@@ -1685,10 +1685,11 @@
   c_snap_subset_sdq <- c_snap_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, c_snap_date, source, c_snap_clinician_name, c_snap_clinician_role,
                                                     c_snap_visit_type, c_snap_treatment_week, c_snap_1_fail_attention:c_snap_18_interrupts)
   
+  c_snap_subset_sdq[,7:ncol(c_snap_subset_sdq)]  <- lapply(c_snap_subset_sdq[,7:ncol(c_snap_subset_sdq)], na_if, "")
   c_snap_subset_sdq[,11:ncol(c_snap_subset_sdq)] <- sapply(c_snap_subset_sdq[,11:ncol(c_snap_subset_sdq)], as.numeric) 
   
-  c_snap_subset_sdq$no_columns <- c_snap_subset_sdq %>% select(matches('c_snap_')) %>% ncol() %>% as.numeric()
-  c_snap_subset_sdq$NA_count <- c_snap_subset_sdq %>% select(matches('c_snap_')) %>% apply(., 1, count_na)
+  c_snap_subset_sdq$no_columns <- c_snap_subset_sdq %>% select(matches('c_snap_')) %>% select(-c_snap_date) %>% ncol() %>% as.numeric()
+  c_snap_subset_sdq$NA_count <- c_snap_subset_sdq %>% select(matches('c_snap_')) %>% select(-c_snap_date) %>% apply(., 1, count_na)
   c_snap_subset_sdq$diff <- c(c_snap_subset_sdq$no_columns - c_snap_subset_sdq$NA_count)
   c_snap_subset_sdq <- c_snap_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
@@ -1897,7 +1898,8 @@
   s_bddybocs_list_subset_sdq <- s_bddybocs_list_subset_sdq %>% select(-Overall_date)
   
   s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], as.character)
-  s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `777`="Never", .missing = NULL))
+  s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `77 7`="Never", .missing = NULL))
+  s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], na_if, "")
   
   s_bddybocs_list_subset_sdq$no_columns <- s_bddybocs_list_subset_sdq %>% select(s_bddybocs_list_face:s_bddybocs_list_height) %>% ncol() %>% as.numeric()
   s_bddybocs_list_subset_sdq$NA_count <- s_bddybocs_list_subset_sdq %>% select(s_bddybocs_list_face:s_bddybocs_list_height) %>% apply(., 1, count_na)
@@ -2013,8 +2015,8 @@
   
   s_cpss_subset_sdq[,9:ncol(s_cpss_subset_sdq)] <- sapply(s_cpss_subset_sdq[,9:ncol(s_cpss_subset_sdq)], as.numeric) 
   
-  s_cpss_subset_sdq$no_columns <- s_cpss_subset_sdq %>% select(matches('s_cpss_')) %>% ncol() %>% as.numeric()
-  s_cpss_subset_sdq$NA_count <- s_cpss_subset_sdq %>% select(matches('s_cpss_')) %>% apply(., 1, count_na)
+  s_cpss_subset_sdq$no_columns <- s_cpss_subset_sdq %>% select(s_cpss_1_thoughts:s_cpss_24_happiness) %>% ncol() %>% as.numeric()
+  s_cpss_subset_sdq$NA_count <- s_cpss_subset_sdq %>% select(s_cpss_1_thoughts:s_cpss_24_happiness) %>% apply(., 1, count_na)
   s_cpss_subset_sdq$diff <- c(s_cpss_subset_sdq$no_columns - s_cpss_subset_sdq$NA_count)
   s_cpss_subset_sdq <- s_cpss_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
@@ -2111,7 +2113,8 @@
     iter <- as.numeric(i)
     # iter=22
     measure_name <- variables_no_scoring[iter]
-    
+    print(paste("************************LOOP = ", measure_name))
+
     if (measure_name=="s_medsctdb_") {
       measure_temp <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, s_medsctdb_list, s_medsctdb_changes, s_medsctdb_date) %>% 
         filter(!is.na(s_medsctdb_date))
@@ -2121,48 +2124,81 @@
         distinct(., .keep_all = TRUE)
     }
     
-    if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_blood_" |
-        measure_name=="s_menstruation_" | measure_name=="s_middebrief_" | measure_name=="s_mar_" |
+    if (measure_name=="p_demo_eval_" | measure_name=="s_menstruation_" | measure_name=="s_middebrief_" | measure_name=="s_mar_" |
         measure_name=="s_fua_" | measure_name=="p_fua_") {
       print("creating date variable for measure")
       measure_temp$date_temp <- measure_temp$Overall_date
-      measure_temp <- measure_temp %>% select(-Overall_date)
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+    } else if (measure_name=="p_demo_screen_") {
+      print("creating date variable for measure")
+      measure_temp$date_temp <- measure_temp$Overall_date
+      measure_temp$p_demo_screen_date_mri <- as.Date(measure_temp$p_demo_screen_date_mri)
+      measure_temp$p_demo_screen_date_ekg <- as.Date(measure_temp$p_demo_screen_date_ekg)
+      measure_temp$p_demo_screen_date_eeg <- as.Date(measure_temp$p_demo_screen_date_eeg)
+      measure_temp$p_demo_screen_date_ct <- as.Date(measure_temp$p_demo_screen_date_ct)
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      fix_na_cols <- measure_temp %>% select(matches(measure_name)) %>% 
+        select(-p_demo_screen_date_ekg, -p_demo_screen_date_eeg, -p_demo_screen_date_ct, -p_demo_screen_date_mri) %>% colnames()
+      measure_temp[fix_na_cols]  <- lapply(measure_temp[fix_na_cols], na_if, "")
     } else if (measure_name=="s_mmidebrief_" | measure_name=="c_inpatient_ratings_") {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = (paste0(measure_name, "1_date")))
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
-      measure_temp <- measure_temp %>% select(-Overall_date)
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
     } else if (measure_name=="ksads_") {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = c_ksads_date)
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
-      measure_temp <- measure_temp %>% select(-Overall_date)
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+    } else if (measure_name=="c_cgi_") {
+      print("date variable manually entered in SDQ+")
+      measure_temp <- measure_temp %>% rename(date_temp = (paste0(measure_name, "date")))
+      measure_temp$date_temp <- as.Date(measure_temp$date_temp)
+      measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
+      measure_temp$c_cgi_date_completed_by_clinician <- as.Date(measure_temp$c_cgi_date_completed_by_clinician)
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,8:ncol(measure_temp)]  <- lapply(measure_temp[,8:ncol(measure_temp)], na_if, "")
     } else if (measure_name=="s_medsctdb_") {
       print("date included in CTDB pull")
       measure_temp <- measure_temp %>% rename(date_temp = s_medsctdb_date)
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+    } else if (measure_name=="c_blood_") {
+      print("date variable manually entered in SDQ+")
+      measure_temp <- measure_temp %>% rename(date_temp = c_blood_draw_date)
+      measure_temp$date_temp <- as.Date(measure_temp$date_temp)
+      measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
     } else {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = (paste0(measure_name, "date")))
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
-      measure_temp <- measure_temp %>% select(-Overall_date)
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
     }  
-    
-    measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
-    
+  
     if (measure_name=="s_medsctdb_") {
       
       print("CTDB measure - no need to filter cases")
+      measure_temp$s_medsctdb_list <- na_if(measure_temp$s_medsctdb_list, "N/A")
+      measure_temp$s_medsctdb_list <- na_if(measure_temp$s_medsctdb_list, "n/a")
+      measure_temp$s_medsctdb_list <- gsub("none", "None", measure_temp$s_medsctdb_list)
+      measure_temp$s_medsctdb_list <- gsub("non", "None", measure_temp$s_medsctdb_list)
       
     } else {
       
       print("SDQ+ meausure - excluding incomplete cases")
   
-      measure_temp$no_columns <- measure_temp %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
-      measure_temp$NA_count <- measure_temp %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+      measure_temp$no_columns <- measure_temp %>% select(matches(measure_name)) %>% select(-matches("date")) %>% ncol() %>% as.numeric()
+      measure_temp$NA_count <- measure_temp %>% select(matches(measure_name)) %>% select(-matches("date")) %>% apply(., 1, count_na)
       measure_temp$diff <- c(measure_temp$no_columns - measure_temp$NA_count)
       measure_temp <- measure_temp %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
       
