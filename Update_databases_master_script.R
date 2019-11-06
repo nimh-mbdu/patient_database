@@ -167,8 +167,10 @@ if (modules2run==3 | modules2run==5) {
 if (modules2run==4 | modules2run==5) {
   
   suppressPackageStartupMessages(library(kableExtra))
-  render('W:/Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/attempt2/rough_work_10232019.Rmd', output_format = "word_document", 
-         output_file = paste0("Weekly_Numbers_", todays_date_formatted), output_dir = weekly_numbers_location)
+  render(paste0(string, 'Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/attempt2/rough_work_11062019.Rmd'), 
+         output_format = "html_document",
+         # output_format = "word_document", 
+         output_file = paste0("Weekly_Numbers_b_", todays_date_formatted), output_dir = weekly_numbers_location)
   detach(package:kableExtra)
   
 } else {
