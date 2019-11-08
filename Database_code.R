@@ -12,10 +12,19 @@
   #******Master task tracker
   
   if (exists("task_reshape_master_QC")==FALSE) {
-        task_reshape_master_QC <- read_excel(paste0(IRTA_tracker_location, "TASKS_DATABASE_QC.xlsx"))
+    
+        task_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^TASKS_DATABASE_QC", all.files = FALSE,
+                                       full.names = FALSE, recursive = FALSE,
+                                       ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        task_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", task_master_file)) %>% as.Date()
+        task_master_combined <- tibble(File=c(task_master_file), Date=c(task_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+        task_reshape_master_QC <- read_excel(paste0(IRTA_tracker_location, task_master_combined[1]))
         date_variabes <- c("DOB", "Overall_date", "Task_Date")
+        numeric_variables <- c("Task_Number")
         task_reshape_master_QC[date_variabes] <- lapply(task_reshape_master_QC[date_variabes], as.Date) 
-        rm(date_variabes)
+        task_reshape_master_QC[numeric_variables] <- lapply(task_reshape_master_QC[numeric_variables], as.numeric) 
+        rm(date_variabes, task_master_file, task_master_file_time, task_master_combined)
+  
   } else {
     print("master IRTA tracker + QC info already imported")
   }
@@ -23,11 +32,18 @@
 #******Master IRTA tracker
   
   if (exists("master_IRTA_latest")==FALSE) {
-        master_IRTA_latest <- read_excel(paste0(IRTA_tracker_location, "MASTER_IRTA_DATABASE.xlsx"))
+    
+        irta_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^MASTER_IRTA_DATABASE", all.files = FALSE,
+                                       full.names = FALSE, recursive = FALSE,
+                                       ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        irta_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_master_file)) %>% as.Date()
+        irta_master_combined <- tibble(File=c(irta_master_file), Date=c(irta_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+        master_IRTA_latest <- read_excel(paste0(IRTA_tracker_location, irta_master_combined[1]))
         date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
         for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
         master_IRTA_latest[date_variabes] <- lapply(master_IRTA_latest[date_variabes], as.Date)
-        rm(i, date_variabes)
+        rm(i, date_variabes, irta_master_file, irta_master_file_time, irta_master_combined)
+    
   } else {
     print("master task tracker already imported")
   }
