@@ -383,6 +383,8 @@ MID_missing %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MID_check.xlsx"))
 ######################################################################################
 #######Adding MEG QC information
 
+##### list of MEG from QC tracker 
+
 MEG_tasks <- c("MEG_MMI", "Booster", "RL_GNG")
 
 for(i in seq_along(MEG_tasks)) {
@@ -412,7 +414,7 @@ colnames(meg_reshape_master) <- x
 
 for(j in seq_len(max_MEG)) {
   iter <- as.numeric(j)
-  # iter=1
+  # iter=3
 
   meg_reshape <- meg_combined %>%
       select(Initials, SDAN, MEG_tab, Task_Date, Days_since_scan, paste0("Task", iter, "_Name"), paste0("Task", iter, "_Number"), paste0("Task", iter, "_Include"),
@@ -425,33 +427,56 @@ for(j in seq_len(max_MEG)) {
     meg_reshape_master <- merge.default(meg_reshape_master, meg_reshape, all=TRUE) %>% filter(!is.na(Task_Name))
 }
 
-MEG_task_QC <- meg_reshape_master %>% select(Initials, SDAN, Task_Name, Task_Date, Task_Number, Include, Days_since_scan)
+##### list of MEG from IRTA trackers 
+
+meg_list <- task_reshape_master %>% filter(str_detect(Task_Name, "MEG")) %>% 
+  select(Initials, SDAN, IRTA_tracker, Participant_Type2, Task_Name, Task_Number, Task_Date)
+
+##### list of MPRAGE from IRTA trackers 
+
+mprage_list <- task_reshape_master %>% filter(str_detect(Task_Name, "_scan") | Task_Name=="MPRAGE") %>% 
+  filter(Task_Number!="777" & Task_Number!="999") %>% 
+  group_by(Initials) %>% arrange(Task_Date) %>% slice(n()) %>% ungroup() %>% 
+  select(Initials, SDAN, IRTA_tracker, Participant_Type2, Task_Name, Task_Date) %>% 
+  rename(MPRAGE="Task_Name") %>% rename(MPRAGE_Date="Task_Date")
+mprage_list$MPRAGE <- gsub("MID_scan", "Other_MRI_scan", mprage_list$MPRAGE)
+mprage_list$MPRAGE <- gsub("Resting_state_scan", "Other_MRI_scan", mprage_list$MPRAGE)
+mprage_list$MPRAGE <- gsub("DTI_scan", "Other_MRI_scan", mprage_list$MPRAGE)
+mprage_list$MPRAGE <- gsub("MMI_3blocks_scan", "Other_MRI_scan", mprage_list$MPRAGE)
+
+##### checking MPRAGE listed
+
+MEG_mprage <- meg_list %>% filter(Task_Name=="MEG_MMI") %>% merge.default(., mprage_list, all=TRUE) %>% 
+  filter(Task_Number!="777" & Task_Number!="999")
+MEG_mprage$Days_between_scans <- as.numeric(difftime(MEG_mprage$Task_Date, MEG_mprage$MPRAGE_Date, tz="", units = "days")) %>% round(., digits=0)
+MEG_mprage <- MEG_mprage %>% filter(is.na(Days_between_scans) | Days_between_scans>365) %>% select(-Task_Name, -Task_Number, -MPRAGE)
+
+MEG_mprage %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MEG_need_mprage.xlsx"))
 
 ##### checking for merge conflicts/missing MMIs: 
-MEG_task_QC <- merge.default(task_reshape_master, MEG_task_QC, all=TRUE) %>%
-  filter(str_detect(Task_Name, "MEG")) %>%
-  select(Initials, SDAN, IRTA_tracker, SEX, DOB, Handedness, Participant_Type2, Protocol,
-         Eligible, Scheduling_status, Clinical_Visit_Type, Task_Name, Task_Number, Task_Date, Include, Days_since_scan) %>% 
-  arrange(Initials, Task_Date) 
-# %>% group_by(Initials) %>% fill(SDAN:Protocol, .direction = "down") %>% fill(SDAN:Protocol, .direction = "up") %>% 
-  # group_by(Initials, Task_Date) %>% fill(Eligible:Clinical_Visit_Type, .direction = "down") %>% ungroup() 
+MEG_task_QC <- meg_reshape_master %>% filter(str_detect(Task_Name, "MEG")) %>% merge.default(meg_list, ., all=TRUE) %>% 
+  select(-Photo_PII_Removal, -Experimenter1, -Experimenter2, )
 
-of_interest <- c('Task_Number', 'Include', 'Days_since_scan')
+of_interest <- c('IRTA_tracker', 'Task_Number', 'Include', 'Days_since_scan', 'MEG_tab')
 MEG_task_QC[of_interest] <- lapply(MEG_task_QC[of_interest], replace_na, '666')
-numeric <- c('Eligible', 'Scheduling_status', 'Task_Number', 'Include', 'Days_since_scan')
+numeric <- c('Task_Number', 'Include', 'Days_since_scan')
 MEG_task_QC[numeric] <- lapply(MEG_task_QC[numeric], as.numeric)
 
-meg_missing_number <- MEG_task_QC %>% filter(Days_since_scan<0 | Days_since_scan=='666') %>% filter(Task_Number=='666')
-meg_missing_qc <- MEG_task_QC %>% filter(Task_Number != '777' & Task_Number != '999') %>% filter(Include=='666')
-meg_missing_date <- MEG_task_QC %>% filter(Task_Number != '777' & Task_Number != '999') %>% filter(is.na(Task_Date)) 
-meg_missing_irta_tracker <- MEG_task_QC %>% filter(is.na(IRTA_tracker))
+meg_missing_date <- MEG_task_QC %>% filter(Task_Number != '777' & Task_Number != '999') %>% filter(is.na(Task_Date)) %>% mutate(reason1="Missing task date")
+meg_missing_number <- MEG_task_QC %>% filter(Days_since_scan<0 | Days_since_scan=='666') %>% filter(Task_Number=='666') %>% mutate(reason2="Missing task number")
+meg_missing_qc <- MEG_task_QC %>% filter(MEG_tab=="666") %>% mutate(reason3="Missing from MEG tracker")
+meg_missing_irta_tracker <- MEG_task_QC %>% filter(IRTA_tracker=="666") %>% mutate(reason4="Missing from IRTA tracker")
 
 MEG_missing <- merge.default(meg_missing_date, meg_missing_number, all=TRUE) %>%
   merge.default(., meg_missing_qc, all=TRUE) %>% merge.default(., meg_missing_irta_tracker, all=TRUE) 
-MEG_missing[of_interest] <- lapply(MEG_missing[of_interest], na_if, '666')
-MEG_missing <- MEG_missing %>% arrange(Task_Date) %>% arrange(Initials, Task_Name)
+MEG_missing$QC_missing <- paste(MEG_missing$reason1, MEG_missing$reason2, MEG_missing$reason3, MEG_missing$reason4, sep = "; ")
+MEG_missing$QC_missing <- gsub("NA; ", "", MEG_missing$QC_missing, fixed=TRUE)
+MEG_missing$QC_missing <- gsub("; NA", "", MEG_missing$QC_missing, fixed=TRUE)
+MEG_missing <- MEG_missing %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
 
-MEG_task_QC <- meg_reshape_master %>% select(SDAN, Task_Name, Task_Date, Task_Number, Include)
+MEG_missing[of_interest] <- lapply(MEG_missing[of_interest], na_if, '666')
+MEG_task_QC[of_interest] <- lapply(MEG_task_QC[of_interest], na_if, '666')
+MEG_task_QC <- MEG_task_QC %>% select(SDAN, Task_Name, Task_Date, Include)
 
 MEG_missing %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MEG_check.xlsx"))
 
@@ -499,5 +524,5 @@ rm(list=ls(pattern="missing"))
 rm(list=ls(pattern="_reordered"))
 rm(list=ls(pattern="_template"))
 rm(IRTA_full, IRTA_init, j, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest, o)
-rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, MID_temp, meg_reshape_master, meg_reshape, MEG_tasks, meg_combined,  MEG_task_QC)
+rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, MID_temp, meg_reshape_master, meg_reshape, MEG_tasks, meg_combined,  MEG_task_QC, meg_list)
 rm(get_last_scan, get_last_visit, has_scan, is_last_v, print_dates, print_notes)
