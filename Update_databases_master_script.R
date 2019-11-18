@@ -82,6 +82,7 @@ to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.
 # date
 todays_date_formatted <- c(to_change$todays_date_formatted)
 todays_date_formatted <- as.Date(todays_date_formatted)
+# todays_date_formatted <- as.Date("2019-11-15") # if you want to manually set the date (outside of the excel sheet)
 
 # task related 
 max_tasks <- c(to_change$max_tasks)
@@ -107,17 +108,18 @@ modules2run <- c(to_change$modules2run)
 # description of modules: 
 # 0 = none
 # 1 = "update master IRTA tracker and tasks database" = string-mbd/Database/Database_Scripts_Github/IRTA_Merge_Code.R
-# 2 = "update master database" = string-mbd/Database/Database_Scripts_Github/Database code.R
-# 3 = "update DAWBA database & deletion list" = W:/Georgia/Analysis_Georgia/Database/DAWBA_database_and_deletions_06192019.R     ***UPDATE!!!
-# 4 = "produce weekly numbers" 
+# 2 = "update master database" = string-mbd/Database/Database_Scripts_Github/Database_code.R
+# 3 = "update DAWBA database & deletion list" = string-mbd/Database/Database_Scripts_Github/DAWBA_database_and_deletions.R
+# 4 = "produce weekly numbers" = string-mbd/Database/Database_Scripts_Github/Research_meeting_numbers.R
 # 5 = all of the above
 # 6 = modules 1 & 2
 # 7 = update master database & create CBT progress report - remember to change input the initials of the participant above & specify whether you want a progress or final report 
 # 8 = create CBT report only (master database already updated)
+# 9 = modules 1 & 4
 
 # update master IRTA tracker and tasks database ---------------------------
 
-if (modules2run==1 | modules2run==5 | modules2run==6) {
+if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9) {
   
   suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
   
@@ -139,10 +141,12 @@ if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
   
   # Note - check that the file has saved with a new date - this won't happen if someone else has the file open.
   # Similar to the above, if any of the database files have not exported properly, uncomment out and run the relevant line below, which will save it under a new name: 
+  
   # Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL_updated.xlsx"))
+  # Psychometrics_behav %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL_updated.xlsx"))
+  
   # CBT_report %>% write_xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT_updated.xlsx"))
   # MATCH_tracker %>% write_xlsx(paste0(database_location, "Inpatient/MASTER_DATABASE_Inpatient_updated.xlsx"))
-  # Psychometrics_behav %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL_updated.xlsx"))
 
 } else {
 
@@ -164,13 +168,13 @@ if (modules2run==3 | modules2run==5) {
 
 # produce weekly numbers --------------------------------------------------
 
-if (modules2run==4 | modules2run==5) {
+if (modules2run==4 | modules2run==5 | modules2run==9) {
   
   suppressPackageStartupMessages(library(kableExtra))
-  render(paste0(string, 'Georgia/Analysis_Georgia/Database/IRTA tracker merge/creating weekly meeting sheet/attempt2/rough_work_11062019.Rmd'), 
+  render(paste0(scripts, 'Research_meeting_numbers.Rmd'), 
          output_format = "html_document",
          # output_format = "word_document", 
-         output_file = paste0("Weekly_Numbers_b_", todays_date_formatted), output_dir = weekly_numbers_location)
+         output_file = paste0("Weekly_Numbers_", todays_date_formatted), output_dir = weekly_numbers_location)
   detach(package:kableExtra)
   
 } else {

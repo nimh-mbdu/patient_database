@@ -1,0 +1,853 @@
+---
+title: "Weekly Numbers"
+output:
+  html_document:
+    df_print: paged
+  word_document:
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 8
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# !diagnostics off
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+# directories -------------------------------------------------------------
+
+# computer = 'pc' # set this to either 'mac' or 'pc' (Georgia = W:/ as I have string mounted differently)
+# 
+# if (computer=="pc") {
+#   string = 'W:/'
+#   sdan1 = 'Y:/'
+# } else if (computer=="mac") {
+#   string = '/Volumes/string-mbd/'
+#   sdan1 = '/Volumes/sdan1/'
+# }
+# 
+# database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here
+# IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
+# weekly_numbers_location = paste0(string, "Minutes and conversation archives/Weekly Meeting Sheet/")
+# CBT_location = paste0(string, "Database/Master Psychometric Database/CBT/")
+# scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful directory while scripts are still under development
+# 
+# # packages ----------------------------------------------------------------
+# 
+# suppressPackageStartupMessages(library(readxl))
+# suppressPackageStartupMessages(library(writexl))
+# suppressPackageStartupMessages(library(tidyr))
+# suppressPackageStartupMessages(library(dplyr))
+# suppressPackageStartupMessages(library(rmarkdown))
+# suppressPackageStartupMessages(library(eeptools))
+# suppressPackageStartupMessages(library(summarytools))
+# suppressPackageStartupMessages(library(openxlsx))
+# suppressPackageStartupMessages(library(data.table))
+# suppressPackageStartupMessages(library(reshape2))
+# suppressPackageStartupMessages(library(stringr))
+# suppressPackageStartupMessages(library(lubridate))
+# suppressPackageStartupMessages(library(ggplot2))
+# suppressPackageStartupMessages(library(rlang))
+# suppressPackageStartupMessages(library(purrr))
+# suppressPackageStartupMessages(library(tidyverse))
+# suppressPackageStartupMessages(library(shiny))
+# suppressPackageStartupMessages(library(knitr))
+# suppressPackageStartupMessages(library(kableExtra))
+# 
+# # other to load if running script here ------------------------------------
+# 
+# to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.xlsx"))
+# max_tasks <- c(to_change$max_tasks)
+# todays_date_formatted <- c(to_change$todays_date_formatted)
+# # todays_date_formatted <- as.Date(todays_date_formatted)
+# todays_date_formatted <- as.Date("2019-11-18")
+
+# Loading data ------------------------------------------------------------
+
+todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
+last_week_date_formatted <- todays_date_formatted - as.difftime(7, unit="days")
+last_week_date <- last_week_date_formatted %>% format(., "%B %d %Y")
+two_weeks_date_formatted <- todays_date_formatted - as.difftime(14, unit="days")
+
+if (exists("task_reshape_master_QC")==FALSE) {
+        task_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^TASKS_DATABASE_QC", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        task_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", task_master_file)) %>% as.Date()
+        task_master_combined <- tibble(File=c(task_master_file), Date=c(task_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+        task_reshape_master_QC <- read_excel(paste0(IRTA_tracker_location, task_master_combined[1]))
+        date_variabes <- c("DOB", "Overall_date", "Task_Date")
+        numeric_variables <- c("Task_Number")
+        task_reshape_master_QC[date_variabes] <- lapply(task_reshape_master_QC[date_variabes], as.Date) 
+        task_reshape_master_QC[numeric_variables] <- lapply(task_reshape_master_QC[numeric_variables], as.numeric) 
+        rm(date_variabes, task_master_file, task_master_file_time, task_master_combined)
+} else {
+        print("master IRTA tracker + QC info already imported")
+        numeric_variables <- c("Task_Number")
+        task_reshape_master_QC[numeric_variables] <- lapply(task_reshape_master_QC[numeric_variables], as.numeric) 
+}
+
+if (exists("master_IRTA_latest")==FALSE) {
+        irta_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^MASTER_IRTA_DATABASE", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        irta_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_master_file)) %>% as.Date()
+        irta_master_combined <- tibble(File=c(irta_master_file), Date=c(irta_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+        master_IRTA_latest <- read_excel(paste0(IRTA_tracker_location, irta_master_combined[1]))
+        date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
+        for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
+        master_IRTA_latest[date_variabes] <- lapply(master_IRTA_latest[date_variabes], as.Date)
+        rm(i, date_variabes, irta_master_file, irta_master_file_time, irta_master_combined)
+} else {
+    print("master task tracker already imported")
+}
+
+if (exists("master_IRTA_oldest_screens_latest")==FALSE) {
+        irta_old_screens_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^OLD_REFERRALS_DATABASE", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        irta_old_screens_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_old_screens_file)) %>% as.Date()
+        irta_old_screens_combined <- tibble(File=c(irta_old_screens_file), Date=c(irta_old_screens_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+        master_IRTA_oldest_screens_latest <- read_excel(paste0(IRTA_tracker_location, irta_old_screens_combined[1]))
+        date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
+        master_IRTA_oldest_screens_latest[date_variabes] <- lapply(master_IRTA_oldest_screens_latest[date_variabes], as.Date) 
+        rm(date_variabes, irta_old_screens_file, irta_old_screens_file_time, irta_old_screens_combined)
+} else {
+    print("master IRTA tracker + QC info already imported")
+}
+
+if (exists("master_IRTA_screens_latest")==FALSE) {
+        irta_ongoing_screens_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^REFERRAL_AND_SCREENING_DATABASE", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        irta_ongoing_screens_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_ongoing_screens_file)) %>% as.Date()
+        irta_ongoing_screens_combined <- tibble(File=c(irta_ongoing_screens_file), Date=c(irta_ongoing_screens_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        master_IRTA_screens_latest <- read_excel(paste0(IRTA_tracker_location, irta_ongoing_screens_combined[1]))
+        date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
+        master_IRTA_screens_latest[date_variabes] <- lapply(master_IRTA_screens_latest[date_variabes], as.Date) 
+        rm(date_variabes, irta_ongoing_screens_file, irta_ongoing_screens_file_time, irta_ongoing_screens_combined)
+} else {
+    print("master IRTA tracker + QC info already imported")
+}
+
+if (exists("Psychometrics_treatment")==FALSE) {
+       master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+       master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
+       master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
+        family_hist <- Psychometrics_treatment %>% 
+          select(Initials, Participant_Type2, Clinical_Visit_Date, Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
+          filter(!is.na(c_family_interview_interviewer))
+        rm(Psychometrics_treatment, master_database_file, master_database_file_time, master_database_combined)
+} else {
+        print("clinical database info already imported")
+        family_hist <- Psychometrics_treatment %>% 
+          select(Initials, Clinical_Visit_Date, Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
+          filter(!is.na(c_family_interview_interviewer))
+}
+
+if (exists("MEG_mprage")==FALSE) {
+        MEG_mprage <- read_excel(paste0(IRTA_tracker_location,"QCing/MEG_need_mprage.xlsx"))
+} else {
+        print("MEG MPRAGE missing info already imported")
+}
+
+```
+
+![](`r paste0(CBT_location, "images/NIH_logo.png")`)
+
+***
+
+#### WEDNESDAY RESEARCH MEETING: NUMBERS
+
+***
+
+##### DATE: `r todays_date`
+
+***
+
+#### Outline:
+
+1. Recruitment summary
+    + Referrals
+    + Screening status update  
+    + Scheduling 
+    + 18-M-0037 enrollment 
+2. Task numbers
+    + MID
+    + MEG
+    + Bloods 
+3. Treatment
+    + BA enrollment
+    + MATCH CBT 
+
+***
+
+#### 1. Recruitment summary
+
+***
+
+##### Referrals:
+
+Referrals since last week, `r last_week_date`
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+######## Dummy table
+num_referrals1 <- tibble(Participant_Type2= c(NA), Referral_Date= c(NA), Screening_initial_contact_successful= c(0, 1, NA), TDiff=0)
+referrals_table1 <- ctable(num_referrals1$Participant_Type2, num_referrals1$Screening_initial_contact_successful, 
+                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.num_referrals1.Participant_Type2") %>% 
+  rename(Screening_Successful = "cross_table.num_referrals1.Screening_initial_contact_successful") %>% select(-proportions.Total)
+referrals_table1 <- na_if(referrals_table1, "<NA>")
+referrals_table1a <- reshape(referrals_table1, idvar = "Participant_Type2", timevar = "Screening_Successful", direction = "wide") %>% mutate(temp=1)
+
+######## Real table
+referrals_last_week <- master_IRTA_screens_latest %>% select(Participant_Type2, Referral_Date, Screening_initial_contact_successful)
+referrals_last_week$TDiff <- as.numeric(difftime(referrals_last_week$Referral_Date, last_week_date_formatted, tz="", units = "days"))
+num_referrals2 <- referrals_last_week %>% filter(TDiff >=0)
+referrals_table2 <- ctable(num_referrals2$Participant_Type2, num_referrals2$Screening_initial_contact_successful, 
+                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>%
+  as.data.frame()  %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.num_referrals2.Participant_Type2") %>%
+  rename(Screening_Successful = "cross_table.num_referrals2.Screening_initial_contact_successful") %>% select(-proportions.Total)
+referrals_table2 <- na_if(referrals_table2, "<NA>")
+referrals_table2a <- reshape(referrals_table2, idvar = "Participant_Type2", timevar = "Screening_Successful", direction = "wide") %>% mutate(temp=2)
+
+######## Combined table
+referrals_table3 <- merge.default(referrals_table1a, referrals_table2a, all=TRUE) %>% filter(temp==2) %>% select(-temp) 
+# %>% filter(!is.na(Participant_Type2))
+referrals_table3a <- referrals_table3 %>% 
+  mutate(Unsuccessful_Percent = (proportions.0.0 * 100)) %>% mutate(Unsuccessful_Percent = round(Unsuccessful_Percent, 2)) %>%
+  mutate(Successful_Percent = (proportions.1.1 * 100)) %>% mutate(Successful_Percent = round(Successful_Percent, 2)) %>%
+  mutate(NA_Percent = (`proportions..NA..NA` * 100)) %>% mutate(NA_Percent = round(NA_Percent, 2)) %>%
+  select(Participant_Type2, Freq.1, Successful_Percent, Freq.0, Unsuccessful_Percent, Freq.NA, NA_Percent, Freq.Total) %>% 
+  arrange(desc(Participant_Type2))
+referrals_table3a[,2:5] <- sapply(referrals_table3a[,2:5], replace_na, '0')
+
+rm(num_referrals1, referrals_table1, referrals_table1a, referrals_last_week, num_referrals2, referrals_table2, referrals_table2a, referrals_table3)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+    
+referrals_table3a %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%", "Contact Unsuccessful", "%", "Not recorded", "%", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### Screening:
+
+Overview: all participants still in active screening
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+screens <- master_IRTA_screens_latest %>% filter(!is.na(Screening_Start_Date))
+
+screens_table1 <- ctable(screens$Participant_Type2, screens$Screening_initial_contact_successful, 
+                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
+  rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.screens.Participant_Type2") %>% 
+  rename(Screening_Successful = "cross_table.screens.Screening_initial_contact_successful") %>% select(-proportions.Total)
+screens_table1 <- na_if(screens_table1, "<NA>")
+
+screens_table2 <- reshape(screens_table1, idvar = "Participant_Type2", timevar = "Screening_Successful", direction = "wide") %>% 
+  mutate(Unsuccessful_Percent = (proportions.0.0 * 100)) %>% mutate(Unsuccessful_Percent = round(Unsuccessful_Percent, 2)) %>%
+  mutate(Successful_Percent = (proportions.1.1 * 100)) %>% mutate(Successful_Percent = round(Successful_Percent, 2)) %>% 
+  mutate(NA_Percent = (proportions..NA..NA * 100)) %>% mutate(NA_Percent = round(NA_Percent, 2)) %>%
+  select(Participant_Type2, Freq.1, Successful_Percent, Freq.0, Unsuccessful_Percent, Freq.NA, NA_Percent, Freq.Total)
+
+rm(screens_table1)
+
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+screens_table2 %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%", "Contact Unsuccessful", "%", 
+                                          "Contact not recorded", "%", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Status Of those currently screening: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+screens_current <- screens %>% filter(Screening_initial_contact_successful==1)
+
+screens_current_table1 <- table(screens_current$Participant_Type2, screens_current$Child_e_assented) %>% as.data.frame() %>% 
+  rename(Child_e_assented = "Var2", Child_e_assent_freq = "Freq", Participant_Type2 = "Var1") %>%
+  reshape(., idvar = "Participant_Type2", timevar = "Child_e_assented", direction = "wide") 
+screens_current_table2 <- table(screens_current$Participant_Type2, screens_current$Parent_e_consented) %>% as.data.frame() %>% 
+  rename(Parent_e_consented = "Var2", Parent_e_consented_freq = "Freq", Participant_Type2 = "Var1") %>%
+  reshape(., idvar = "Participant_Type2", timevar = "Parent_e_consented", direction = "wide") 
+screens_current_table3 <- table(screens_current$Participant_Type2, screens_current$Child_DAWBA_completed) %>% as.data.frame() %>% 
+  rename(Child_DAWBA_completed = "Var2", Child_DAWBA_completed_freq = "Freq", Participant_Type2 = "Var1") %>%
+  reshape(., idvar = "Participant_Type2", timevar = "Child_DAWBA_completed", direction = "wide") 
+screens_current_table4 <- table(screens_current$Participant_Type2, screens_current$Parent_DAWBA_completed) %>% as.data.frame() %>% 
+  rename(Parent_DAWBA_completed = "Var2", Parent_DAWBA_completed_freq = "Freq", Participant_Type2 = "Var1") %>%
+  reshape(., idvar = "Participant_Type2", timevar = "Parent_DAWBA_completed", direction = "wide") 
+
+screens_current_table <- merge.default(screens_current_table2, screens_current_table1, all=TRUE) %>% 
+  merge.default(., screens_current_table4, all=TRUE) %>% merge.default(., screens_current_table3, all=TRUE) %>% 
+  reshape(., varying = c("Parent_e_consented_freq.0", "Parent_e_consented_freq.1", "Child_e_assent_freq.0", "Child_e_assent_freq.1",
+                         "Parent_DAWBA_completed_freq.0", "Parent_DAWBA_completed_freq.1", "Child_DAWBA_completed_freq.0",
+                         "Child_DAWBA_completed_freq.1"), direction = "long", idvar = "Participant_Type2", new.row.names=c(1:6))
+
+rm(screens, screens_current, screens_current_table1, screens_current_table2, screens_current_table3, screens_current_table4)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+screens_current_table %>% arrange(Participant_Type2) %>% filter(time==1 & Participant_Type2 != "UNSURE") %>% select(-time) %>% 
+  kable(., col.names = c("Diagnosis", "Parent e-consented", "Child e-assented", "Parent DAWBA complete", 
+                         "Child DAWBA complete")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### Ready to review at clinical meeting (i.e. both parent and child have completed the DAWBA): 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+ready_2_review <- master_IRTA_screens_latest %>% 
+  mutate(DAWBA_ready = (as.numeric(Parent_DAWBA_completed) + as.numeric(Child_DAWBA_completed))) %>% 
+  filter(DAWBA_ready==2) %>% 
+  select(Initials, Participant_Type2, DAWBA_ID)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+ready_2_review %>% kable(., col.names = c("Initials", "Participant Type", "DAWBA ID")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### New evaluation visits: 
+
+Scheduling:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+scheduling <- master_IRTA_latest %>% filter(IRTA_tracker!="REMOVED") %>% 
+  select(Initials, SDAN, IRTA_tracker, Participant_Type2, Eligible, Clinical_Visit_Type, Clinical_Visit_Date, Scheduling_status, 
+         Protocol) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% filter(is.na(Clinical_Visit_Date)) %>%
+  mutate(Eligible = as.numeric(Eligible)) %>% filter(Eligible<4 | is.na(Eligible))
+
+scheduling_table <- ctable(scheduling$Participant_Type2, scheduling$Eligible, 
+                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
+  rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.scheduling.Participant_Type2") %>% 
+  rename(Eligible = "cross_table.scheduling.Eligible") %>% select(Participant_Type2, Eligible, Freq)
+scheduling_table <- na_if(scheduling_table, "<NA>")
+
+scheduling_table2 <- reshape(scheduling_table, idvar = "Eligible", timevar = "Participant_Type2", direction = "wide") %>% 
+  mutate(HV_Percent = ((Freq.HV/Freq.Total) * 100)) %>% mutate(HV_Percent = round(HV_Percent, 2)) %>% 
+  mutate(MDD_Percent = ((Freq.MDD/Freq.Total) * 100)) %>% mutate(MDD_Percent = round(MDD_Percent, 2)) %>% 
+  mutate(NA_Percent = ((Freq.NA/Freq.Total) * 100)) %>% mutate(NA_Percent = round(NA_Percent, 2)) %>% 
+  select(Eligible, Freq.MDD, MDD_Percent, Freq.HV, HV_Percent, Freq.NA, NA_Percent, Freq.Total)
+
+scheduling_table2$Eligible <- recode(scheduling_table2$Eligible, "0"="Include: fully eligible", "1"="Include: can’t scan (braces, etc.)", 
+  "2"="On hold: contact again after specified amount of time", "3"="On hold: low priority", .missing = NULL)
+
+rm(scheduling, scheduling_table)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+scheduling_table2 %>% kable(., col.names = c("Status", "MDD", "%", "HV", "%", "Unknown", "%", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Scheduled: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+scheduled <- master_IRTA_latest %>% filter(IRTA_tracker!="REMOVED") %>% 
+  select(Initials, SDAN, IRTA_tracker, Participant_Type2, Eligible, Clinical_Visit_Type, Clinical_Visit_Date, Scheduling_status, 
+         Protocol) %>% group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% slice(1) %>% ungroup() %>% 
+  filter(Clinical_Visit_Date>todays_date_formatted)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+scheduled %>% arrange(Clinical_Visit_Date) %>% select(Initials, Participant_Type2, Clinical_Visit_Date) %>% 
+  kable(., col.names = c("Initials", "Diagnosis", "Visit Date")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### Enrolled in 0037:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+protocol_0037 <- master_IRTA_latest %>% filter(str_detect(Protocol, "0037")) %>% group_by(Initials) %>% 
+  slice(1) %>% ungroup() %>% select(Initials, IRTA_tracker, Participant_Type2, Eligible, Eligibility_notes, Clinical_Visit_Type,
+                                    Clinical_Visit_Date, Consent_Date, Protocol) %>% 
+  filter(Participant_Type2=="MDD" | Participant_Type2=="HV")
+
+protocol_0037$Protocol_Type[str_detect(protocol_0037$Protocol, 'SCREENING')] <- 'Screening'
+protocol_0037$Protocol_Type[str_detect(protocol_0037$Protocol, 'Screening')] <- 'Screening'
+protocol_0037$Protocol_Type[is.na(protocol_0037$Protocol_Type)] <- 'Characterization'
+
+protocol_table <- ctable(protocol_0037$Participant_Type2, protocol_0037$Protocol_Type, 
+                  useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.protocol_0037.Participant_Type2") %>% 
+  rename(Protocol = "cross_table.protocol_0037.Protocol_Type") %>% 
+  select(-proportions.Total)
+
+protocol_table2 <- reshape(protocol_table, idvar = "Participant_Type2", timevar = "Protocol", direction = "wide") %>% 
+  mutate(Characterization_Percent = (proportions.Characterization.Characterization * 100)) %>% 
+  mutate(Characterization_Percent = round(Characterization_Percent, 2)) %>%
+  mutate(Screening_Percent = (proportions.Screening.Screening * 100)) %>% 
+  mutate(Screening_Percent = round(Screening_Percent, 2)) %>%
+  select(Participant_Type2, Freq.Characterization, Characterization_Percent, Freq.Screening, Screening_Percent, Freq.Total)
+
+rm(protocol_0037, protocol_table)
+    
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+protocol_table2 %>% kable(., col.names = c("Diagnosis", "Signed into Characterization", "%", 
+                                           "Signed Screening Consents Only", "%", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+#### 2. Task Numbers 
+
+***
+
+##### MID scans: 
+
+Cross-sectional 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+diag_mid_1 <- task_reshape_master_QC %>% filter(Task_Name=="MID_scan") %>% filter(Participant_Type2 =="MDD" | Participant_Type2 == "HV") %>%
+  filter(Age_at_visit>11) %>% filter(!is.na(Task_Number) & Task_Number != "777" & Task_Number != "999") %>%
+  filter(Task_Date < todays_date_formatted)
+
+diag_mid_2_table <- ctable(diag_mid_1$Task_Number, diag_mid_1$Participant_Type2, useNA = "no",
+                           prop="r", totals=FALSE, display.type=FALSE) %>%
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>%
+  rename(Participant_Type2 = "cross_table.diag_mid_1.Participant_Type2") %>%
+  rename(Task_Number = "cross_table.diag_mid_1.Task_Number") %>% select(-proportions.Total)
+
+diag_mid_3_table <- reshape(diag_mid_2_table, idvar = "Task_Number", timevar = "Participant_Type2", direction = "wide") %>%
+  mutate(HV_Percent = (proportions.HV.HV * 100)) %>% mutate(HV_Percent = round(HV_Percent, 2)) %>%
+  mutate(MDD_Percent = (proportions.MDD.MDD * 100)) %>% mutate(MDD_Percent = round(MDD_Percent, 2)) %>%
+  select(Task_Number, Freq.MDD, MDD_Percent, Freq.HV, HV_Percent, Freq.Total)
+
+rm(diag_mid_1, diag_mid_2_table)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+diag_mid_3_table %>% kable(., col.names = c("Task Number", "MDD", "%", "HV", "%", "Total")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Longitudinal
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+mid_long <- task_reshape_master_QC %>% filter(Task_Name=="MID_scan") %>% filter(str_detect(Task_Visit_Type, "v")) %>% 
+  filter(Task_Number!="777" & Task_Number!="999") %>%
+  select(Initials, Participant_Type2, Task_Date, Task_Number, Task_Visit_Type) 
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+#### follow up numbers
+fu_dates <- mid_long %>% filter(Task_Visit_Type=="v1") %>%
+  mutate(month4 = (Task_Date + 120), month8 = (Task_Date + 240), month12 = (Task_Date + 360)) %>% mutate(source2="FU")
+fu_dates$month4_past <- (todays_date_formatted >= fu_dates$month4) %>% as.character()
+fu_dates$month8_past <- (todays_date_formatted >= fu_dates$month8) %>% as.character()
+fu_dates$month12_past <- (todays_date_formatted >= fu_dates$month12) %>% as.character()
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+#### calculating the demoninators
+## MDD
+denominator_mdd_v1 <- mid_long %>% filter(Participant_Type2=="MDD") %>% select(Task_Visit_Type) %>%
+  filter(Task_Visit_Type=="v1") %>% nrow() %>% as.numeric()
+denominator_mdd_v2 <- fu_dates %>% filter(Participant_Type2=="MDD") %>% select(month4_past) %>%
+  filter(month4_past=="TRUE") %>% nrow() %>% as.numeric()
+denominator_mdd_v3 <- fu_dates %>% filter(Participant_Type2=="MDD") %>% select(month8_past) %>%
+  filter(month8_past=="TRUE") %>% nrow() %>% as.numeric()
+denominator_mdd_v4 <- fu_dates %>% filter(Participant_Type2=="MDD") %>% select(month12_past) %>%
+  filter(month12_past=="TRUE") %>% nrow() %>% as.numeric()
+## HV
+denominator_hv_v1 <- mid_long %>% filter(Participant_Type2=="HV") %>% select(Task_Visit_Type) %>%
+  filter(Task_Visit_Type=="v1") %>% nrow() %>% as.numeric()
+denominator_hv_v2 <- c(0)
+denominator_hv_v3 <- c(0)
+denominator_hv_v4 <- fu_dates %>% filter(Participant_Type2=="HV") %>% select(month12_past) %>%
+  filter(month12_past=="TRUE") %>% nrow() %>% as.numeric()
+
+#### calculating the numerators
+## MDD
+numerator_mdd_v2 <- mid_long %>% filter(Participant_Type2=="MDD") %>% select(Task_Visit_Type) %>%
+  filter(Task_Visit_Type=="v2") %>% nrow() %>% as.numeric()
+numerator_mdd_v3 <- mid_long %>% filter(Participant_Type2=="MDD") %>% select(Task_Visit_Type) %>%
+  filter(Task_Visit_Type=="v3") %>% nrow() %>% as.numeric()
+numerator_mdd_v4 <- mid_long %>% filter(Participant_Type2=="MDD") %>% select(Task_Visit_Type) %>%
+  filter(Task_Visit_Type=="v4") %>% nrow() %>% as.numeric()
+## HV
+numerator_hv_v2 <- mid_long %>% filter(Participant_Type2=="HV") %>% select(Task_Visit_Type) %>%
+  filter(Task_Visit_Type=="v2") %>% nrow() %>% as.numeric()
+numerator_hv_v3 <- mid_long %>% filter(Participant_Type2=="HV") %>% select(Task_Visit_Type) %>%
+  filter(Task_Visit_Type=="v3") %>% nrow() %>% as.numeric()
+numerator_hv_v4 <- mid_long %>% filter(Participant_Type2=="HV") %>% select(Task_Visit_Type) %>%
+  filter(Task_Visit_Type=="v4") %>% nrow() %>% as.numeric()
+
+#### combining
+combined <- tibble(Visit= c("Baseline", "4 months", "8 months", "1 year"), 
+                   MDD_actual = c(denominator_mdd_v1, numerator_mdd_v2, numerator_mdd_v3, numerator_mdd_v4), 
+                   MDD_expected = c(denominator_mdd_v1, denominator_mdd_v2, denominator_mdd_v3, denominator_mdd_v4), 
+                   HV_actual = c(denominator_hv_v1, numerator_hv_v2, numerator_hv_v3, numerator_hv_v4), 
+                   HV_expected = c(denominator_hv_v1, denominator_hv_v2, denominator_hv_v3, denominator_hv_v4)) %>% 
+  mutate(Total_actual = MDD_actual + HV_actual, Total_expected = MDD_expected + HV_expected) %>% 
+  mutate(MDD_percent = round(((MDD_actual/MDD_expected)*100),2), 
+         HV_percent = round(((HV_actual/HV_expected)*100),2), 
+         Total_percent = round(((Total_actual/Total_expected)*100),2)) %>% 
+  select(Visit, MDD_actual, MDD_expected, MDD_percent, 
+         HV_actual, HV_expected, HV_percent,
+         Total_actual, Total_expected, Total_percent)
+
+combined$HV_percent <- gsub("Inf", "", combined$HV_percent)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+combined %>% kable(., col.names = c("Scan Type", "MDD completed", "MDD expected", "%", 
+                                    "HV completed", "HV expected", "%", "Total completed", "Total expected", "%")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### SUPREME:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+supreme <- task_reshape_master_QC %>% filter(Task_Name == "Supreme") %>% 
+  filter(Participant_Type2 =="MDD" | Participant_Type2 == "HV") %>%
+  filter(!is.na(Task_Number) & Task_Number != "777" & Task_Number != "999") 
+
+supreme_tot <- supreme %>% nrow() %>% as.numeric()
+supreme_tot_row <- tibble(Participant_Type2=c("Total"), Number=c(supreme_tot))
+supreme_table <- table(supreme$Participant_Type2) %>% as.data.frame() %>%
+  rename(Number = "Freq", Participant_Type2 = "Var1") 
+supreme_table <- rbind(supreme_table, supreme_tot_row) %>% 
+  mutate(Percent = ((Number/supreme_tot) * 100)) %>% mutate(Percent = round(Percent, 2))
+
+rm(supreme, supreme_tot, supreme_tot_row)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+supreme_table %>% kable(., col.names = c("Diagnosis", "Number", "%")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### MEG:
+
+Current MEG - MMI 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+meg_mmi <- task_reshape_master_QC %>% filter((Task_Name == "MEG_MMI") | (Task_Name == "MEG_Resting_state") | (Task_Name == "MEG_Empty_Room")) %>% 
+  filter(Participant_Type2 =="MDD" | Participant_Type2 == "HV") %>%
+  filter(Age_at_visit>11) %>% filter(!is.na(Task_Number) & Task_Number != "777" & Task_Number != "999") 
+
+meg_mmi_past <- meg_mmi %>% filter(Task_Date < todays_date_formatted) %>% select(Initials, Participant_Type2, Task_Name, Task_Date) %>% 
+  distinct(., .keep_all = TRUE) 
+meg_mmi_past$ID <- seq.int(nrow(meg_mmi_past))
+
+meg_mmi_past <- meg_mmi_past %>% spread(., key = "Task_Name", value = "Task_Date") %>% select(-ID) %>% 
+  group_by(Initials) %>% fill(MEG_MMI:MEG_Resting_state, .direction = "down") %>%
+  fill(MEG_MMI:MEG_Resting_state, .direction = "up") %>% ungroup() %>% filter(!is.na(MEG_MMI)) %>% 
+  distinct(., .keep_all = TRUE) %>% 
+  mutate(MEG_complete=(MEG_MMI==MEG_Resting_state)) %>% mutate(MEG_complete=as.character(MEG_complete))
+meg_mmi_past <- meg_mmi_past %>% mutate(MEG_complete = replace_na(MEG_complete, "FALSE"))
+  
+meg_mmi_table <- ctable(meg_mmi_past$Participant_Type2, meg_mmi_past$MEG_complete, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.meg_mmi_past.Participant_Type2") %>% 
+  rename(MEG_complete = "cross_table.meg_mmi_past.MEG_complete") %>% select(-proportions.Total)
+
+meg_mmi_table2 <- reshape(meg_mmi_table, idvar = "Participant_Type2", timevar = "MEG_complete", direction = "wide") %>%
+  mutate(FALSE_Percent = (proportions.FALSE.FALSE * 100)) %>% mutate(FALSE_Percent = round(FALSE_Percent, 2)) %>%
+  mutate(TRUE_Percent = (proportions.TRUE.TRUE * 100)) %>% mutate(TRUE_Percent = round(TRUE_Percent, 2)) %>%
+  select(Participant_Type2, Freq.TRUE, TRUE_Percent, Freq.FALSE, FALSE_Percent, Freq.Total)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+meg_mmi_table2 %>% kable(., col.names = c("Diagnosis", "Complete", "%", "Incomplete", "%", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+meg_mmi_upcoming <- task_reshape_master_QC %>% filter(Task_Name == "MEG_MMI") %>% 
+  filter(Task_Date >= todays_date_formatted) %>% select(Initials, Task_Date)
+meg_mmi_upcoming$Task_Date <- format(meg_mmi_upcoming$Task_Date, "%B %d %Y")
+
+meg_mprage_missing <- MEG_mprage %>% select(Initials, Task_Date) 
+meg_mprage_missing$Days_since_scan <- as.numeric(difftime(meg_mprage_missing$Task_Date, todays_date_formatted, tz="", units = "days"))
+
+rm(meg_mmi, meg_mmi_past, meg_mmi_table)
+
+```
+
+Upcoming MEG - MMI
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+meg_mmi_upcoming %>% kable(., col.names = c("Initials", "Date")) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+MEG MPRAGE pending
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+meg_mprage_missing %>% kable(., col.names = c("Initials", "MEG Date", "Days since MEG")) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### Bloods:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+bloods <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "lood")) %>% filter(Participant_Type2 =="MDD" | Participant_Type2 == "HV") %>%
+  filter(Age_at_visit>11) %>% filter(!is.na(Task_Number) & Task_Number != "777" & Task_Number != "999") %>% 
+  filter(Task_Date < todays_date_formatted)
+
+bloods_table <- ctable(bloods$Task_Number, bloods$Clinical_Visit_Code, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Clinical_Visit_Code = "cross_table.bloods.Clinical_Visit_Code") %>% 
+  rename(Task_Number = "cross_table.bloods.Task_Number") %>% select(-proportions.Total)
+
+bloods_table2 <- reshape(bloods_table, idvar = "Task_Number", timevar = "Clinical_Visit_Code", direction = "wide") %>% 
+  mutate(c_Percent = (proportions.c.c * 100)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+  mutate(i_Percent = (proportions.i.i * 100)) %>% mutate(i_Percent = round(i_Percent, 2)) %>%
+  select(Task_Number, Freq.i, i_Percent, Freq.c, c_Percent, Freq.Total)
+
+rm(bloods, bloods_table)
+    
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+bloods_table2 %>% kable(., col.names = c("Task Number", "Inpatient", "%", "Characterization", "%", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### Family History Interview completion:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+family_hist <- family_hist %>% select(-Clinical_Visit_Date) %>% group_by(Initials) %>% 
+  arrange(c_family_interview_date) %>% slice(n()) %>% ungroup()
+
+family_hist_table <- ctable(family_hist$Clinical_Visit_Type, family_hist$Participant_Type2, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.family_hist.Participant_Type2") %>% 
+  rename(Clinical_Visit_Type = "cross_table.family_hist.Clinical_Visit_Type") %>% select(-proportions.Total)
+
+family_hist_table2 <- reshape(family_hist_table, idvar = "Clinical_Visit_Type", timevar = "Participant_Type2", direction = "wide") %>% 
+  mutate(HV_Percent = (proportions.HV.HV * 100)) %>% mutate(HV_Percent = round(HV_Percent, 2)) %>% 
+  mutate(MDD_Percent = (proportions.MDD.MDD * 100)) %>% mutate(MDD_Percent = round(MDD_Percent, 2)) %>% 
+  select(Clinical_Visit_Type, Freq.MDD, MDD_Percent, Freq.HV, HV_Percent, Freq.Total)
+
+rm(family_hist, family_hist_table)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+family_hist_table2 %>% kable(., col.names = c("Clinical Visit Type", "MDD", "%", "HV", "%", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+#### 3. Treatment Numbers 
+
+***
+
+##### BA enrollment:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+outpatients <- master_IRTA_latest %>% filter(Clinical_Visit_Code=="o") %>% group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
+  slice(n()) %>% ungroup()
+outpatients$Eligible <- recode(outpatients$Eligible, "0"="Active in treatment", 
+      "5"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
+      "6"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
+      "7"="Patient (or parent) withdrew from treatment", 
+      "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
+      "9"="Patient (or parent) withdrew from treatment", 
+      "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)", 
+      "11"="Completed treatment", .missing = NULL)
+
+outpatients_tot <- outpatients %>% nrow() %>% as.numeric()
+outpatients_total_table <- tibble(Eligible=c("Total"), Number=c(outpatients_tot))
+outpatients_table <- table(outpatients$Eligible) %>% as.data.frame() %>%
+  rename(Number = "Freq", Eligible = "Var1") %>% mutate(Eligible=as.character(Eligible))
+
+outpatients_table <- rbind(outpatients_table, outpatients_total_table) %>% 
+  mutate(Status_percent = ((Number/outpatients_tot) * 100)) %>% mutate(Status_percent = round(Status_percent, 2)) 
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+outpatients_table %>% kable(., col.names = c("Treatment status", "Frequency", "%")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Current CBT participants: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+current_outpatients <- outpatients %>% filter(Clinical_Visit_Date>two_weeks_date_formatted) %>% filter(Eligible=="Active in treatment") %>% 
+  select(Initials, Clinical_Visit_Date, Clinical_Visit_Number, IRTA_tracker)
+
+current_outpatients$Clinical_Visit_Date <- format(current_outpatients$Clinical_Visit_Date, "%B %d %Y")
+
+rm(outpatients_tot, outpatients_total_table)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+current_outpatients %>% kable(., col.names = c("Initials", "Last CBT Date", "Visit Number", "Scheduling IRTA")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### Inpatients:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+inpatients <- master_IRTA_latest %>% filter(Clinical_Visit_Code=="i") %>% group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
+  slice(n()) %>% ungroup()
+inpatients$Eligible <- recode(inpatients$Eligible, "0"="Active in treatment", 
+      "5"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
+      "6"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
+      "7"="Patient (or parent) withdrew from treatment", 
+      "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
+      "9"="Patient (or parent) withdrew from treatment", 
+      "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)", 
+      "11"="Completed treatment", .missing = NULL)
+
+inpatients_tot <- inpatients %>% nrow() %>% as.numeric()
+inpatients_total_table <- tibble(Eligible=c("Total"), Number=c(inpatients_tot))
+inpatients_table <- table(inpatients$Eligible) %>% as.data.frame() %>%
+  rename(Number = "Freq", Eligible = "Var1") %>% mutate(Eligible=as.character(Eligible))
+
+inpatients_table <- rbind(inpatients_table, inpatients_total_table) %>% 
+  mutate(Status_percent = ((Number/inpatients_tot) * 100)) %>% mutate(Status_percent = round(Status_percent, 2)) 
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+inpatients_table %>% kable(., col.names = c("Treatment status", "Frequency", "%")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Current inpatients: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+current_inpatients <- inpatients %>% filter(Clinical_Visit_Date>two_weeks_date_formatted) %>% filter(Eligible=="Active in treatment") %>% 
+  select(Initials, Clinical_Visit_Date, Clinical_Visit_Number, IRTA_tracker)
+current_inpatients$Clinical_Visit_Date <- format(current_inpatients$Clinical_Visit_Date, "%B %d %Y")
+
+rm(inpatients_tot, inpatients_total_table)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+current_inpatients %>% kable(., col.names = c("Initials", "Last Week Recorded", "Week Number", "Scheduling IRTA")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+\pagebreak
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+rm(referrals_table3a, screens_table2, screens_current_table, ready_2_review, scheduled, scheduling_table2, protocol_table2, 
+   inpatients_table, combined, meg_mmi_table2, meg_mmi_upcoming, bloods_table2, 
+   current_outpatients, current_inpatients, outpatients, outpatients_table, inpatients, family_hist_table2, 
+   supreme_table, meg_mprage_missing, MEG_mprage, diag_mid_3_table, fu_dates, mid_long)
+rm(list=ls(pattern="denominator_"))
+rm(list=ls(pattern="numerator_"))
+
+```
