@@ -106,7 +106,7 @@ master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% gr
   fill(FIRST_NAME, LAST_NAME, SDAN:Handedness, Parent_CTSS_username:Metal, .direction = "up") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 master_IRTA_reordered <- master_IRTA_reordered %>% group_by(Initials) %>% arrange(Initials, Overall_date) %>% 
-  fill(Current:Treatment_Notes, Clinicals, Clinicals_date, .direction = "down") %>% 
+  fill(Eligibility_notes, Scheduling_status_notes, Consent_Date, Protocol, Data_sharing, Treatment_Notes, Clinicals, Clinicals_date, .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 
 # creating an 'overall date' column, prioritizing referral date from the screening tabs of the IRTA trackers, where this is missing, inserting the screening start date instead
@@ -366,16 +366,27 @@ MID_temp[of_interest] <- lapply(MID_temp[of_interest], replace_na, '666')
 missing_date <- MID_temp %>% filter(Task_Number != '777' & Task_Number != '999') %>% 
   filter(Scheduling_status !='0' & Scheduling_status !='1') %>% 
   filter(is.na(Task_Date)) %>% 
-  filter(Task_Number != '666')
+  filter(Task_Number != '666') %>% mutate(reason1="Missing task date")
 missing_number <- MID_temp %>% 
   filter(Days_since_scan<0) %>% 
-  filter(Task_Number == '666')
+  filter(Task_Number == '666') %>% mutate(reason2="Missing task number")
 missing_qc <- MID_temp %>% filter(Task_Number != '777' & Task_Number != '999') %>% 
   filter(Days_since_scan<0) %>% 
-  filter(Include=='666')
+  filter(Include=='666') %>% mutate(reason3="Missing from MID tracker")
+
+# code to check data uniqness: 
+# 1. MID and resting have same data, task number & task visit type? 
+# 2. Task visit type unique within each participant? (i.e. they don't have 2 rows with v2)
+
+# meg_missing_irta_tracker %>% mutate(reason4="Missing from IRTA tracker")
 
 MID_missing <- merge.default(missing_date, missing_number, all=TRUE) %>% 
   merge.default(., missing_qc, all=TRUE)
+# MID_missing$QC_missing <- paste(MID_missing$reason1, MID_missing$reason2, MID_missing$reason3, MID_missing$reason4, sep = "; ")
+# MID_missing$QC_missing <- gsub("NA; ", "", MID_missing$QC_missing, fixed=TRUE)
+# MID_missing$QC_missing <- gsub("; NA", "", MID_missing$QC_missing, fixed=TRUE)
+# MID_missing <- MID_missing %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
+
 MID_missing[of_interest] <- lapply(MID_missing[of_interest], na_if, '666')
 
 MID_missing %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MID_check.xlsx")) # if file empty, everything is perfect 
