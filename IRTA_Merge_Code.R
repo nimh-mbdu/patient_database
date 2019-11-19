@@ -216,46 +216,85 @@ master_IRTA_latest$Next_FU_date <- as.Date(master_IRTA_latest$Next_FU_date, orig
 ######################################################################################
 #######Creating tasks database
 
-task_reshape_master = data.frame(matrix(ncol = 18, nrow = 0))
-x <- c("FIRST_NAME", "LAST_NAME", "Initials", "SDAN", "DAWBA_ID", "PLUSID",
-       "SEX", "DOB", "Handedness", "Participant_Type2", 
-       "Age_at_visit", "Overall_date", "Protocol", "Scanner", 
+task_reshape_master = data.frame(matrix(ncol = 15, nrow = 0))
+x <- c("FIRST_NAME", "LAST_NAME", "Initials", "SDAN", "IRTA_tracker", "Participant_Type2", 
+       "Eligible", "Scheduling_status", "Overall_date", "Protocol", "Scanner", 
        "Task_Name", "Task_Number", "Task_Date", "Task_Visit_Type")
 colnames(task_reshape_master) <- x
 
 for(i in seq_len(max_tasks)) {
   iter <- as.numeric(i)
-  # iter=1 # for manually running without the loop
+  # iter=2 # for manually running without the loop
 
   task_reshape <- master_IRTA_latest %>% 
-    select(FIRST_NAME, LAST_NAME, Initials, SDAN, DAWBA_ID, PLUSID, 
-           SEX, DOB, Handedness, Participant_Type2, 
-           Age_at_visit, Overall_date, Protocol, Scanner,
+    select(FIRST_NAME, LAST_NAME, Initials, SDAN, IRTA_tracker, Participant_Type2, 
+           Eligible, Scheduling_status, Overall_date, Protocol, Scanner,
            paste0("Task", iter, "_Name"), paste0("Task", iter, "_Number"), 
            paste0("Task", iter, "_Date"), paste0("Task", iter, "_Visit_Type")) 
   
-  if(iter==1) {task_reshape$Task1_Name <- replace_na(task_reshape$Task1_Name, "No_Task")}
+  if(iter==1) {
+    dummy <- task_reshape %>% filter(is.na(Task1_Name)) %>%
+      filter(is.na(Task1_Date) & is.na(Task1_Number) & is.na(Task1_Visit_Type)) %>% filter(!is.na(Overall_date))
+    dummy$Task1_Name <- replace_na(dummy$Task1_Name, "No_Task")
+    dummy$Task1_Date <- dummy$Overall_date
+    dummy2 <- task_reshape %>% filter(!is.na(Task1_Name) | !is.na(Task1_Date) | !is.na(Task1_Number) | !is.na(Task1_Visit_Type))
+    task_reshape <- merge.default(dummy2, dummy, all=TRUE)
+    rm(dummy, dummy2)
+  }
   
   names(task_reshape)[names(task_reshape) == paste0("Task", iter, "_Name")] <- "Task_Name"
   names(task_reshape)[names(task_reshape) == paste0("Task", iter, "_Number")] <- "Task_Number"
   names(task_reshape)[names(task_reshape) == paste0("Task", iter, "_Date")] <- "Task_Date"
   names(task_reshape)[names(task_reshape) == paste0("Task", iter, "_Visit_Type")] <- "Task_Visit_Type"
   
-  task_reshape <- task_reshape %>% filter(!is.na(Task_Name)) %>% distinct(., .keep_all = TRUE)
+  task_reshape <- task_reshape %>% 
+    filter(!is.na(Task_Name) | !is.na(Task_Date) & !is.na(Task_Number) & !is.na(Task_Visit_Type)) %>% 
+    distinct(., .keep_all = TRUE)
   # assign(paste0("task", iter), task_reshape) # uncomment this row if you would like to KEEP all individual files from loop to QC them
 
   task_reshape_master <- merge.default(task_reshape_master, task_reshape, all=TRUE)
 }
+  
+##### Overall task QC
 
+# task name check
+  task_names <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/tasks_list.xlsx"))
+  task_name_check <- task_reshape_master %>% filter(!is.na(Task_Name)) %>% select(Initials, SDAN, IRTA_tracker, Task_Name, Task_Date, Task_Number, Task_Visit_Type)
+  task_name_check$correct <- (task_name_check$Task_Name %in% task_names$Task_Name) %>% as.character() 
+  task_name_check <- task_name_check %>% filter(correct=="FALSE") %>% mutate(reason1 = "Task name incorrect") %>% select(-correct)
+
+# task number check 
+  task_number_check <- task_reshape_master %>% filter(!is.na(Task_Name) & !is.na(Task_Date)) %>% filter(Task_Name!="No_Task" & Task_Name!="Measures") %>% 
+    filter(is.na(Task_Number)) %>% mutate(reason2 = "Missing task number")
+    
+
+  
+  # task_name_check %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/Task_other_check.xlsx")) # if file empty, everything is perfect 
+  
+
+  # task_errors_combined <- merge.default(MMI_missing_date, MMI_missing_number, all=TRUE) %>% 
+  #   merge.default(., MMI_missing_qc, all=TRUE) %>% merge.default(., MMI_missing_irta, all=TRUE) %>% merge.default(., MMI_duplicate, all=TRUE)
+  # 
+  # 
+  # 
+  # task_errors_combined$QC_missing <- paste(task_errors_combined$reason1, task_errors_combined$reason2, task_errors_combined$reason3, 
+  #                                          task_errors_combined$reason4, task_errors_combined$reason5, sep = "; ")
+  # task_errors_combined$QC_missing <- gsub("NA; ", "", task_errors_combined$QC_missing, fixed=TRUE)
+  # task_errors_combined$QC_missing <- gsub("; NA", "", task_errors_combined$QC_missing, fixed=TRUE)
+  # 
+  # 
+  # 
+  # task_errors_combined <- task_errors_combined %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
+  
+  
 eligibility_variables <- master_IRTA_latest %>% 
-  select(Initials, SDAN, IRTA_tracker, Overall_date, Eligible, Clinical_Visit_Date, 
-         Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number, Scheduling_status, 
-         Participant_Type, Participant_Type2) %>%
+  select(Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker, Overall_date, Eligible, 
+         SEX, DOB, Handedness, Participant_Type, Participant_Type2, Age_at_visit, Clinical_Visit_Date, 
+         Clinical_Visit_Type, Clinical_Visit_Code, Clinical_Visit_Number, Scheduling_status) %>%
   arrange(Initials, Overall_date, desc(Clinical_Visit_Type)) %>%
   distinct(., Initials, SDAN, Overall_date, .keep_all = TRUE)
 
 task_reshape_master <- left_join(task_reshape_master, eligibility_variables, all=TRUE)
-task_reshape_master$Task_Date <- coalesce(task_reshape_master$Task_Date, task_reshape_master$Overall_date)
 task_reshape_master <- task_reshape_master %>% 
   select(FIRST_NAME, LAST_NAME, Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker,
          SEX, DOB, Handedness, Participant_Type, Participant_Type2, Age_at_visit, Overall_date, 
@@ -293,34 +332,39 @@ MMI_task_QC$Task_Date <- as.Date(MMI_task_QC$Task_Date)
 MMI_task_QC$SDAN <- as.character(MMI_task_QC$SDAN)
 
 ##### checking for merge conflicts/missing MMIs: 
-MMI_missing <- merge.default(task_reshape_master, MMI_task_QC, all=TRUE) %>%
+MMI_missing <- task_reshape_master %>% 
   filter(Task_Name=="MMI_3blocks_scan") %>% 
-  select(Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker, 
-         SEX, DOB, Handedness, Age_at_visit, Overall_date,
-         Eligible, Scheduling_status, Participant_Type,
-         Participant_Type2, Protocol,
-         Clinical_Visit_Type, Scanner,
-         Task_Name, Task_Number, Task_Date, Task_Visit_Type, QC_tracker_tab_no, Include) %>% 
-  group_by(SDAN) %>% 
-  fill(Initials, IRTA_tracker, .direction = "down") %>% 
-  fill(Initials, IRTA_tracker, .direction = "up") %>% 
-  ungroup() %>% 
-  filter(is.na(Task_Number) | is.na(Include)) %>% 
-  mutate(Todays_Date = todays_date_formatted)
+  select(Initials, SDAN, IRTA_tracker, Eligible, Scheduling_status,
+         Participant_Type2, Protocol, Clinical_Visit_Type, Scanner,
+         Task_Name, Task_Number, Task_Date) %>% 
+  merge.default(., MMI_task_QC, all=TRUE)
 
-MMI_missing$Days_since_scan <- as.numeric(difftime(MMI_missing$Task_Date, MMI_missing$Todays_Date, tz="", units = "days"))
+MMI_missing$Days_since_scan <- as.numeric(difftime(MMI_missing$Task_Date, todays_date_formatted, tz="", units = "days"))
 of_interest <- c('IRTA_tracker', 'Eligible', 'Scheduling_status', 'Protocol', 'Scanner', 'Task_Number', 'QC_tracker_tab_no', 'Include', 'Days_since_scan')
 MMI_missing[of_interest] <- lapply(MMI_missing[of_interest], replace_na, '666')
 numeric <- c('Eligible', 'Scheduling_status', 'Task_Number', 'QC_tracker_tab_no', 'Include', 'Days_since_scan')
 MMI_missing[numeric] <- lapply(MMI_missing[numeric], as.numeric)
-MMI_missing <- MMI_missing %>% filter(Eligible<4 | Eligible>7) %>% 
-  filter(Task_Number != '777' & Task_Number != '999') %>% 
-  filter(Days_since_scan<1 | Days_since_scan==666) %>% 
-  filter(Scheduling_status != 1) %>% 
-  arrange(SDAN, Task_Date)
-MMI_missing[of_interest] <- lapply(MMI_missing[of_interest], na_if, '666')
 
-MMI_missing %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MMI_check.xlsx")) # if file empty, everything is perfect 
+MMI_missing_date <- MMI_missing %>% filter(Scheduling_status !='0' & Scheduling_status !='1') %>% 
+  filter(is.na(Task_Date)) %>% filter(Task_Number != '666') %>% mutate(reason1="Missing task date")
+MMI_missing_number <- MMI_missing %>% filter(Days_since_scan<0) %>% 
+  filter(Task_Number == '666') %>% mutate(reason2="Missing task number")
+MMI_missing_qc <- MMI_missing %>% filter(Days_since_scan<0) %>% 
+  filter(Include=='666') %>% mutate(reason3="Missing from MMI tracker")
+MMI_missing_irta <- MMI_missing %>% filter(Days_since_scan<0) %>% 
+  filter(IRTA_tracker=='666') %>% mutate(reason4="Missing from IRTA tracker")
+MMI_duplicate <- MMI_missing %>% group_by(SDAN) %>% filter(n()>1) %>% ungroup() %>% mutate(reason5="Duplicate entry")
+
+MMI_missing_combined <- merge.default(MMI_missing_date, MMI_missing_number, all=TRUE) %>% 
+  merge.default(., MMI_missing_qc, all=TRUE) %>% merge.default(., MMI_missing_irta, all=TRUE) %>% merge.default(., MMI_duplicate, all=TRUE)
+MMI_missing_combined$QC_missing <- paste(MMI_missing_combined$reason1, MMI_missing_combined$reason2, MMI_missing_combined$reason3, 
+                                         MMI_missing_combined$reason4, MMI_missing_combined$reason5, sep = "; ")
+MMI_missing_combined$QC_missing <- gsub("NA; ", "", MMI_missing_combined$QC_missing, fixed=TRUE)
+MMI_missing_combined$QC_missing <- gsub("; NA", "", MMI_missing_combined$QC_missing, fixed=TRUE)
+MMI_missing_combined <- MMI_missing_combined %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
+MMI_missing_combined[of_interest] <- lapply(MMI_missing_combined[of_interest], na_if, '666')
+
+MMI_missing_combined %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MMI_check.xlsx")) # if file empty, everything is perfect 
 
 ##### MID
 
@@ -334,34 +378,58 @@ for(i in seq_len(max_MID)) {
   float <- read_excel(paste0(MID_tracker_location, "MID Tasks.xlsx"), sheet = paste0("QC_", iter), col_names = TRUE, skip = 1, col_types = NULL) %>%
     mutate(QC_tracker_tab_no = iter) %>% mutate(Task_Name = "MID_scan") %>% 
     rename(Task_Date = Date) %>% 
-    # rename(Participant_Type_QC = Participant_Type) %>%
     select(SDAN, Task_Name, Task_Date, QC_tracker_tab_no, Include) %>% 
     filter(!is.na(SDAN))
   MID_task_QC <- merge.default(MID_task_QC, float, all=TRUE)
 } 
-# MID_task_QC <- merge.default(MID_task_QC, floatDx, all=TRUE)
 MID_task_QC <- MID_task_QC %>% arrange(SDAN, QC_tracker_tab_no)
 MID_task_QC$Task_Date <- as.Date(MID_task_QC$Task_Date)
 MID_task_QC$SDAN <- as.character(MID_task_QC$SDAN)
 
 ##### checking for merge conflicts/missing information:
-MID_temp <- merge.default(task_reshape_master, MID_task_QC, all=TRUE) %>%
+MID_missing <- task_reshape_master %>% 
   filter(Task_Name=="MID_scan") %>% 
-  select(Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker, 
-         SEX, DOB, Handedness, Age_at_visit, Overall_date,
-         Eligible, Scheduling_status, Participant_Type,
-         Participant_Type2, Protocol,
-         Clinical_Visit_Type, Scanner,
-         Task_Name, Task_Number, Task_Date, Task_Visit_Type, QC_tracker_tab_no, Include) %>% 
-  group_by(SDAN) %>% 
-  fill(Initials, IRTA_tracker, .direction = "down") %>% 
-  fill(Initials, IRTA_tracker, .direction = "up") %>% 
-  ungroup() %>% 
-  mutate(Todays_Date = todays_date_formatted)
+  select(Initials, SDAN, IRTA_tracker, Eligible, Scheduling_status,
+         Participant_Type2, Protocol, Clinical_Visit_Type, Scanner,
+         Task_Name, Task_Number, Task_Date, Task_Visit_Type) %>% 
+  merge.default(., MID_task_QC, all=TRUE)
 
-MID_temp$Days_since_scan <- as.numeric(difftime(MID_temp$Task_Date, MID_temp$Todays_Date, tz="", units = "days"))
+MID_missing$Days_since_scan <- as.numeric(difftime(MID_missing$Task_Date, todays_date_formatted, tz="", units = "days"))
 of_interest <- c('IRTA_tracker', 'Eligible', 'Scheduling_status', 'Protocol', 'Scanner', 'Task_Number', 'QC_tracker_tab_no', 'Include', 'Days_since_scan')
-MID_temp[of_interest] <- lapply(MID_temp[of_interest], replace_na, '666')
+MID_missing[of_interest] <- lapply(MID_missing[of_interest], replace_na, '666')
+numeric <- c('Eligible', 'Scheduling_status', 'Task_Number', 'QC_tracker_tab_no', 'Include', 'Days_since_scan')
+MID_missing[numeric] <- lapply(MID_missing[numeric], as.numeric)
+
+# MID_temp <- merge.default(task_reshape_master, MID_task_QC, all=TRUE) %>%
+#   filter(Task_Name=="MID_scan") %>% 
+#   select(Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker, 
+#          SEX, DOB, Handedness, Age_at_visit, Overall_date,
+#          Eligible, Scheduling_status, Participant_Type,
+#          Participant_Type2, Protocol,
+#          Clinical_Visit_Type, Scanner,
+#          Task_Name, Task_Number, Task_Date, Task_Visit_Type, QC_tracker_tab_no, Include) %>% 
+#   group_by(SDAN) %>% 
+#   fill(Initials, IRTA_tracker, .direction = "down") %>% 
+#   fill(Initials, IRTA_tracker, .direction = "up") %>% 
+#   ungroup() %>% 
+#   mutate(Todays_Date = todays_date_formatted)
+# 
+# MID_temp$Days_since_scan <- as.numeric(difftime(MID_temp$Task_Date, MID_temp$Todays_Date, tz="", units = "days"))
+# of_interest <- c('IRTA_tracker', 'Eligible', 'Scheduling_status', 'Protocol', 'Scanner', 'Task_Number', 'QC_tracker_tab_no', 'Include', 'Days_since_scan')
+# MID_temp[of_interest] <- lapply(MID_temp[of_interest], replace_na, '666')
+
+#####################
+
+MID_missing_date <- MID_missing %>% filter(Scheduling_status !='0' & Scheduling_status !='1') %>% 
+  filter(is.na(Task_Date)) %>% filter(Task_Number != '666') %>% mutate(reason1="Missing task date")
+MID_missing_number <- MID_missing %>% filter(Days_since_scan<0) %>% 
+  filter(Task_Number == '666') %>% mutate(reason2="Missing task number")
+MID_missing_qc <- MID_missing %>% filter(Days_since_scan<0) %>% 
+  filter(Include=='666') %>% mutate(reason3="Missing from MID tracker")
+MID_missing_irta <- MID_missing %>% filter(Days_since_scan<0) %>% 
+  filter(IRTA_tracker=='666') %>% mutate(reason4="Missing from IRTA tracker")
+MID_duplicate <- MID_missing %>% group_by(SDAN) %>% filter(n()>1) %>% ungroup() %>% mutate(reason5="Duplicate entry")
+
 
 missing_date <- MID_temp %>% filter(Task_Number != '777' & Task_Number != '999') %>% 
   filter(Scheduling_status !='0' & Scheduling_status !='1') %>% 
@@ -373,6 +441,27 @@ missing_number <- MID_temp %>%
 missing_qc <- MID_temp %>% filter(Task_Number != '777' & Task_Number != '999') %>% 
   filter(Days_since_scan<0) %>% 
   filter(Include=='666') %>% mutate(reason3="Missing from MID tracker")
+
+
+
+
+#####################
+
+
+
+
+
+MID_missing_combined <- merge.default(MID_missing_date, MID_missing_number, all=TRUE) %>% 
+  merge.default(., MID_missing_qc, all=TRUE) %>% merge.default(., MID_missing_irta, all=TRUE) %>% merge.default(., MID_duplicate, all=TRUE)
+MID_missing_combined$QC_missing <- paste(MID_missing_combined$reason1, MID_missing_combined$reason2, MID_missing_combined$reason3, 
+                                         MID_missing_combined$reason4, MID_missing_combined$reason5, sep = "; ")
+MID_missing_combined$QC_missing <- gsub("NA; ", "", MID_missing_combined$QC_missing, fixed=TRUE)
+MID_missing_combined$QC_missing <- gsub("; NA", "", MID_missing_combined$QC_missing, fixed=TRUE)
+MID_missing_combined <- MID_missing_combined %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
+MID_missing_combined[of_interest] <- lapply(MID_missing_combined[of_interest], na_if, '666')
+
+
+
 
 # code to check data uniqness: 
 # 1. MID and resting have same data, task number & task visit type? 
