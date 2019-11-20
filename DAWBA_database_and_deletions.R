@@ -8,33 +8,47 @@
 # Loading patient info ----------------------------------------------------
 
 if (exists("master_IRTA_latest")==FALSE) {
-  master_IRTA_latest <- read_excel(paste0(IRTA_tracker_location, "MASTER_IRTA_DATABASE.xlsx"))
+  irta_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^MASTER_IRTA_DATABASE", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+  irta_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_master_file)) %>% as.Date()
+  irta_master_combined <- tibble(File=c(irta_master_file), Date=c(irta_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+  master_IRTA_latest <- read_excel(paste0(IRTA_tracker_location, irta_master_combined[1]))
   date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
   for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
   master_IRTA_latest[date_variabes] <- lapply(master_IRTA_latest[date_variabes], as.Date)
-  rm(i, date_variabes)
+  rm(i, date_variabes, irta_master_file, irta_master_file_time, irta_master_combined)
 } else {
-  print("master participant tracker already imported")
-}
-
-if (exists("master_IRTA_screens_latest")==FALSE) {
-  master_IRTA_screens_latest <- read_excel(paste0(IRTA_tracker_location, "REFERRAL_AND_SCREENING_DATABASE.xlsx"))
-  date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
-  for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
-  master_IRTA_screens_latest[date_variabes] <- lapply(master_IRTA_screens_latest[date_variabes], as.Date)
-  rm(i, date_variabes)
-} else {
-  print("master current screens tracker already imported")
+  print("master task tracker already imported")
 }
 
 if (exists("master_IRTA_oldest_screens_latest")==FALSE) {
-  master_IRTA_oldest_screens_latest <- read_excel(paste0(IRTA_tracker_location, "OLD_REFERRALS_DATABASE.xlsx"))
+  irta_old_screens_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^OLD_REFERRALS_DATABASE", all.files = FALSE,
+                                      full.names = FALSE, recursive = FALSE,
+                                      ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+  irta_old_screens_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_old_screens_file)) %>% as.Date()
+  irta_old_screens_combined <- tibble(File=c(irta_old_screens_file), Date=c(irta_old_screens_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+  master_IRTA_oldest_screens_latest <- read_excel(paste0(IRTA_tracker_location, irta_old_screens_combined[1]))
   date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
-  for(i in seq_len(max_tasks)) { date_variabes <- c(date_variabes, paste0("Task", i, "_Date"))}
-  master_IRTA_oldest_screens_latest[date_variabes] <- lapply(master_IRTA_oldest_screens_latest[date_variabes], as.Date)
-  rm(i, date_variabes)
+  master_IRTA_oldest_screens_latest[date_variabes] <- lapply(master_IRTA_oldest_screens_latest[date_variabes], as.Date) 
+  rm(date_variabes, irta_old_screens_file, irta_old_screens_file_time, irta_old_screens_combined)
 } else {
-  print("master old referrals tracker already imported")
+  print("master IRTA tracker + QC info already imported")
+}
+
+if (exists("master_IRTA_screens_latest")==FALSE) {
+  irta_ongoing_screens_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^REFERRAL_AND_SCREENING_DATABASE", all.files = FALSE,
+                                          full.names = FALSE, recursive = FALSE,
+                                          ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+  irta_ongoing_screens_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_ongoing_screens_file)) %>% as.Date()
+  irta_ongoing_screens_combined <- tibble(File=c(irta_ongoing_screens_file), Date=c(irta_ongoing_screens_file_time)) %>% 
+    arrange(desc(Date)) %>% slice(1)
+  master_IRTA_screens_latest <- read_excel(paste0(IRTA_tracker_location, irta_ongoing_screens_combined[1]))
+  date_variabes <- c("DOB", "Screening_Start_Date", "Referral_Date", "Consent_Date", "Clinical_Visit_Date", "Clinicals_date", "Overall_date")
+  master_IRTA_screens_latest[date_variabes] <- lapply(master_IRTA_screens_latest[date_variabes], as.Date) 
+  rm(date_variabes, irta_ongoing_screens_file, irta_ongoing_screens_file_time, irta_ongoing_screens_combined)
+} else {
+  print("master IRTA tracker + QC info already imported")
 }
 
 # Isolating participant info I need & merging -----------------------------
@@ -64,9 +78,10 @@ master_old_screen_identifiers <- master_IRTA_oldest_screens_latest %>%
 
 participant_identifiers_combined <- merge.default(master_IRTA_identifiers, master_current_screen_identifiers, all=TRUE) %>% 
   merge.default(., master_old_screen_identifiers, all=TRUE)
+fill_names <- participant_identifiers_combined %>% select(-Initials) %>% colnames()
 participant_identifiers_combined <- participant_identifiers_combined %>% group_by(Initials) %>% 
-  fill(., names(participant_identifiers_combined), .direction = c("down")) %>% 
-  fill(., names(participant_identifiers_combined), .direction = c("up")) %>% 
+  fill(., names(fill_names), .direction = c("down")) %>% 
+  fill(., names(fill_names), .direction = c("up")) %>% 
   arrange(Initials, Source) %>% filter(1:n() == 1) %>% ungroup()
 
 # finish the split below
@@ -99,10 +114,11 @@ DAWBA_Archive <- read_excel(paste0(database_location, "other_data_never_delete/d
 
 dawba_combined <- merge.default(DAWBA_Archive, DAWBA_Data_Download_raw, all=TRUE) %>% 
   filter(sid !="234110") %>% filter(sid !="234111") %>% filter(sid !="234112") %>% filter(sid !="234113") %>% filter(sid !="None")
+fill_names <- dawba_combined %>% select(-sid) %>% colnames()
 dawba_combined <- dawba_combined %>% 
   group_by(sid) %>%
-  fill(., names(dawba_combined), .direction = "down") %>%
-  fill(., names(dawba_combined), .direction = "up") %>%
+  fill(., names(fill_names), .direction = "down") %>%
+  fill(., names(fill_names), .direction = "up") %>%
   ungroup() %>%
   distinct(., .keep_all = TRUE)
 
@@ -263,9 +279,10 @@ s_bdd_combined <- s_bdd_combined %>% mutate(s_dawba_bdd_diag = (as.numeric(s_daw
 # Integrating the BDD probabilities into the DAWBA database
 
 all_bdd_combined <- merge.default(s_bdd_combined, p_bdd_combined, all=TRUE)
+fill_names <- all_bdd_combined %>% select(-DAWBA_ID) %>% colnames()
 all_bdd_combined <- all_bdd_combined %>% group_by(DAWBA_ID) %>% 
-  fill(., names(all_bdd_combined), .direction = "down") %>%
-  fill(., names(all_bdd_combined), .direction = "up") %>%
+  fill(., names(fill_names), .direction = "down") %>%
+  fill(., names(fill_names), .direction = "up") %>%
   distinct(., .keep_all = TRUE) %>% ungroup()
 dawba_w_names <- merge.default(dawba_w_names, all_bdd_combined, all=TRUE) 
 

@@ -149,21 +149,22 @@ if (exists("master_IRTA_screens_latest")==FALSE) {
 }
 
 if (exists("Psychometrics_treatment")==FALSE) {
-       master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL", all.files = FALSE,
+        master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL", all.files = FALSE,
                                  full.names = FALSE, recursive = FALSE,
                                  ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-       master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
-       master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
+        master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
+        master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
           arrange(desc(Date)) %>% slice(1)
         Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
+        Psychometrics_date <- c(master_database_combined$Date)
         family_hist <- Psychometrics_treatment %>% 
-          select(Initials, Participant_Type2, Clinical_Visit_Date, Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
+          select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
           filter(!is.na(c_family_interview_interviewer))
         rm(Psychometrics_treatment, master_database_file, master_database_file_time, master_database_combined)
 } else {
         print("clinical database info already imported")
         family_hist <- Psychometrics_treatment %>% 
-          select(Initials, Clinical_Visit_Date, Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
+          select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
           filter(!is.na(c_family_interview_interviewer))
 }
 
@@ -611,12 +612,12 @@ meg_mmi_past <- meg_mmi %>% filter(Task_Date < todays_date_formatted) %>% select
   distinct(., .keep_all = TRUE) 
 meg_mmi_past$ID <- seq.int(nrow(meg_mmi_past))
 
-meg_mmi_past <- meg_mmi_past %>% spread(., key = "Task_Name", value = "Task_Date") %>% select(-ID) %>% 
-  group_by(Initials) %>% fill(MEG_MMI:MEG_Resting_state, .direction = "down") %>%
-  fill(MEG_MMI:MEG_Resting_state, .direction = "up") %>% ungroup() %>% filter(!is.na(MEG_MMI)) %>% 
-  distinct(., .keep_all = TRUE) %>% 
+meg_mmi_past <- meg_mmi_past %>% spread(., key = "Task_Name", value = "Task_Date") %>% select(-ID) %>% group_by(Initials) %>% 
+  fill(MEG_MMI:MEG_Resting_state, .direction = "down") %>% fill(MEG_MMI:MEG_Resting_state, .direction = "up") %>% 
+  ungroup() %>% filter(!is.na(MEG_MMI)) %>% distinct(., .keep_all = TRUE) %>% 
   mutate(MEG_complete=(MEG_MMI==MEG_Resting_state)) %>% mutate(MEG_complete=as.character(MEG_complete))
 meg_mmi_past <- meg_mmi_past %>% mutate(MEG_complete = replace_na(MEG_complete, "FALSE"))
+meg_mmi_past <- meg_mmi_past %>% group_by(Initials) %>% arrange(MEG_complete) %>% slice(n()) %>% ungroup()
   
 meg_mmi_table <- ctable(meg_mmi_past$Participant_Type2, meg_mmi_past$MEG_complete, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
   as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.meg_mmi_past.Participant_Type2") %>% 
@@ -701,19 +702,21 @@ bloods_table2 %>% kable(., col.names = c("Task Number", "Inpatient", "%", "Chara
 
 ##### Family History Interview completion:
 
+Numbers as of last database update (`r Psychometrics_date`). 
+
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
 family_hist <- family_hist %>% select(-Clinical_Visit_Date) %>% group_by(Initials) %>% 
   arrange(c_family_interview_date) %>% slice(n()) %>% ungroup()
 
-family_hist_table <- ctable(family_hist$Clinical_Visit_Type, family_hist$Participant_Type2, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
+family_hist_table <- ctable(family_hist$IRTA_tracker, family_hist$Participant_Type2, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
   as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.family_hist.Participant_Type2") %>% 
-  rename(Clinical_Visit_Type = "cross_table.family_hist.Clinical_Visit_Type") %>% select(-proportions.Total)
+  rename(IRTA_tracker = "cross_table.family_hist.IRTA_tracker") %>% select(-proportions.Total)
 
-family_hist_table2 <- reshape(family_hist_table, idvar = "Clinical_Visit_Type", timevar = "Participant_Type2", direction = "wide") %>% 
+family_hist_table2 <- reshape(family_hist_table, idvar = "IRTA_tracker", timevar = "Participant_Type2", direction = "wide") %>% 
   mutate(HV_Percent = (proportions.HV.HV * 100)) %>% mutate(HV_Percent = round(HV_Percent, 2)) %>% 
   mutate(MDD_Percent = (proportions.MDD.MDD * 100)) %>% mutate(MDD_Percent = round(MDD_Percent, 2)) %>% 
-  select(Clinical_Visit_Type, Freq.MDD, MDD_Percent, Freq.HV, HV_Percent, Freq.Total)
+  select(IRTA_tracker, Freq.MDD, MDD_Percent, Freq.HV, HV_Percent, Freq.Total)
 
 rm(family_hist, family_hist_table)
 
@@ -725,6 +728,8 @@ family_hist_table2 %>% kable(., col.names = c("Clinical Visit Type", "MDD", "%",
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
+
+*Note: rows are scheduling IRTA, not IRTA who completed the interview. 
 
 ***
 
