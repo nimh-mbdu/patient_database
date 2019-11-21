@@ -59,9 +59,14 @@ knitr::opts_chunk$set(echo = TRUE)
 # 
 # # Loading data ------------------------------------------------------------
 
-CBT_report <- read_excel(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
-  
-date_variabes <- CBT_report %>% select(matches("_date")) %>% colnames() 
+cbt_file <- list.files(path = paste0(CBT_location), pattern = "^MASTER_DATABASE_CBT", all.files = FALSE, 
+                       full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+cbt_file_date <- file.mtime(paste0(CBT_location, "/", cbt_file)) %>% as.Date()
+cbt_combined <- tibble(File=c(cbt_file), Date=c(cbt_file_date)) %>% arrange(desc(Date)) %>% slice(1)
+
+CBT_report <- read_excel(paste0(CBT_location, cbt_combined[1]))
+
+date_variabes <- CBT_report %>% select(matches("_date"), matches("_Date")) %>% colnames()
 date_variabes <- c(date_variabes, "DOB")
 CBT_report[date_variabes] <- lapply(CBT_report[date_variabes], as.Date) 
 
@@ -99,16 +104,32 @@ start <- data %>% arrange(Clinical_Visit_Date) %>% slice(1) %>% select(Clinical_
 end <- data %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
 weeks_treat  <- data %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Clinical_Visit_Number) %>% pull()
 
-# provider <- head(data$Primary_clinician,1)
-provider <- c("INSERT COMMUNITY PROVIDER")
+provider <- head(data$Primary_clinician,1)
+# provider <- c("INSERT COMMUNITY PROVIDER")
 
 # basic demographics 
 gender <- head(data$SEX,1) %>% tolower()
-datebirth <- as.Date(head(data$DOB,1))
-age <- age_calc(dob = datebirth, enddate = todays_date_formatted, units = "years", precise = TRUE) %>% round(., digits = 1) 
+datebirth <- head(data$DOB,1)
+age <- age_calc(dob = datebirth, enddate = todays_date_formatted, units = "years", precise = TRUE) %>% round(., digits = 1)
 datebirth <- format(datebirth, "%B-%d-%Y")
-dx <- head(data$c_ksadsdx_primary_dx,1)
-dx <- gsub("MDD", "Major Depressive Disorder", dx, fixed=TRUE)
+
+# diagnoses
+diagnosis_full_names <- read_excel(paste0(database_location, "other_data_never_delete/disorder_list.xlsx"))
+
+dx <- tail(data$c_ksadsdx_primary_dx,1)
+dx <- gsub(eval(diagnosis_full_names$Initials), eval(diagnosis_full_names$Full), dx, fixed=TRUE)
+
+comorbid1 <- tail(data$c_ksadsdx_ongoing_comorbid_combined,1)
+comorbid1 <- gsub("MDD, ", "", comorbid1, fixed=TRUE) 
+comorbid2 <- str_split(comorbid1, ", ", n = Inf, simplify = TRUE) %>% t()
+# comorbid2 <- tail(data$c_ksadsdx_comorbid_dx_combined,1)
+for(h in seq_len(nrow(diagnosis_full_names))) {
+  # h=1
+  dxinitial <- diagnosis_full_names[h,1]
+  dxfull <- diagnosis_full_names[h,2]
+  comorbid2 <- gsub(eval(dxinitial), eval(dxfull), comorbid2, fixed=TRUE) 
+}
+comorbid3 <- paste(comorbid2, collapse=', ')
 
 if (head(data$SEX,1)=="FEMALE") {
   pronoun <- c("her")

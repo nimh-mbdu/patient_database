@@ -57,15 +57,17 @@ knitr::opts_chunk$set(echo = TRUE)
 # suppressPackageStartupMessages(library(shiny))
 # suppressPackageStartupMessages(library(knitr))
 # 
-# # fancyhdr
-# 
-# # Loading data ------------------------------------------------------------
 
 # Loading data ------------------------------------------------------------
 
-CBT_report <- read_excel(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
+cbt_file <- list.files(path = paste0(CBT_location), pattern = "^MASTER_DATABASE_CBT", all.files = FALSE, 
+                       full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+cbt_file_date <- file.mtime(paste0(CBT_location, "/", cbt_file)) %>% as.Date()
+cbt_combined <- tibble(File=c(cbt_file), Date=c(cbt_file_date)) %>% arrange(desc(Date)) %>% slice(1)
 
-date_variabes <- CBT_report %>% select(matches("_date")) %>% colnames()
+CBT_report <- read_excel(paste0(CBT_location, cbt_combined[1]))
+
+date_variabes <- CBT_report %>% select(matches("_date"), matches("_Date")) %>% colnames()
 date_variabes <- c(date_variabes, "DOB")
 CBT_report[date_variabes] <- lapply(CBT_report[date_variabes], as.Date)
 

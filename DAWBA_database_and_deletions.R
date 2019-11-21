@@ -54,7 +54,7 @@ if (exists("master_IRTA_screens_latest")==FALSE) {
 # Isolating participant info I need & merging -----------------------------
 
 master_IRTA_identifiers <- master_IRTA_latest %>% 
-  select(FIRST_NAME, LAST_NAME, Initials, DAWBA_ID, PLUSID, SDAN, IRTA_tracker, Participant_Type2, 
+  select(FIRST_NAME, LAST_NAME, Initials, DAWBA_ID, PLUSID, SDAN, IRTA_tracker, SEX, DOB, Participant_Type2, 
          Clinical_Visit_Date, Screening_Start_Date, Referral_Date, Overall_date, 
          Eligible, Eligibility_notes, Scheduling_status, Scheduling_status_notes, 
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, DAWBA_completed) %>% 
@@ -63,14 +63,14 @@ master_IRTA_identifiers <- master_IRTA_latest %>%
   mutate(Source = "Current participants") %>% filter(!is.na(DAWBA_ID) | !is.na(PLUSID)) 
 
 master_current_screen_identifiers <- master_IRTA_screens_latest %>% 
-  select(FIRST_NAME, LAST_NAME, Initials, DAWBA_ID, PLUSID, SDAN, IRTA_tracker, Participant_Type2, 
+  select(FIRST_NAME, LAST_NAME, Initials, DAWBA_ID, PLUSID, SDAN, IRTA_tracker, SEX, DOB, Participant_Type2, 
          Clinical_Visit_Date, Screening_Start_Date, Referral_Date, Overall_date, 
          Eligible, Eligibility_notes, Scheduling_status, Scheduling_status_notes, 
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, DAWBA_completed) %>% 
   mutate(Source = "Current screens") %>% filter(!is.na(DAWBA_ID) | !is.na(PLUSID))
 
 master_old_screen_identifiers <- master_IRTA_oldest_screens_latest %>% 
-  select(FIRST_NAME, LAST_NAME, Initials, DAWBA_ID, PLUSID, SDAN, IRTA_tracker, Participant_Type2, 
+  select(FIRST_NAME, LAST_NAME, Initials, DAWBA_ID, PLUSID, SDAN, IRTA_tracker, SEX, DOB, Participant_Type2, 
          Clinical_Visit_Date, Screening_Start_Date, Referral_Date, Overall_date, 
          Eligible, Eligibility_notes, Scheduling_status, Scheduling_status_notes, 
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, DAWBA_completed) %>% 
@@ -89,7 +89,7 @@ participant_identifiers_combined <- participant_identifiers_combined %>% group_b
 split1 <- colsplit(participant_identifiers_combined$DAWBA_ID, "/", names = c("DAWBA1", "DAWBA2"))
 participant_identifiers_combined <- cbind(participant_identifiers_combined, split1) 
 participant_identifiers_combined <- melt(data = participant_identifiers_combined, id.vars = 
-  c("FIRST_NAME", "LAST_NAME", "Initials", "PLUSID", "SDAN", "IRTA_tracker", "Participant_Type2", "Clinical_Visit_Date", "Screening_Start_Date", 
+  c("FIRST_NAME", "LAST_NAME", "Initials", "PLUSID", "SDAN", "IRTA_tracker", "SEX", "DOB", "Participant_Type2", "Clinical_Visit_Date", "Screening_Start_Date", 
     "Referral_Date", "Overall_date", "Parent_e_consented", "Child_e_assented", "Parent_DAWBA_completed", "Child_DAWBA_completed", "DAWBA_completed",
     "Eligible", "Eligibility_notes", "Scheduling_status", "Scheduling_status_notes", "Source"), measure.vars = c("DAWBA1", "DAWBA2")) %>% 
   rename(DAWBA_ID = value) %>% mutate(DAWBA_ID = as.character(DAWBA_ID)) %>% filter(variable=="DAWBA1" | !is.na(DAWBA_ID)) %>% select(-variable)
