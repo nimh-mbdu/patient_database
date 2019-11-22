@@ -284,7 +284,13 @@ all_bdd_combined <- all_bdd_combined %>% group_by(DAWBA_ID) %>%
   fill(., names(fill_names), .direction = "down") %>%
   fill(., names(fill_names), .direction = "up") %>%
   distinct(., .keep_all = TRUE) %>% ungroup()
+
 dawba_w_names <- merge.default(dawba_w_names, all_bdd_combined, all=TRUE) 
+fill_names <- dawba_w_names %>% select(-DAWBA_ID) %>% colnames()
+dawba_w_names <- dawba_w_names %>% group_by(DAWBA_ID) %>% 
+  fill(., names(fill_names), .direction = "down") %>%
+  fill(., names(fill_names), .direction = "up") %>%
+  distinct(., .keep_all = TRUE) %>% ungroup()
 
 # Exporting the database --------------------------------------------------
 
