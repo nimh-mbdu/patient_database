@@ -123,9 +123,14 @@ if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9) {
   
   suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
   
-  # Note - check that the file has saved with a new date - this won't happen if someone else has the file open.
-  # If it has not exported properly, uncomment out and run the line below, which will save it under a new name: 
-  # master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE_updated.xlsx")) # will not save if someone else has this dataset open 
+  # Note - check that the files have saved with a new date - this won't happen if someone else has the file open.
+  # If any of the files have not exported properly, uncomment out and run the relevant line below, which will save it under a new name: 
+  
+  # master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE_updated.xlsx"))
+  # task_reshape_master_QC %>% write_xlsx(paste0(IRTA_tracker_location,"TASKS_DATABASE_QC_updated.xlsx"))
+  
+  # master_IRTA_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"REFERRAL_AND_SCREENING_DATABASE_updated.xlsx"))
+  # master_IRTA_oldest_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"OLD_REFERRALS_DATABASE_updated.xlsx"))
   
 } else {
   
@@ -139,7 +144,7 @@ if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
 
   suppressWarnings(source(paste0(scripts, 'Database_code.R')))
   
-  # Note - check that the file has saved with a new date - this won't happen if someone else has the file open.
+  # Note - check that the files have saved with a new date - this won't happen if someone else has the file open.
   # Similar to the above, if any of the database files have not exported properly, uncomment out and run the relevant line below, which will save it under a new name: 
   
   # Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL_updated.xlsx"))
@@ -242,6 +247,23 @@ rm(list=ls(pattern="linician"))
 
   print("No CBT report generated - NA")
 
+}
+
+# produce clinician meeting sheet -----------------------------------------
+
+if (modules2run==111) {
+  
+  # suppressPackageStartupMessages(library(kableExtra))
+  # render(paste0(scripts, 'Research_meeting_numbers.Rmd'), 
+  #        output_format = "html_document",
+  #        # output_format = "word_document", 
+  #        output_file = paste0("Weekly_Numbers_", todays_date_formatted), output_dir = weekly_numbers_location)
+  # detach(package:kableExtra)
+  
+} else {
+  
+  print("clinician meeting sheet not produced - NA")
+  
 }
 
 # end ---------------------------------------------------------------------
