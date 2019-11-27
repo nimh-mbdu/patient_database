@@ -23,6 +23,7 @@ scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful dire
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here 
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
 weekly_numbers_location = paste0(string, "Minutes and conversation archives/Weekly Meeting Sheet/")
+clinician_sheet_location = paste0(string, "Minutes and conversation archives/Thursday Clinical Meetings/Clinician Sheet/")
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring 
 graphs_location = paste0(database_location, "graphs/")
 
@@ -116,10 +117,22 @@ modules2run <- c(to_change$modules2run)
 # 7 = update master database & create CBT progress report - remember to change input the initials of the participant above & specify whether you want a progress or final report 
 # 8 = create CBT report only (master database already updated)
 # 9 = modules 1 & 4
+# 10 = generate clinician meeting sheet
+# 11 = modules 1 & 10
+
+# functions ---------------------------------------------------------------
+
+count_na <- function(x) sum(is.na(x))
+
+FitFlextableToPage <- function(ft, pgwidth = 10){
+  ft_out <- ft %>% autofit(., add_h = 0.3)
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*10.5/(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
 
 # update master IRTA tracker and tasks database ---------------------------
 
-if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9) {
+if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2run==11) {
   
   suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
   
@@ -176,7 +189,7 @@ if (modules2run==3 | modules2run==5) {
 if (modules2run==4 | modules2run==5 | modules2run==9) {
   
   suppressPackageStartupMessages(library(kableExtra))
-  render(paste0(scripts, 'Research_meeting_numbers.Rmd'), 
+  render(paste0(scripts, 'Reports/Research_meeting_numbers.Rmd'), 
          output_format = "html_document",
          # output_format = "word_document", 
          output_file = paste0("Weekly_Numbers_", todays_date_formatted), output_dir = weekly_numbers_location)
@@ -251,15 +264,13 @@ rm(list=ls(pattern="linician"))
 
 # produce clinician meeting sheet -----------------------------------------
 
-if (modules2run==111) {
+if (modules2run==10 | modules2run==11) {
   
-  # suppressPackageStartupMessages(library(kableExtra))
-  # render(paste0(scripts, 'Research_meeting_numbers.Rmd'), 
-  #        output_format = "html_document",
-  #        # output_format = "word_document", 
-  #        output_file = paste0("Weekly_Numbers_", todays_date_formatted), output_dir = weekly_numbers_location)
-  # detach(package:kableExtra)
-  
+  render(paste0(scripts, 'Reports/Clinician_sheet.Rmd'),
+         # output_format = "html_document",
+         output_format = "word_document",
+         output_file = paste0("Clinician_sheet_", todays_date_formatted), output_dir = clinician_sheet_location)
+
 } else {
   
   print("clinician meeting sheet not produced - NA")
