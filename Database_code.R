@@ -137,24 +137,25 @@
   #****** Manual entry database
   
   manual_shaps <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SHAPS", skip=2) %>% 
-    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
   manual_mfq <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "MFQ", skip=2) %>% 
-    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
   manual_ari <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "ARI", skip=2) %>% 
-    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
   manual_lsas <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "LSAS", skip=2) %>% 
-    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
   manual_scared <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SCARED", skip=2) %>% 
-    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
   manual_ksadsdx <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "KSADS Dx checklist", skip=2) %>% 
-    select(-starts_with("x")) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
+  manual_ethnicity <- read_excel(paste0(database_location, "other_data_never_delete/ethnicity_list_KCs_CR_tracker.xlsx"))
   
   manual_sets <- ls(pattern="manual_")
   manual_sets <- mget(manual_sets)
-  manual_combined <- reduce(manual_sets, full_join) %>% select(-Entry_date)
-  fill_names <- manual_combined %>% select(-SDAN) %>% colnames()
+  manual_combined <- reduce(manual_sets, full_join)
+  fill_names <- manual_combined %>% select(-Initials) %>% colnames()
   manual_combined <- manual_combined %>% 
-    group_by(SDAN, Overall_date) %>% 
+    group_by(Initials, Overall_date) %>% 
     fill(., names(fill_names), .direction = "down") %>%
     fill(., names(fill_names), .direction = "up") %>%
     ungroup() %>% 
@@ -285,8 +286,6 @@
   task_DB$Task_Number <- as.character(task_DB$Task_Number)
 
 # Scoring SDQ+ and merging with CTDB --------------------------------------
-  
-  count_na <- function(x) sum(is.na(x))
   
 #####
   # c_visittrack_ 
@@ -827,6 +826,10 @@
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
+    group_by(Initials, Task_Name, c_ksadsdx_date) %>%
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_ksadsdx_date, measurement_TDiff_abs) %>%
+    filter(1:n() == 1) %>%
+    ungroup() %>%
     select(-measurement_TDiff_abs)
   
   diagnosis_subset_clinical <- merge.default(clinical_DB_date, diagnosis_subset_sdq, all=TRUE) %>% 
@@ -843,6 +846,10 @@
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     filter(1:n() == 1) %>%
     ungroup() %>% 
+    group_by(Initials, c_ksadsdx_date) %>%
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, c_ksadsdx_date, measurement_TDiff_abs) %>%
+    filter(1:n() == 1) %>%
+    ungroup() %>%
     select(-measurement_TDiff_abs)
 
 # IQ, handedness, tanner -------------------------------------------
@@ -2127,7 +2134,7 @@
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
-    # iter=23
+    # iter=2
     measure_name <- variables_no_scoring[iter]
     print(paste("************************LOOP = ", measure_name))
 
@@ -2139,7 +2146,7 @@
         filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
     }
-    
+
     if (measure_name=="p_demo_eval_" | measure_name=="s_menstruation_" | measure_name=="s_middebrief_" | measure_name=="s_mar_" |
         measure_name=="s_fua_" | measure_name=="p_fua_") {
       print("creating date variable for measure")
@@ -2200,7 +2207,16 @@
       measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
       measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
     }  
-  
+      
+    if (measure_name=="p_demo_eval_"){
+      
+      measure_temp$p_demo_eval_6_race <- gsub("while", "white",measure_temp$p_demo_eval_6_race)
+      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
+        rename(date_temp="Overall_date") %>% filter(!is.na(p_demo_eval_6_race) | !is.na(p_demo_eval_7_hispanic))
+      measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
+      
+    }
+      
     if (measure_name=="s_medsctdb_") {
       
       print("CTDB measure - no need to filter cases")
@@ -2221,6 +2237,15 @@
       measure_temp$tempcomplete <- measure_temp %>% select(matches(measure_name)) %>% complete.cases(.)
       measure_temp$tempcomplete[measure_temp$tempcomplete=="FALSE"] <- "0"
       measure_temp$tempcomplete[measure_temp$tempcomplete=="TRUE"] <- "1"
+      
+    }
+    
+    if (measure_name=="p_demo_eval_"){
+      
+      fill_names <- measure_temp %>% select(-Initials) %>% colnames()
+      measure_temp <- measure_temp %>% group_by(Initials) %>% arrange(Initials, desc(source)) %>%
+        fill(., names(fill_names), .direction = "down") %>% fill(., names(fill_names), .direction = "up") %>% slice(1) %>% ungroup()
+      
     }
 
     if (measure_name=="s_after_ba_" | measure_name=="s_before_ba_" | measure_name=="s_srsors_" | 
@@ -2444,6 +2469,7 @@ fill_names <- Psychometrics_treatment %>% select(-Initials, -Clinical_Visit_Date
 # str(Psychometrics_treatment, list.len=ncol(Psychometrics_treatment))
 Psychometrics_treatment <- Psychometrics_treatment %>%
   group_by(Initials, Clinical_Visit_Date) %>%
+  arrange(Initials, Clinical_Visit_Date) %>% 
   fill(., names(fill_names), .direction = "down") %>%
   fill(., names(fill_names), .direction = "up") %>%
   ungroup() %>%
@@ -2580,6 +2606,7 @@ fill_names <- Psychometrics_behav %>% select(-Initials, -Task_Name, -Task_Date, 
 # str(Psychometrics_behav, list.len=ncol(Psychometrics_behav))
 Psychometrics_behav <- Psychometrics_behav %>%
   group_by(Initials, Task_Name, Task_Date, Task_Number) %>%
+  arrange(Initials, Task_Name, Task_Date) %>% 
   fill(., names(fill_names), .direction = c("down")) %>%
   fill(., names(fill_names), .direction = c("up")) %>%
   ungroup() %>%

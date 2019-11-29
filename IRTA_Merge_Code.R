@@ -36,7 +36,7 @@ temp_active_data <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_
 
 irta_sets <- ls(pattern="_active_data")
 irta_sets <- mget(irta_sets)
-master_IRTA_template <- reduce(irta_sets, full_join) %>% mutate(Participant_Type2 = NA)
+master_IRTA_template <- reduce(irta_sets, full_join) %>% mutate(Participant_Type2 = NA) %>% mutate(Age_at_visit = NA)
 
 # loading all current screens ---------------------------------------------
 
@@ -59,7 +59,7 @@ rm(temp_current_screens)
 # merge & tidy up
 irta_screen_sets <- ls(pattern="_current_screens")
 irta_screen_sets <- mget(irta_screen_sets)
-master_IRTA_screens_template <- reduce(irta_screen_sets, full_join) %>% mutate(Participant_Type2 = NA, Clinical_Visit_Number = NA, Clinical_Visit_Code = NA)
+master_IRTA_screens_template <- reduce(irta_screen_sets, full_join) %>% mutate(Participant_Type2 = NA, Clinical_Visit_Number = NA, Clinical_Visit_Code = NA) %>% mutate(Age_at_visit = NA)
 
 # loading all old and unsuccessful screens ---------------------------------------------
 
@@ -81,7 +81,7 @@ temp_old_screens <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_
 # merge & tidy up
 irta_old_screen_sets <- ls(pattern="_old_screens")
 irta_old_screen_sets <- mget(irta_old_screen_sets)
-master_IRTA_old_screens_template <- reduce(irta_old_screen_sets, full_join) %>% mutate(Participant_Type2 = NA)
+master_IRTA_old_screens_template <- reduce(irta_old_screen_sets, full_join) %>% mutate(Participant_Type2 = NA) %>% mutate(Age_at_visit = NA)
 
 # reordering and creating date variables ----------------------------------
 

@@ -100,6 +100,16 @@ latest_sdq_pull <- c(to_change$latest_sdq_pull)
 current_IRTAs_full <- c("Kenzie Jackson", "Katy Chang", "Christine Wei", "Stuart Kirwan", "Lisa Gorham", "Kate Haynes", "Chris Camp")
 current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
 
+# functions ---------------------------------------------------------------
+
+count_na <- function(x) sum(is.na(x))
+
+FitFlextableToPage <- function(ft, pgwidth = 10){
+  ft_out <- ft %>% autofit(., add_h = 0.3)
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*10.5/(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+
 # modules to run ----------------------------------------------------------
 
 modules2run <- c(to_change$modules2run)
@@ -119,16 +129,6 @@ modules2run <- c(to_change$modules2run)
 # 9 = modules 1 & 4
 # 10 = generate clinician meeting sheet
 # 11 = modules 1 & 10
-
-# functions ---------------------------------------------------------------
-
-count_na <- function(x) sum(is.na(x))
-
-FitFlextableToPage <- function(ft, pgwidth = 10){
-  ft_out <- ft %>% autofit(., add_h = 0.3)
-  ft_out <- width(ft_out, width = dim(ft_out)$widths*10.5/(flextable_dim(ft_out)$widths))
-  return(ft_out)
-}
 
 # update master IRTA tracker and tasks database ---------------------------
 

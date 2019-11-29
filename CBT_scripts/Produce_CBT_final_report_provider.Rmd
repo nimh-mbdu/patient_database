@@ -426,11 +426,11 @@ data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>
 
 ***
 
-#### Alternative measures of depression: 
+#### Clinician-administered measure of depression:
 
 ##### Parent and child consensus on depression symptoms 
 
-CDRS (Children's Depression Rating Scale): 20 items. Each question is asked of both parent and child and then a consensus score reached by the clinician. Items range between 1-5 and 1-7, depending on the question.
+CDRS (Children’s Depression Rating Scale): 20 items. This is a semi-structured interview of youth depression that is scored by clinician consensus between parent and child’s independent responses. A raw score of 40 or greater is an indicator of depressive symptomatology.
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
