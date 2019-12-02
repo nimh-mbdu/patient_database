@@ -201,7 +201,14 @@
   common_identifiers_child <- master_IRTA_latest %>% select(PLUSID, FIRST_NAME, LAST_NAME, SDAN, Initials) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% fill(PLUSID, SDAN, Initials, .direction = "down") %>% fill(PLUSID, SDAN, Initials, .direction = "up") %>% ungroup() %>% 
     group_by(Initials) %>% fill(PLUSID, SDAN, .direction = "down") %>% fill(PLUSID, SDAN, .direction = "up") %>% ungroup() %>% distinct(., .keep_all = TRUE)
+  
   ctdb_w_plusid_child <- left_join(common_identifiers_child, ctdb_Data_Download_reduced, all=TRUE)
+  
+  common_identifiers_child_sib <- master_IRTA_latest %>% select(FIRST_NAME, LAST_NAME, Initials, PLUSID, IRTA_tracker, Sibling_Init, Sibling_Type) %>% 
+    group_by(FIRST_NAME, LAST_NAME) %>% fill(Initials:Sibling_Type, .direction = "down") %>% fill(Initials:Sibling_Type, .direction = "up") %>% ungroup() %>% 
+    group_by(Initials) %>% fill(PLUSID:Sibling_Type, .direction = "down") %>% fill(PLUSID:Sibling_Type, .direction = "up") %>% ungroup() %>% 
+    filter(!is.na(Sibling_Init) | !is.na(Sibling_Type)) %>% filter(Sibling_Type=="1") %>% filter(IRTA_tracker!="REMOVED") %>% distinct(., .keep_all = TRUE) %>% 
+    select(PLUSID, Initials, Sibling_Init)
   
   #****** CTDB parent name prep
 
@@ -357,7 +364,7 @@
       rename(measure_temp_source = source) %>% 
       group_by(Initials, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup()
 
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
@@ -367,11 +374,11 @@
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       group_by(Initials, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
@@ -390,11 +397,11 @@
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       group_by(Initials, Task_Name, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
@@ -484,7 +491,7 @@
       rename(measure_temp_source = source) %>% 
       group_by(Initials, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
-      filter(1:n() == 1) %>% 
+      slice(1) %>% 
       ungroup()
     
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
@@ -496,11 +503,11 @@
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       group_by(Initials, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
@@ -526,11 +533,11 @@
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       group_by(Initials, Task_Name, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
@@ -588,7 +595,7 @@
     rename(s_lsas_source = source) %>% 
     group_by(Initials, s_lsas_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_lsas_date, desc(s_lsas_tot), desc(s_lsas_source)) %>%
-    filter(1:n() == 1) %>% 
+    slice(1) %>% 
     ungroup()
   
   s_lsas_subset_clinical <- merge.default(clinical_DB_date, s_lsas_subset, all=TRUE) %>% 
@@ -598,11 +605,11 @@
     mutate(measurement_TDiff_abs=abs(s_lsas_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, s_lsas_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_lsas_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -614,11 +621,11 @@
     mutate(measurement_TDiff_abs=abs(s_lsas_TDiff)) %>% 
     group_by(Initials, Task_Name, Task_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, Task_Name, s_lsas_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, s_lsas_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -672,7 +679,7 @@
     rename(s_shaps_source = source) %>% 
     group_by(Initials, s_shaps_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_shaps_date, desc(s_shaps_tot), desc(s_shaps_source)) %>%
-    filter(1:n() == 1) %>% 
+    slice(1) %>% 
     ungroup()
   
   s_shaps_subset_clinical <- merge.default(clinical_DB_date, s_shaps_subset, all=TRUE) %>% 
@@ -683,11 +690,11 @@
     mutate(measurement_TDiff_abs=abs(s_shaps_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, s_shaps_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_shaps_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -700,11 +707,11 @@
     mutate(measurement_TDiff_abs=abs(s_shaps_TDiff)) %>% 
     group_by(Initials, Task_Name, Task_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, Task_Name, s_shaps_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, s_shaps_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -824,12 +831,13 @@
     mutate(measurement_TDiff_abs=abs(c_ksadsdx_TDiff)) %>% 
     group_by(Initials, Task_Name, Task_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, Task_Name, c_ksadsdx_date) %>%
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_ksadsdx_date, measurement_TDiff_abs) %>%
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>%
+    filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
   
   diagnosis_subset_clinical <- merge.default(clinical_DB_date, diagnosis_subset_sdq, all=TRUE) %>% 
@@ -844,11 +852,11 @@
     mutate(measurement_TDiff_abs=abs(c_ksadsdx_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, c_ksadsdx_date) %>%
-    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, c_ksadsdx_date, measurement_TDiff_abs) %>%
-    filter(1:n() == 1) %>%
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_ksadsdx_date, measurement_TDiff_abs) %>%
+    slice(1) %>%
     ungroup() %>%
     select(-measurement_TDiff_abs)
 
@@ -877,7 +885,7 @@
     rename(c_wasi_source = source) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, desc(c_wasi_date), desc(c_wasi_iq), desc(c_wasi_source)) %>%
-    filter(1:n() == 1) %>% 
+    slice(1) %>% 
     ungroup()
   
   c_wasi_subset_clinical <- merge.default(clinical_DB_date, c_wasi_subset, all=TRUE) %>% 
@@ -909,7 +917,7 @@
     rename(s_tanner_source = source) %>% 
     group_by(Initials, s_tanner_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_tanner_date, desc(s_tanner_source)) %>%
-    filter(1:n() == 1) %>% 
+    slice(1) %>% 
     ungroup()
   
   s_tanner_subset_clinical <- merge.default(clinical_DB_date, s_tanner_subset, all=TRUE) %>% 
@@ -920,7 +928,7 @@
     mutate(measurement_TDiff_abs=abs(s_tanner_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     select(-measurement_TDiff_abs)
   
@@ -932,7 +940,7 @@
     mutate(measurement_TDiff_abs=abs(s_tanner_TDiff)) %>% 
     group_by(Initials, Task_Name, Task_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     select(-measurement_TDiff_abs)
   
@@ -1003,7 +1011,7 @@
     rename(s_handedness_ehi_source = source) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, desc(s_handedness_ehi_date), desc(s_handedness_ehi_tot), desc(s_handedness_ehi_source)) %>%
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup()
   s_handedness_subset$s_handedness_ehi_tot <- as.numeric(s_handedness_subset$s_handedness_ehi_tot)
   
@@ -1073,11 +1081,11 @@
     mutate(measurement_TDiff_abs=abs(c_medsclin_TDiff)) %>% 
     group_by(Initials, Task_Name, Task_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, Task_Name, c_medsclin_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_medsclin_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1094,11 +1102,11 @@
     mutate(measurement_TDiff_abs=abs(c_medsclin_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, c_medsclin_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1117,11 +1125,11 @@
     mutate(measurement_TDiff_abs=abs(c_medsclin1yr_TDiff)) %>% 
     group_by(Initials, Task_Name, Task_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, Task_Name, c_medsclin1yr_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_medsclin1yr_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1138,11 +1146,11 @@
     mutate(measurement_TDiff_abs=abs(c_medsclin1yr_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, c_medsclin1yr_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin1yr_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1277,11 +1285,11 @@
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       group_by(Initials, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
@@ -1365,11 +1373,11 @@
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       group_by(Initials, Task_Name, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
@@ -1396,11 +1404,11 @@
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       group_by(Initials, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
@@ -1457,7 +1465,7 @@
     rename(s_seq_source = source) %>% 
     group_by(Initials, s_seq_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_seq_date, desc(s_seq_tot), desc(s_seq_source)) %>%
-    # filter(1:n() == 1) %>% 
+    # slice(1) %>% 
     ungroup() %>% 
     select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_seq_source, matches('s_seq_'))
   
@@ -1466,11 +1474,11 @@
     mutate(measurement_TDiff_abs=abs(s_seq_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, s_seq_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_seq_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1532,7 +1540,7 @@
       rename(measure_temp_source = source) %>% 
       group_by(Initials, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temp_gen_functioning_tot), desc(measure_temp_source)) %>%
-      filter(1:n() == 1) %>% 
+      slice(1) %>% 
       ungroup() 
     
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
@@ -1540,11 +1548,11 @@
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       group_by(Initials, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
-      filter(1:n() == 1) %>%
+      slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>%
       select(-measurement_TDiff_abs)
@@ -1597,7 +1605,7 @@
     rename(p_fasa_source = source) %>% 
     group_by(Initials, p_fasa_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, p_fasa_date, desc(p_fasa_tot), desc(p_fasa_source)) %>%
-    filter(1:n() == 1) %>% 
+    slice(1) %>% 
     ungroup() %>% 
     select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, p_fasa_source, matches('p_fasa_'))
   
@@ -1606,11 +1614,11 @@
     mutate(measurement_TDiff_abs=abs(p_fasa_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, p_fasa_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, p_fasa_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1688,11 +1696,11 @@
     mutate(measurement_TDiff_abs=abs(s_baexpout_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, s_baexpout_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_baexpout_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1731,7 +1739,7 @@
     rename(c_snap_source = source) %>% 
     group_by(Initials, c_snap_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, c_snap_date, desc(c_snap_tot), desc(c_snap_source)) %>%
-    filter(1:n() == 1) %>% 
+    slice(1) %>% 
     ungroup() %>% 
     select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_snap_source, matches('c_snap_'))
   
@@ -1740,11 +1748,11 @@
     mutate(measurement_TDiff_abs=abs(c_snap_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, c_snap_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, c_snap_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1786,11 +1794,11 @@
     mutate(measurement_TDiff_abs=abs(c_cybocs_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, c_cybocs_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, c_cybocs_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1825,11 +1833,11 @@
     mutate(measurement_TDiff_abs=abs(s_cybocs_list_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, s_cybocs_list_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_cybocs_list_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs) 
@@ -1902,11 +1910,11 @@
     mutate(measurement_TDiff_abs=abs(c_bddybocs_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, c_bddybocs_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, c_bddybocs_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -1941,11 +1949,11 @@
     mutate(measurement_TDiff_abs=abs(s_bddybocs_list_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, s_bddybocs_list_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_bddybocs_list_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -2002,11 +2010,11 @@
     mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, date_temp) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -2070,11 +2078,11 @@
     mutate(measurement_TDiff_abs=abs(s_cpss_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, s_cpss_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_cpss_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -2116,11 +2124,11 @@
     mutate(measurement_TDiff_abs=abs(s_ascq_TDiff)) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     group_by(Initials, s_ascq_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, s_ascq_date, measurement_TDiff_abs) %>% 
-    filter(1:n() == 1) %>%
+    slice(1) %>%
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
@@ -2134,13 +2142,19 @@
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
-    # iter=2
+    # iter=23
     measure_name <- variables_no_scoring[iter]
     print(paste("************************LOOP = ", measure_name))
 
     if (measure_name=="s_medsctdb_") {
       measure_temp <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, s_medsctdb_list, s_medsctdb_changes, s_medsctdb_date) %>% 
         filter(!is.na(s_medsctdb_date))
+    } else if (measure_name=="c_family_interview_") {
+      measure_temp <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
+        filter(!is.na(Overall_date)) %>% 
+        distinct(., .keep_all = TRUE)
+      measure_temp <- merge.default(measure_temp, common_identifiers_child_sib, all=TRUE) %>% 
+        select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Sibling_Init, source, matches(measure_name))
     } else {
       measure_temp <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
         filter(!is.na(Overall_date)) %>% 
@@ -2199,6 +2213,13 @@
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
       measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
       measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+    } else if (measure_name=="c_family_interview_") {
+      print("date variable manually entered in SDQ+")
+      measure_temp <- measure_temp %>% rename(date_temp = "c_family_interview_date")
+      measure_temp$date_temp <- as.Date(measure_temp$date_temp)
+      measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date)
+      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Sibling_Init, date_temp, source, matches(measure_name))
+      measure_temp[,8:ncol(measure_temp)]  <- lapply(measure_temp[,8:ncol(measure_temp)], na_if, "")
     } else {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = (paste0(measure_name, "date")))
@@ -2209,12 +2230,10 @@
     }  
       
     if (measure_name=="p_demo_eval_"){
-      
       measure_temp$p_demo_eval_6_race <- gsub("while", "white",measure_temp$p_demo_eval_6_race)
       measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
         rename(date_temp="Overall_date") %>% filter(!is.na(p_demo_eval_6_race) | !is.na(p_demo_eval_7_hispanic))
       measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
-      
     }
       
     if (measure_name=="s_medsctdb_") {
@@ -2240,12 +2259,16 @@
       
     }
     
+    if (measure_name=="c_family_interview_") {
+      dummy1 <- measure_temp %>% select(-Initials) %>% rename(Initials="Sibling_Init") %>% filter(!is.na(Initials))
+      measure_temp <- measure_temp %>% select(-Sibling_Init) %>% merge.default(., dummy1, all=TRUE)
+      rm(dummy1) 
+    }
+    
     if (measure_name=="p_demo_eval_"){
-      
       fill_names <- measure_temp %>% select(-Initials) %>% colnames()
       measure_temp <- measure_temp %>% group_by(Initials) %>% arrange(Initials, desc(source)) %>%
         fill(., names(fill_names), .direction = "down") %>% fill(., names(fill_names), .direction = "up") %>% slice(1) %>% ungroup()
-      
     }
 
     if (measure_name=="s_after_ba_" | measure_name=="s_before_ba_" | measure_name=="s_srsors_" | 
@@ -2270,11 +2293,11 @@
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
         group_by(Initials, Task_Name, Task_Date) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         group_by(Initials, Task_Name, date_temp) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         filter(measurement_TDiff_abs<=60) %>% 
         select(-measurement_TDiff_abs)
@@ -2301,7 +2324,7 @@
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
         group_by(Initials, Task_Name, Task_Date) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         select(-measurement_TDiff_abs)
       
@@ -2335,11 +2358,11 @@
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
         group_by(Initials, Task_Name, Task_Date) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         group_by(Initials, Task_Name, date_temp) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         filter(measurement_TDiff_abs<=60) %>% 
         select(-measurement_TDiff_abs)
@@ -2372,11 +2395,11 @@
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
         group_by(Initials, Clinical_Visit_Date) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         group_by(Initials, date_temp) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         filter(measurement_TDiff_abs<=60) %>% 
         select(-measurement_TDiff_abs)
@@ -2403,7 +2426,7 @@
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
         group_by(Initials, Clinical_Visit_Date) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         select(-measurement_TDiff_abs)
       
@@ -2437,11 +2460,11 @@
         mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
         group_by(Initials, Clinical_Visit_Date) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         group_by(Initials, date_temp) %>% 
         arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
-        filter(1:n() == 1) %>%
+        slice(1) %>%
         ungroup() %>% 
         filter(measurement_TDiff_abs<=60) %>% 
         select(-measurement_TDiff_abs)
