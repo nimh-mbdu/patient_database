@@ -326,6 +326,26 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
     filter(!str_detect(Participant_Type, "Fox")) %>% distinct(., .keep_all = TRUE) %>% filter(is.na(DAWBA_ID)) %>% 
     filter(str_detect(Protocol, "0037")) %>% filter(Overall_date > as.Date("2018-05-01")) %>% mutate(reason18="Missing DAWBA ID") 
   
+  # comparing to previous version 
+  
+  task_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^TASKS_DATABASE_QC", all.files = FALSE,
+                                   full.names = FALSE, recursive = FALSE,
+                                   ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+  task_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", task_master_file)) %>% as.Date()
+  task_master_combined <- tibble(File=c(task_master_file), Date=c(task_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+  prev_task_database <- read_excel(paste0(IRTA_tracker_location, task_master_combined[1]))  %>%
+    select(Initials:Participant_Type, Eligible:Task_Visit_Type) %>% mutate(source2="old version of tracker")
+  date_variabes <- c("DOB", "Task_Date")
+  numeric_variables <- c("Task_Number")
+  prev_task_database[date_variabes] <- lapply(prev_task_database[date_variabes], as.Date) 
+  prev_task_database[numeric_variables] <- lapply(prev_task_database[numeric_variables], as.numeric) 
+
+  historical_check <- task_reshape_master %>% select(Initials:Participant_Type, Eligible:Task_Visit_Type) %>% 
+    mutate(source1="new version of tracker") %>% merge.default(., prev_task_database, all=TRUE) %>% filter(is.na(source1) | is.na(source2))
+  historical_check$Info_source <- coalesce(historical_check$source1, historical_check$source2)
+  historical_check <- historical_check %>% select(-source1, -source2) %>% group_by(Initials) %>% filter(n()>1) %>% ungroup() %>% 
+    mutate(reason19="Information change from previous tracker merge: check deliberate vs. accidental. Origin of information") 
+  
 # combining the above 
   task_errors_combined <- merge.default(task_name_check, task_duplicate_date, all=TRUE) %>% merge.default(., task_duplicate_v_type, all=TRUE) %>% 
     merge.default(., task_duplicate_number, all=TRUE) %>% merge.default(., task_number_check, all=TRUE) %>% merge.default(., task_scanner_missing, all=TRUE) %>% 
@@ -333,22 +353,26 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
     merge.default(., duplicate_sdan, all=TRUE) %>% merge.default(., task_missing_sex, all=TRUE) %>% merge.default(., task_missing_dob, all=TRUE) %>% 
     merge.default(., task_missing_initials, all=TRUE) %>% merge.default(., task_missing_eligible, all=TRUE) %>% merge.default(., task_missing_clinical_date, all=TRUE) %>% 
     merge.default(., task_check_clinical_code, all=TRUE) %>% merge.default(., task_missing_scheduling, all=TRUE) %>% merge.default(., task_missing_dawbaid, all=TRUE) %>% 
-    select(-FIRST_NAME, -LAST_NAME)
+    merge.default(., historical_check, all=TRUE) %>% select(-FIRST_NAME, -LAST_NAME)
   
   task_errors_combined$QC_task <- paste(task_errors_combined$reason1, task_errors_combined$reason2, task_errors_combined$reason3, task_errors_combined$reason4, 
                                         task_errors_combined$reason5, task_errors_combined$reason6, sep = "; ")
   task_errors_combined$QC_other <- paste(task_errors_combined$reason7, task_errors_combined$reason8, task_errors_combined$reason9, task_errors_combined$reason10, 
                                          task_errors_combined$reason11, task_errors_combined$reason12, task_errors_combined$reason13, task_errors_combined$reason14, 
                                          task_errors_combined$reason15, task_errors_combined$reason16, task_errors_combined$reason17, task_errors_combined$reason18, sep = "; ")
+  task_errors_combined$QC_historical <- paste(task_errors_combined$reason19, task_errors_combined$Info_source, sep = "; ")
   
   task_errors_combined$QC_task <- gsub("NA; ", "", task_errors_combined$QC_task, fixed=TRUE)
   task_errors_combined$QC_task <- gsub("; NA", "", task_errors_combined$QC_task, fixed=TRUE)
+  task_errors_combined$QC_task <- na_if(task_errors_combined$QC_task, "NA")
   task_errors_combined$QC_other <- gsub("NA; ", "", task_errors_combined$QC_other, fixed=TRUE)
   task_errors_combined$QC_other <- gsub("; NA", "", task_errors_combined$QC_other, fixed=TRUE)
-  
-  task_errors_combined$QC_task <- na_if(task_errors_combined$QC_task, "NA")
   task_errors_combined$QC_other <- na_if(task_errors_combined$QC_other, "NA")
-  task_errors_combined <- task_errors_combined %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
+  task_errors_combined$QC_historical <- gsub("NA; ", "", task_errors_combined$QC_historical, fixed=TRUE)
+  task_errors_combined$QC_historical <- gsub("; NA", "", task_errors_combined$QC_historical, fixed=TRUE)
+  task_errors_combined$QC_historical <- na_if(task_errors_combined$QC_historical, "NA")
+  
+  task_errors_combined <- task_errors_combined %>% select(-matches("reason"), -Info_source, -Participant_Type2, -Age_at_visit, -Overall_date) %>% arrange(Initials, Task_Date)
 
 # exporting 
     
@@ -552,7 +576,7 @@ meg_list <- task_reshape_master %>% filter(str_detect(Task_Name, "MEG")) %>%
 ##### checking for merge conflicts/missing information:
 
 MEG_task_QC <- meg_reshape_master %>% filter(str_detect(Task_Name, "MEG")) %>% merge.default(meg_list, ., all=TRUE) %>% 
-  select(-Photo_PII_Removal, -Experimenter1, -Experimenter2, )
+  select(-Photo_PII_Removal, -Experimenter1, -Experimenter2)
 
 of_interest <- c('IRTA_tracker', 'Task_Number', 'Include', 'Days_since_scan', 'MEG_tab')
 MEG_task_QC[of_interest] <- lapply(MEG_task_QC[of_interest], replace_na, '666')
@@ -651,6 +675,6 @@ rm(list=ls(pattern="_template"))
 rm(list=ls(pattern="duplicate"))
 rm(IRTA_full, IRTA_init, j, w, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest, o)
 rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, meg_reshape_master, meg_reshape, MEG_tasks, meg_combined,  
-   MEG_task_QC, meg_list, MID_check, RS_check, task_check_clinical_code, task_name_check, task_number_check, 
-   task_errors_combined, task_names, MID_resting_discrepancy)
+   MEG_task_QC, meg_list, MID_check, RS_check, task_check_clinical_code, task_name_check, task_number_check, prev_task_database,
+   task_errors_combined, task_names, MID_resting_discrepancy, task_master_file, task_master_file_time, task_master_combined)
 rm(get_last_scan, get_last_visit, has_scan, is_last_v, print_dates, print_notes)

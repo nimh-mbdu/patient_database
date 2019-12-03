@@ -266,11 +266,13 @@ rm(list=ls(pattern="linician"))
 
 if (modules2run==10 | modules2run==11) {
   
+  suppressPackageStartupMessages(library(flextable))
   render(paste0(scripts, 'Reports/Clinician_sheet.Rmd'),
          # output_format = "html_document",
          output_format = "word_document",
          output_file = paste0("Clinician_sheet_", todays_date_formatted), output_dir = clinician_sheet_location)
-
+  detach(package:flextable)
+  
 } else {
   
   print("clinician meeting sheet not produced - NA")
