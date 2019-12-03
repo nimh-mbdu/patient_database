@@ -7,6 +7,7 @@ output:
     fig_caption: yes
     fig_height: 5
     fig_width: 8
+    reference_docx: template.docx
 ---
 
 ```{r setup, include=FALSE}
@@ -243,8 +244,6 @@ Mood Brain & Development Unit, NIH
 
 CC': `r p_f_name` `r p_l_name`; parent.
 
-\pagebreak
-
 ***
 
 #### Patient self-report score summary
@@ -278,13 +277,11 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
-  arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_mfq1w_tot, p_mfq1w_tot, p_mfq1w_parent) %>%
+  arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_mfq1w_tot, p_mfq1w_tot, p_mfq1w_parent) %>%
   mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_mfq1w_tot = replace_na(p_mfq1w_tot, " ")) %>% mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
-
-\pagebreak
 
 ***
 
@@ -313,13 +310,11 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
-  arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_scared_tot, p_scared_tot, p_scared_parent) %>%
+  arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_scared_tot, p_scared_tot, p_scared_parent) %>%
   mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_scared_tot = replace_na(p_scared_tot, " ")) %>% mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
-
-\pagebreak
 
 ***
 
@@ -348,12 +343,10 @@ data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%  arrange(Clinical_Visit_Date) %>% 
-  select(Clinical_Visit_Date3, Clinical_Visit_Number, s_shaps_tot) %>%
+  select(Clinical_Visit_Date4, Clinical_Visit_Number, s_shaps_tot) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```
-
-\pagebreak
 
 ***
 
@@ -382,13 +375,11 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
-  arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, s_ari1w_tot, p_ari1w_tot, p_ari1w_parent) %>%
+  arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_ari1w_tot, p_ari1w_tot, p_ari1w_parent) %>%
   mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_ari1w_tot = replace_na(p_ari1w_tot, " ")) %>% mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
-
-\pagebreak
 
 ***
 
@@ -417,12 +408,10 @@ data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Date) %>% 
-  select(Clinical_Visit_Date3, Clinical_Visit_Number, s_lsas_tot) %>%
+  select(Clinical_Visit_Date4, Clinical_Visit_Number, s_lsas_tot) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```
-
-\pagebreak
 
 ***
 
@@ -451,11 +440,11 @@ data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>%
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(c_cdrs_tot)) %>% arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date3, Clinical_Visit_Number, c_cdrs_tot) %>% 
+data %>% filter(!is.na(c_cdrs_tot)) %>% arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, c_cdrs_tot) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Clinician reporting on child"))
 
 ```
 
-\pagebreak
+
 
 ***

@@ -309,7 +309,8 @@ p_mfq_screen_sdq$no_columns <- p_mfq_screen_sdq %>% select(matches('p_mfq_')) %>
 p_mfq_screen_sdq$NA_count <- p_mfq_screen_sdq %>% select(matches('p_mfq_')) %>% select(-p_mfq_screen_date) %>% apply(., 1, count_na)
 p_mfq_screen_sdq$diff <- c(p_mfq_screen_sdq$no_columns - p_mfq_screen_sdq$NA_count)
 p_mfq_screen_sdq <- p_mfq_screen_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-
+p_mfq_screen_sdq <- p_mfq_screen_sdq %>% group_by(PLUSID) %>% arrange(p_mfq_screen_date) %>% slice(1) %>% ungroup()
+  
 # tidying variables 
 
 p_mfq_screen_sdq$MFQ_tot <- p_mfq_screen_sdq %>% select(matches("p_mfq_")) %>% select(-p_mfq_screen_date, -p_mfq_parent) %>% rowSums(na.rm=TRUE)
@@ -405,7 +406,7 @@ for(i in seq(nrow(scheduled_v1))) {
 
   temp <- scheduled_v1 %>% slice(eval(iter))
   
-  cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2])
+  cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2], "(", temp[1,3], ")")
   
   demo_table <- flextable(temp, col_keys = c("Participant_Type", "IRTA_tracker", "DOB", "Age_at_visit", "SEX", "City", "State", "Marital_Status", 
                                        "Eligible", "DAWBA_ID", "Referral_Source", "MFQ_tot", "Clinical_Visit_Date")) %>%
@@ -427,6 +428,8 @@ for(i in seq(nrow(scheduled_v1))) {
 
 ***
 
+\pagebreak
+
 ##### 2. Scheduling for eval
  
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
@@ -437,7 +440,7 @@ for(i in seq(nrow(scheduling_v1))) {
 
   temp <- scheduling_v1 %>% slice(eval(iter))
   
-  cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2])
+  cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2], "(", temp[1,3], ")")
   
   demo_table <- flextable(temp, col_keys = c("Participant_Type", "IRTA_tracker", "DOB", "Age_at_visit", "SEX", "City", "State", "Marital_Status", 
                                        "Eligible", "DAWBA_ID", "Referral_Source", "MFQ_tot", "Referral_Date")) %>%
@@ -459,28 +462,23 @@ for(i in seq(nrow(scheduling_v1))) {
 
 ***
 
+\pagebreak
+
 ##### 3. Ready to review
  
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 
 ready_to_review$Referral_Date <- coalesce(ready_to_review$Referral_Date, ready_to_review$Screening_Start_Date)
-ready_to_review2 <- ready_to_review %>% filter(Participant_Type=="MDD") 
 
-if(nrow(ready_to_review2)==0){
-
-  cat("  \n",  "  \n###",  "No MDDs ready to reivew today.",  "  \n###", "Number of HVs ready to review:", nrow(ready_to_review))
-
-} else {
+  cat("  \n###", "Number to review today:", nrow(ready_to_review))
   
-  cat("  \n###", "Number of MDDs to review today:", nrow(ready_to_review2))
-  
-  for(i in seq(nrow(ready_to_review2))) {
+  for(i in seq(nrow(ready_to_review))) {
   # iter=3
     iter <- as.numeric(i)
   
-    temp <- ready_to_review2 %>% slice(eval(iter))
+    temp <- ready_to_review %>% slice(eval(iter))
   
-    cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2])
+    cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2], "(", temp[1,3], ")")
   
     demo_table <- flextable(temp, col_keys = c("Participant_Type", "IRTA_tracker", "DOB", "Age_at_visit", "SEX", "City", "State", "Marital_Status",
                                          "Eligible", "DAWBA_ID", "Referral_Source", "MFQ_tot", "Referral_Date")) %>%
@@ -505,34 +503,29 @@ if(nrow(ready_to_review2)==0){
     cat(knit_print(notes_table))
   
   }
-}
   
 ```
 
 ***
+
+\pagebreak
 
 ##### 3. Screening 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 
 screening$Referral_Date <- coalesce(screening$Referral_Date, screening$Screening_Start_Date)
-screening2 <- screening %>% filter(Participant_Type=="MDD") %>% filter(!is.na(FIRST_NAME) & !is.na(LAST_NAME)) %>% filter(FIRST_NAME!="UNKNOWN" & LAST_NAME!="UNKNOWN")
-
-if(nrow(screening2)==0) {
-
-  cat("  \n",  "  \n###",  "No MDDs currently screening.",  "  \n###", "Number of HVs screening:", nrow(screening))
-
-} else {
+screening <- screening %>% filter(!is.na(FIRST_NAME) & !is.na(LAST_NAME)) %>% filter(FIRST_NAME!="UNKNOWN" & LAST_NAME!="UNKNOWN")
   
-  cat("  \n###", "Number of MDDs screening:", nrow(screening2))
+  cat("  \n###", "Number screening:", nrow(screening))
 
-  for(i in seq(nrow(screening2))) {
+  for(i in seq(nrow(screening))) {
     # iter=3
     iter <- as.numeric(i)
   
-    temp <- screening2 %>% slice(eval(iter))
+    temp <- screening %>% slice(eval(iter))
   
-    cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2])
+    cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2], "(", temp[1,3], ")")
   
     demo_table <- flextable(temp, col_keys = c("Participant_Type", "IRTA_tracker", "DOB", "Age_at_visit", "SEX", "City", "State", "Marital_Status",
                                          "Eligible", "DAWBA_ID", "Referral_Source", "MFQ_tot", "Referral_Date")) %>%
@@ -558,8 +551,6 @@ if(nrow(screening2)==0) {
     cat(knit_print(notes_table))
   
   }
-  
-}
   
 ```
 

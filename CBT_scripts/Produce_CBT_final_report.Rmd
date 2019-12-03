@@ -7,6 +7,7 @@ output:
     fig_caption: yes
     fig_height: 5
     fig_width: 8
+    reference_docx: template.docx
 ---
 
 ```{r setup, include=FALSE}
@@ -215,8 +216,6 @@ National Institutes of Health,
 Bethesda, MD  
 Tel: `r clinician_contact`  
 
-\pagebreak
-
 ***
 
 #### Some useful tools to practice: 
@@ -262,4 +261,3 @@ Tel: `r clinician_contact`
 ![](`r paste0(CBT_location, "images/BAstrategy7.png")`)
 
 
-\pagebreak
