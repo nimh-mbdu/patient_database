@@ -137,18 +137,18 @@
   #****** Manual entry database
   
   manual_shaps <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SHAPS", skip=2) %>% 
-    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
   manual_mfq <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "MFQ", skip=2) %>% 
-    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
   manual_ari <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "ARI", skip=2) %>% 
-    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
   manual_lsas <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "LSAS", skip=2) %>% 
-    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
   manual_scared <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SCARED", skip=2) %>% 
-    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
   manual_ksadsdx <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "KSADS Dx checklist", skip=2) %>% 
-    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")
-  manual_ethnicity <- read_excel(paste0(database_location, "other_data_never_delete/ethnicity_list_KCs_CR_tracker.xlsx"))
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
+  manual_ethnicity <- read_excel(paste0(database_location, "other_data_never_delete/ethnicity_list_KCs_CR_tracker.xlsx")) %>% mutate_all(as.character)
   
   manual_sets <- ls(pattern="manual_")
   manual_sets <- mget(manual_sets)
@@ -160,7 +160,6 @@
     fill(., names(fill_names), .direction = "up") %>%
     ungroup() %>% 
     distinct(., .keep_all = TRUE)
-  
   manual_combined$Overall_date <- as.Date(manual_combined$Overall_date)
   manual_combined$c_ksadsdx_date <- as.Date(manual_combined$c_ksadsdx_date, "%d-%m-%Y")
   

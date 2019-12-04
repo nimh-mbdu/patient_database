@@ -290,7 +290,7 @@ fill_names <- dawba_w_names %>% select(-DAWBA_ID) %>% colnames()
 dawba_w_names <- dawba_w_names %>% group_by(DAWBA_ID) %>% 
   fill(., names(fill_names), .direction = "down") %>%
   fill(., names(fill_names), .direction = "up") %>%
-  arrange(DAWBA_ID, dawba_logins) %>% slice(1) %>% 
+  arrange(DAWBA_ID, desc(dawba_logins)) %>% slice(1) %>% 
   ungroup()
 
 # Exporting the database --------------------------------------------------
