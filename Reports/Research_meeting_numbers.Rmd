@@ -169,7 +169,15 @@ if (exists("Psychometrics_treatment")==FALSE) {
 }
 
 if (exists("MEG_mprage")==FALSE) {
-        MEG_mprage <- read_excel(paste0(IRTA_tracker_location,"QCing/MEG_need_mprage.xlsx"))
+  
+        meg_mprage_file <- list.files(path = paste0(IRTA_tracker_location, "QCing/"), pattern = "^MEG_need_mprage", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        meg_mprage_file_time <- file.mtime(paste0(IRTA_tracker_location, "QCing/", meg_mprage_file)) %>% as.Date()
+        meg_mprage_combined <- tibble(File=c(meg_mprage_file), Date=c(meg_mprage_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        MEG_mprage <- read_excel(paste0(IRTA_tracker_location, "QCing/", meg_mprage_combined[1]))
+        
 } else {
         print("MEG MPRAGE missing info already imported")
 }
@@ -851,7 +859,7 @@ current_inpatients %>% kable(., col.names = c("Initials", "Last Week Recorded", 
 rm(referrals_table3a, screens_table2, screens_current_table, ready_2_review, scheduled, scheduling_table2, protocol_table2, 
    inpatients_table, combined, meg_mmi_table2, meg_mmi_upcoming, bloods_table2, 
    current_outpatients, current_inpatients, outpatients, outpatients_table, inpatients, family_hist_table2, 
-   supreme_table, meg_mprage_missing, MEG_mprage, diag_mid_3_table, fu_dates, mid_long)
+   supreme_table, meg_mprage_missing, diag_mid_3_table, fu_dates, mid_long)
 rm(list=ls(pattern="denominator_"))
 rm(list=ls(pattern="numerator_"))
 

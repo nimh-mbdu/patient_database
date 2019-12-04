@@ -2,8 +2,6 @@
 #***********DAWBA = diagnostic information from participant screening
 
 # to do: 
-# dawba deletions 
-# bdd information
 
 # Loading patient info ----------------------------------------------------
 
@@ -115,6 +113,7 @@ DAWBA_Archive <- read_excel(paste0(database_location, "other_data_never_delete/d
 dawba_combined <- merge.default(DAWBA_Archive, DAWBA_Data_Download_raw, all=TRUE) %>% 
   filter(sid !="234110") %>% filter(sid !="234111") %>% filter(sid !="234112") %>% filter(sid !="234113") %>% filter(sid !="None")
 fill_names <- dawba_combined %>% select(-sid) %>% colnames()
+dawba_combined[fill_names] <- lapply(dawba_combined[fill_names], na_if, "")
 dawba_combined <- dawba_combined %>% 
   group_by(sid) %>%
   fill(., names(fill_names), .direction = "down") %>%
@@ -133,8 +132,6 @@ setnames(dawba_combined, old=c(dawba_columns$old_name), new=c(dawba_columns$new_
 DAWBA_Data_Download <- dawba_combined %>% select(dawba_columns$new_name) %>% arrange(DAWBA_ID) 
 
 # Clean up -------------------------------------------
-
-count_na <- function(x) sum(is.na(x))
 
 DAWBA_Data_Download$DAWBA_SEX[DAWBA_Data_Download$DAWBA_SEX==1] <- 'MALE'
 DAWBA_Data_Download$DAWBA_SEX[DAWBA_Data_Download$DAWBA_SEX==2] <- 'FEMALE'
@@ -280,17 +277,21 @@ s_bdd_combined <- s_bdd_combined %>% mutate(s_dawba_bdd_diag = (as.numeric(s_daw
 
 all_bdd_combined <- merge.default(s_bdd_combined, p_bdd_combined, all=TRUE)
 fill_names <- all_bdd_combined %>% select(-DAWBA_ID) %>% colnames()
+all_bdd_combined[fill_names] <- lapply(all_bdd_combined[fill_names], na_if, "")
 all_bdd_combined <- all_bdd_combined %>% group_by(DAWBA_ID) %>% 
   fill(., names(fill_names), .direction = "down") %>%
   fill(., names(fill_names), .direction = "up") %>%
   distinct(., .keep_all = TRUE) %>% ungroup()
 
 dawba_w_names <- merge.default(dawba_w_names, all_bdd_combined, all=TRUE) 
+fill_names <- dawba_w_names %>% select(-DAWBA_ID, -matches("date"), -matches("Date"), -DOB) %>% colnames()
+dawba_w_names[fill_names] <- lapply(dawba_w_names[fill_names], na_if, "")
 fill_names <- dawba_w_names %>% select(-DAWBA_ID) %>% colnames()
 dawba_w_names <- dawba_w_names %>% group_by(DAWBA_ID) %>% 
   fill(., names(fill_names), .direction = "down") %>%
   fill(., names(fill_names), .direction = "up") %>%
-  distinct(., .keep_all = TRUE) %>% ungroup()
+  arrange(DAWBA_ID, dawba_logins) %>% slice(1) %>% 
+  ungroup()
 
 # Exporting the database --------------------------------------------------
 
