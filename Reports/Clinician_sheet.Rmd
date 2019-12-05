@@ -378,6 +378,7 @@ ready_to_review$Scheduling_status <-
 ready_to_review$Marital_Status <- 
   recode(ready_to_review$Marital_Status, "0"="Married", "1"="Divorced; joint custody", "2"="Divorced; sole custody", "3"="Never married", .missing = NULL)
 ready_to_review[numeric_variables2] <- lapply(ready_to_review[numeric_variables2], FUN = function(x) recode(x, "0"="No", "1"="Yes", .missing = "Unknown"))
+ready_to_review$Referral_Date <- coalesce(ready_to_review$Referral_Date, ready_to_review$Screening_Start_Date)
 
 # 4. still undergoing screening 
 screening <- sdq_plus_tracker %>% filter(source=="screens") %>% filter(Eligible<4 | Eligible==666) %>% 
@@ -389,6 +390,8 @@ screening$Scheduling_status <- recode(screening$Scheduling_status, "0"="Screenin
                                          "3"="Completed (visit has passed)", "4"="Scheduling on hold pending clinician follow up", .missing = NULL)
 screening$Marital_Status <- recode(screening$Marital_Status, "0"="Married", "1"="Divorced; joint custody", "2"="Divorced; sole custody", "3"="Never married", .missing = NULL)
 screening[numeric_variables2] <- lapply(screening[numeric_variables2], FUN = function(x) recode(x, "0"="No", "1"="Yes", .missing = "Unknown"))
+screening$Referral_Date <- coalesce(screening$Referral_Date, screening$Screening_Start_Date)
+screening <- screening %>% filter(!is.na(FIRST_NAME) & !is.na(LAST_NAME)) %>% filter(FIRST_NAME!="UNKNOWN" & LAST_NAME!="UNKNOWN")
 
 ```
 
@@ -396,7 +399,7 @@ screening[numeric_variables2] <- lapply(screening[numeric_variables2], FUN = fun
 
 ***
 
-##### 1. Scheduled for eval
+##### 1. Scheduled for eval: `r nrow(scheduled_v1)`
  
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 
@@ -430,7 +433,7 @@ for(i in seq(nrow(scheduled_v1))) {
 
 \pagebreak
 
-##### 2. Scheduling for eval
+##### 2. Scheduling for eval: `r nrow(scheduling_v1)`
  
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 
@@ -464,14 +467,10 @@ for(i in seq(nrow(scheduling_v1))) {
 
 \pagebreak
 
-##### 3. Ready to review
+##### 3. Ready to review: `r nrow(ready_to_review)`
  
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 
-ready_to_review$Referral_Date <- coalesce(ready_to_review$Referral_Date, ready_to_review$Screening_Start_Date)
-
-  cat("  \n###", "Number to review today:", nrow(ready_to_review))
-  
   for(i in seq(nrow(ready_to_review))) {
   # iter=3
     iter <- as.numeric(i)
@@ -510,15 +509,10 @@ ready_to_review$Referral_Date <- coalesce(ready_to_review$Referral_Date, ready_t
 
 \pagebreak
 
-##### 3. Screening 
+##### 3. Screening: `r nrow(screening)`
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
-
-screening$Referral_Date <- coalesce(screening$Referral_Date, screening$Screening_Start_Date)
-screening <- screening %>% filter(!is.na(FIRST_NAME) & !is.na(LAST_NAME)) %>% filter(FIRST_NAME!="UNKNOWN" & LAST_NAME!="UNKNOWN")
   
-  cat("  \n###", "Number screening:", nrow(screening))
-
   for(i in seq(nrow(screening))) {
     # iter=3
     iter <- as.numeric(i)
