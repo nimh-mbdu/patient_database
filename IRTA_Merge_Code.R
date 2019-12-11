@@ -327,13 +327,15 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
     filter(str_detect(Protocol, "0037")) %>% filter(Overall_date > as.Date("2018-05-01")) %>% mutate(reason18="Missing DAWBA ID") 
   
   # comparing to previous version 
-  
-  task_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^TASKS_DATABASE_QC", all.files = FALSE,
+  task_master_file <- list.files(path = paste0(IRTA_tracker_location, "IRTA_Master_Backups/"), pattern = "^TASKS_DATABASE_QC", all.files = FALSE,
                                    full.names = FALSE, recursive = FALSE,
                                    ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-  task_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", task_master_file)) %>% as.Date()
-  task_master_combined <- tibble(File=c(task_master_file), Date=c(task_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
-  prev_task_database <- read_excel(paste0(IRTA_tracker_location, task_master_combined[1]))  %>%
+  task_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "IRTA_Master_Backups/", task_master_file)) %>% as.Date()
+  task_master_combined <- tibble(File=c(task_master_file), Date=c(task_master_file_time)) 
+  task_master_combined$date_diff <- as.numeric(difftime(last_week_date_formatted, task_master_combined$Date, tz="", units = "days"))
+  task_master_combined$day_of_week <- weekdays(as.Date(task_master_combined$Date))
+  task_master_combined <- task_master_combined %>% filter(day_of_week=="Wednesday") %>% arrange(date_diff) %>% slice(1)
+  prev_task_database <- read_excel(paste0(IRTA_tracker_location, "IRTA_Master_Backups/", task_master_combined[1]))  %>%
     select(Initials:Participant_Type, Eligible:Task_Visit_Type) %>% mutate(source2="old version of tracker")
   date_variabes <- c("DOB", "Task_Date")
   numeric_variables <- c("Task_Number")
@@ -373,18 +375,6 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
   task_errors_combined$QC_historical <- na_if(task_errors_combined$QC_historical, "NA")
   
   task_errors_combined <- task_errors_combined %>% select(-matches("reason"), -Info_source, -Participant_Type2, -Age_at_visit, -Overall_date) %>% arrange(Initials, Task_Date)
-
-# exporting 
-    
-for(w in seq_along(current_IRTAs_full)) {
-    iter <- as.numeric(w)
-    # iter=1
-    IRTA_full <- current_IRTAs_full[iter]
-    IRTA_init <- current_IRTAs_init[iter]
-    task_errors_combined %>% filter(IRTA_tracker==eval(IRTA_init)) %>% write_xlsx(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_task_qc_", todays_date_formatted, ".xlsx")) 
-  }
-  
-  task_errors_combined %>% filter(IRTA_tracker=="REMOVED") %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/REMOVED_task_qc_", todays_date_formatted, ".xlsx")) # if file empty, everything is perfect
 
 # check <- eligibility_variables %>% filter(is.na(Clinical_Visit_Type)) %>% filter(Scheduling_status=='3')
 # check <- table(task_reshape_master$Task_Name, task_reshape_master$IRTA_tracker) %>% as.data.frame() %>% filter(Freq!='0')
@@ -444,8 +434,6 @@ MMI_missing_combined$QC_missing <- gsub("NA; ", "", MMI_missing_combined$QC_miss
 MMI_missing_combined$QC_missing <- gsub("; NA", "", MMI_missing_combined$QC_missing, fixed=TRUE)
 MMI_missing_combined <- MMI_missing_combined %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
 MMI_missing_combined[of_interest] <- lapply(MMI_missing_combined[of_interest], na_if, '666')
-
-MMI_missing_combined %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MMI_check_", todays_date_formatted, ".xlsx")) # if file empty, everything is perfect 
 
 ##### MID
 
@@ -519,8 +507,6 @@ MID_missing_combined$QC_missing <- gsub("; NA", "", MID_missing_combined$QC_miss
 MID_missing_combined <- MID_missing_combined %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
 MID_missing_combined[of_interest] <- lapply(MID_missing_combined[of_interest], na_if, '666')
 
-MID_missing_combined %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MID_check_", todays_date_formatted, ".xlsx")) # if file empty, everything is perfect 
-
 ######################################################################################
 #######Adding MEG QC information
 
@@ -531,11 +517,9 @@ MEG_tasks <- c("MEG_MMI", "Booster", "RL_GNG")
 for(i in seq_along(MEG_tasks)) {
   iter <- as.numeric(i)
   # iter=1
-
   temp_MEG_data <- read_excel(paste0(MEG_tracker_location, "MEG_Tracker.xlsx"), sheet = MEG_tasks[iter]) %>%
     mutate_all(as.character) %>% mutate(MEG_tab=MEG_tasks[iter])
   assign(paste0("task_", iter, "_meg_data"), temp_MEG_data)
-
 }
 
 # merge & tidy up
@@ -606,8 +590,6 @@ MEG_missing[of_interest] <- lapply(MEG_missing[of_interest], na_if, '666')
 MEG_task_QC[of_interest] <- lapply(MEG_task_QC[of_interest], na_if, '666')
 MEG_task_QC <- MEG_task_QC %>% select(SDAN, Task_Name, Task_Date, Include)
 
-MEG_missing %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MEG_check_", todays_date_formatted, ".xlsx"))
-
 ##### list of MPRAGE from IRTA trackers 
 
 mprage_list <- task_reshape_master %>% filter(str_detect(Task_Name, "_scan") | Task_Name=="MPRAGE") %>% 
@@ -627,8 +609,6 @@ MEG_mprage <- meg_list %>% filter(Task_Name=="MEG_MMI") %>% merge.default(., mpr
 MEG_mprage$Days_between_scans <- as.numeric(difftime(MEG_mprage$Task_Date, MEG_mprage$MPRAGE_Date, tz="", units = "days")) %>% round(., digits=0)
 MEG_mprage <- MEG_mprage %>% filter(is.na(Days_between_scans) | Days_between_scans>365) %>% select(-Task_Name, -Task_Number, -MPRAGE)
 
-MEG_mprage %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MEG_need_mprage_", todays_date_formatted, ".xlsx"))
-
 ######################################################################################
 #####Merge of QC information with main task tracker, drops inconsistencies, hence why accuracy is so important 
 
@@ -636,11 +616,51 @@ task_QC <- merge.default(MID_task_QC, MMI_task_QC, all=TRUE) %>% merge.default(.
 task_reshape_master_QC <- left_join(task_reshape_master, task_QC, all=TRUE)
 
 ######################################################################################
+#######Export of QC information
+
+if (weekdays(as.Date(todays_date_formatted))=="Wednesday") {
+  print("Today is Wednesday -> exporting QC reports")
+  
+  # general reports - exported into individual IRTA trackers 
+  for(j in seq_along(current_IRTAs_full)) {
+    iter <- as.numeric(j)
+    # iter=1
+    IRTA_full <- current_IRTAs_full[iter]
+    IRTA_init <- current_IRTAs_init[iter]
+    task_errors_combined %>% filter(IRTA_tracker==eval(IRTA_init)) %>% write_xlsx(paste0(referrals_location, IRTA_full, "/", IRTA_init, "_task_qc_", todays_date_formatted, ".xlsx")) 
+  }
+  task_errors_combined %>% filter(IRTA_tracker=="REMOVED") %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/REMOVED_task_qc_", todays_date_formatted, ".xlsx")) # if file empty, everything is perfect
+  
+  # Task specific QC reports 
+  MMI_missing_combined %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MMI_check_", todays_date_formatted, ".xlsx")) # if file empty, everything is perfect 
+  MID_missing_combined %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MID_check_", todays_date_formatted, ".xlsx")) # if file empty, everything is perfect 
+  MEG_missing %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MEG_check_", todays_date_formatted, ".xlsx"))
+  MEG_mprage %>% write_xlsx(paste0(IRTA_tracker_location,"QCing/MEG_need_mprage_", todays_date_formatted, ".xlsx"))
+  
+} else {
+  print("QC reports not produced - only produced on Wednesdays")
+}
+
+######################################################################################
 #######Saving Master IRTA sheet in typical format
 
-master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE.xlsx")) # will not save if someone else has this dataset open 
+master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE.xlsx")) # will not save if someone else has this dataset open
 master_IRTA_latest %>% write_xlsx(paste0(backup_location,"MASTER_IRTA_DATABASE","_",todays_date_formatted,".xlsx"))
 # also an option to add a password to a saved excel, e.g. = password = "string"
+
+# checking saved properly
+file_save_check <- list.files(path = paste0(IRTA_tracker_location), pattern = "^MASTER_IRTA_DATABASE.xlsx", all.files = FALSE,
+                               full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(IRTA_tracker_location, file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'MASTER_IRTA_DATABASE'")
+} else {
+  print("Conflict: exporting as 'MASTER_IRTA_DATABASE_updated'")
+  master_IRTA_latest %>% write_xlsx(paste0(IRTA_tracker_location,"MASTER_IRTA_DATABASE_updated.xlsx"))
+}
 
 ######################################################################################
 #######Saving Tasks Dataset
@@ -648,17 +668,59 @@ master_IRTA_latest %>% write_xlsx(paste0(backup_location,"MASTER_IRTA_DATABASE",
 task_reshape_master_QC %>% write_xlsx(paste0(IRTA_tracker_location,"TASKS_DATABASE_QC.xlsx"))
 task_reshape_master_QC %>% write_xlsx(paste0(backup_location,"TASKS_DATABASE_QC","_",todays_date_formatted,".xlsx"))
 
+# checking saved properly
+file_save_check <- list.files(path = paste0(IRTA_tracker_location), pattern = "^TASKS_DATABASE_QC.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(IRTA_tracker_location, file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'TASKS_DATABASE_QC'")
+} else {
+  print("Conflict: exporting as 'TASKS_DATABASE_QC_updated'")
+  task_reshape_master_QC %>% write_xlsx(paste0(IRTA_tracker_location,"TASKS_DATABASE_QC_updated.xlsx"))
+}
+
 ######################################################################################
 #######Saving Screens Dataset
 
 master_IRTA_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"REFERRAL_AND_SCREENING_DATABASE.xlsx"))
 master_IRTA_screens_latest %>% write_xlsx(paste0(backup_location,"REFERRAL_AND_SCREENING_DATABASE","_",todays_date_formatted,".xlsx"))
 
+# checking saved properly
+file_save_check <- list.files(path = paste0(IRTA_tracker_location), pattern = "^REFERRAL_AND_SCREENING_DATABASE.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(IRTA_tracker_location, file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'REFERRAL_AND_SCREENING_DATABASE'")
+} else {
+  print("Conflict: exporting as 'REFERRAL_AND_SCREENING_DATABASE_updated'")
+  master_IRTA_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"REFERRAL_AND_SCREENING_DATABASE_updated.xlsx"))
+}
+
 ######################################################################################
 #######Saving Old Screens Dataset
 
 master_IRTA_oldest_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"OLD_REFERRALS_DATABASE.xlsx"))
 master_IRTA_oldest_screens_latest %>% write_xlsx(paste0(backup_location,"OLD_REFERRALS_DATABASE","_",todays_date_formatted,".xlsx"))
+
+# checking saved properly
+file_save_check <- list.files(path = paste0(IRTA_tracker_location), pattern = "^OLD_REFERRALS_DATABASE.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(IRTA_tracker_location, file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'OLD_REFERRALS_DATABASE'")
+} else {
+  print("Conflict: exporting as 'OLD_REFERRALS_DATABASE_updated'")
+  master_IRTA_oldest_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"OLD_REFERRALS_DATABASE_updated.xlsx"))
+}
 
 #####Removing unnecessary variables
 
@@ -673,8 +735,9 @@ rm(list=ls(pattern="missing"))
 rm(list=ls(pattern="_reordered"))
 rm(list=ls(pattern="_template"))
 rm(list=ls(pattern="duplicate"))
-rm(IRTA_full, IRTA_init, j, w, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest, o)
+rm(IRTA_full, IRTA_init, j, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest, o)
 rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, meg_reshape_master, meg_reshape, MEG_tasks, meg_combined,  
    MEG_task_QC, meg_list, MID_check, RS_check, task_check_clinical_code, task_name_check, task_number_check, prev_task_database,
-   task_errors_combined, task_names, MID_resting_discrepancy, task_master_file, task_master_file_time, task_master_combined)
+   task_errors_combined, task_names, MID_resting_discrepancy, task_master_file, task_master_file_time, task_master_combined, file_save_check, 
+   file_save_check_time, file_save_check_combined, historical_check)
 rm(get_last_scan, get_last_visit, has_scan, is_last_v, print_dates, print_notes)

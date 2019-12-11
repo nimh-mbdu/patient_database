@@ -82,7 +82,6 @@ knitr::opts_chunk$set(echo = TRUE)
 # Loading data ------------------------------------------------------------
 
 todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
-last_week_date_formatted <- todays_date_formatted - as.difftime(7, unit="days")
 last_week_date <- last_week_date_formatted %>% format(., "%B %d %Y")
 two_weeks_date_formatted <- todays_date_formatted - as.difftime(14, unit="days")
 

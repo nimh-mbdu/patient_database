@@ -83,6 +83,7 @@ to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.
 # date
 todays_date_formatted <- c(to_change$todays_date_formatted)
 todays_date_formatted <- as.Date(todays_date_formatted)
+last_week_date_formatted <- todays_date_formatted - as.difftime(7, unit="days")
 # todays_date_formatted <- as.Date("2019-11-15") # if you want to manually set the date (outside of the excel sheet)
 
 # task related 

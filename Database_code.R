@@ -2608,11 +2608,53 @@ MATCH_tracker$Eligible <- recode(MATCH_tracker$Eligible, "0"="Include", "5"="Exc
 Psychometrics_treatment %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_CLINICAL.xlsx"))
 Psychometrics_treatment %>% write_xlsx(paste0(folder_backup, "MASTER_DATABASE_CLINICAL_", todays_date_formatted, ".xlsx"))
 
+# checking saved properly
+file_save_check <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(database_location, file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'MASTER_DATABASE_CLINICAL'")
+} else {
+  print("Conflict: exporting as 'MASTER_DATABASE_CLINICAL_updated'")
+  Psychometrics_treatment %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_CLINICAL_updated.xlsx"))
+}
+
 CBT_report %>% write_xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT.xlsx"))
 CBT_report %>% write_xlsx(paste0(database_location, "CBT/Backup/MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
 
+# checking saved properly
+file_save_check <- list.files(path = paste0(database_location, "CBT/"), pattern = "^MASTER_DATABASE_CBT.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(database_location, "CBT/", file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'MASTER_DATABASE_CBT'")
+} else {
+  print("Conflict: exporting as 'MASTER_DATABASE_CBT_updated'")
+  CBT_report %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_CBT_updated.xlsx"))
+}
+
 MATCH_tracker %>% write_xlsx(paste0(database_location, "Inpatient/MASTER_DATABASE_Inpatient.xlsx"))
 MATCH_tracker %>% write_xlsx(paste0(database_location, "Inpatient/Backup/MASTER_DATABASE_Inpatient_", todays_date_formatted, ".xlsx"))
+
+# checking saved properly
+file_save_check <- list.files(path = paste0(database_location, "Inpatient/"), pattern = "^MASTER_DATABASE_Inpatient.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(database_location, "Inpatient/", file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'MASTER_DATABASE_Inpatient'")
+} else {
+  print("Conflict: exporting as 'MASTER_DATABASE_Inpatient_updated'")
+  MATCH_tracker %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_Inpatient_updated.xlsx"))
+}
 
 # Creating tasks database & exporting ------------------------------------
 
@@ -2644,6 +2686,20 @@ Psychometrics_behav <- Psychometrics_behav %>%
 
 Psychometrics_behav %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL.xlsx"))
 Psychometrics_behav %>% write_xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_", todays_date_formatted, ".xlsx"))
+
+# checking saved properly
+file_save_check <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_BEHAVIOURAL.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(database_location, file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'MASTER_DATABASE_BEHAVIOURAL'")
+} else {
+  print("Conflict: exporting as 'MASTER_DATABASE_BEHAVIOURAL_updated'")
+  Psychometrics_behav %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_BEHAVIOURAL_updated.xlsx"))
+}
 
 # Identifying missing cases -----------------------------------------------
 

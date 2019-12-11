@@ -2,9 +2,16 @@
 *.Rhistory
 *.Rapp.history
 *.xlsx
+*.DS_Store
 CBT_scripts/*.RData
 CBT_scripts/*.Rhistory
 CBT_scripts/*.Rapp.history
 CBT_scripts/*.xlsx
 CBT_scripts/*.html
+CBT_scripts/*.DS_Store
 CBT_scripts/*.pdf
+Reports/*.RData
+Reports/*.Rhistory
+Reports/*.Rapp.history
+Reports/*.xlsx
+Reports/*.DS_Store
