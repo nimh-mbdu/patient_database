@@ -31,8 +31,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-# directories -------------------------------------------------------------
-
+# # directories -------------------------------------------------------------
+# 
 # computer = 'pc' # set this to either 'mac' or 'pc' (Georgia = W:/ as I have string mounted differently)
 # 
 # if (computer=="pc") {
@@ -75,9 +75,14 @@ knitr::opts_chunk$set(echo = TRUE)
 # 
 # to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.xlsx"))
 # max_tasks <- c(to_change$max_tasks)
-# todays_date_formatted <- c(to_change$todays_date_formatted)
+# # todays_date_formatted <- c(to_change$todays_date_formatted)
 # # todays_date_formatted <- as.Date(todays_date_formatted)
-# todays_date_formatted <- as.Date("2019-11-18")
+# todays_date_formatted <- as.Date("2019-12-13")
+# last_week_date_formatted <- todays_date_formatted - as.difftime(7, unit="days")
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
 # Loading data ------------------------------------------------------------
 
@@ -223,43 +228,45 @@ Referrals since last week, `r last_week_date`
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
 ######## Dummy table
-num_referrals1 <- tibble(Participant_Type2= c(NA), Referral_Date= c(NA), Screening_initial_contact_successful= c(0, 1, NA), TDiff=0)
-referrals_table1 <- ctable(num_referrals1$Participant_Type2, num_referrals1$Screening_initial_contact_successful, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.num_referrals1.Participant_Type2") %>% 
-  rename(Screening_Successful = "cross_table.num_referrals1.Screening_initial_contact_successful") %>% select(-proportions.Total)
-referrals_table1 <- na_if(referrals_table1, "<NA>")
-referrals_table1a <- reshape(referrals_table1, idvar = "Participant_Type2", timevar = "Screening_Successful", direction = "wide") %>% mutate(temp=1)
-
+referrals_table_dummy <- tibble(Participant_Type2=c("HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, 
+                                                "HV", "MDD", "UNSURE", "Total", NA), Screening_Successful=c("0","0","0","0","0", "1","1","1","1","1", "Total","Total","Total",
+                                                "Total","Total", NA,NA,NA,NA,NA), Freq=c("0")) %>% mutate(Screening_Successful=as.character(Screening_Successful), Freq=as.numeric(Freq))
 ######## Real table
 referrals_last_week <- master_IRTA_screens_latest %>% select(Participant_Type2, Referral_Date, Screening_initial_contact_successful)
 referrals_last_week$TDiff <- as.numeric(difftime(referrals_last_week$Referral_Date, last_week_date_formatted, tz="", units = "days"))
 num_referrals2 <- referrals_last_week %>% filter(TDiff >=0)
-referrals_table2 <- ctable(num_referrals2$Participant_Type2, num_referrals2$Screening_initial_contact_successful, 
+referrals_table <- ctable(num_referrals2$Participant_Type2, num_referrals2$Screening_initial_contact_successful, 
                   useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>%
   as.data.frame()  %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.num_referrals2.Participant_Type2") %>%
-  rename(Screening_Successful = "cross_table.num_referrals2.Screening_initial_contact_successful") %>% select(-proportions.Total)
-referrals_table2 <- na_if(referrals_table2, "<NA>")
-referrals_table2a <- reshape(referrals_table2, idvar = "Participant_Type2", timevar = "Screening_Successful", direction = "wide") %>% mutate(temp=2)
+  rename(Screening_Successful = "cross_table.num_referrals2.Screening_initial_contact_successful") %>% select(-proportions.Total, -proportions..NA.) %>% 
+  mutate(Participant_Type2=as.character(Participant_Type2)) %>% mutate(Screening_Successful=as.character(Screening_Successful))
+referrals_table <- na_if(referrals_table, "<NA>")
 
 ######## Combined table
-referrals_table3 <- merge.default(referrals_table1a, referrals_table2a, all=TRUE) %>% filter(temp==2) %>% select(-temp) 
-# %>% filter(!is.na(Participant_Type2))
-referrals_table3a <- referrals_table3 %>% 
-  mutate(Unsuccessful_Percent = (proportions.0.0 * 100)) %>% mutate(Unsuccessful_Percent = round(Unsuccessful_Percent, 2)) %>%
-  mutate(Successful_Percent = (proportions.1.1 * 100)) %>% mutate(Successful_Percent = round(Successful_Percent, 2)) %>%
-  mutate(NA_Percent = (`proportions..NA..NA` * 100)) %>% mutate(NA_Percent = round(NA_Percent, 2)) %>%
-  select(Participant_Type2, Freq.1, Successful_Percent, Freq.0, Unsuccessful_Percent, Freq.NA, NA_Percent, Freq.Total) %>% 
-  arrange(desc(Participant_Type2))
-referrals_table3a[,2:5] <- sapply(referrals_table3a[,2:5], replace_na, '0')
+referrals_table <- merge.default(referrals_table, referrals_table_dummy, all=TRUE) %>% 
+ group_by(Participant_Type2, Screening_Successful) %>% arrange(desc(Freq)) %>% slice(1) %>% ungroup()
+referrals_table$Screening_Successful <- replace_na(referrals_table$Screening_Successful, "Missing")
 
-rm(num_referrals1, referrals_table1, referrals_table1a, referrals_last_week, num_referrals2, referrals_table2, referrals_table2a, referrals_table3)
+######## Table to print
+referrals_table2 <- pivot_wider(referrals_table, id_cols = "Participant_Type2", names_from = "Screening_Successful", values_from = "Freq") %>% 
+  rename(Unsuccessful="0") %>%   rename(Successful="1")
+referrals_table2[,2:ncol(referrals_table2)] <- lapply(referrals_table2[,2:ncol(referrals_table2)], replace_na, "0")
+referrals_table2[,2:ncol(referrals_table2)] <- lapply(referrals_table2[,2:ncol(referrals_table2)], as.numeric)
+
+referrals_table2 <- referrals_table2 %>% mutate(Unsuccessful_Percent = ((Unsuccessful/Total) * 100)) %>% mutate(Unsuccessful_Percent = round(Unsuccessful_Percent, 2)) %>% 
+  mutate(Successful_Percent = ((Successful/Total) * 100)) %>% mutate(Successful_Percent = round(Successful_Percent, 2)) %>% 
+  mutate(Missing_Percent = ((Missing/Total) * 100)) %>% mutate(Missing_Percent = round(Missing_Percent, 2)) %>% 
+  select(Participant_Type2, Successful, Successful_Percent, Unsuccessful, Unsuccessful_Percent, Missing, Missing_Percent, Total)
+referrals_table2[,2:ncol(referrals_table2)] <- lapply(referrals_table2[,2:ncol(referrals_table2)], replace_na, "0")
+
+######## Variables to remove
+rm(referrals_table_dummy, referrals_last_week, num_referrals2, referrals_table)
 
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
     
-referrals_table3a %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%", "Contact Unsuccessful", "%", "Not recorded", "%", "Total")) %>% 
+referrals_table2 %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%", "Contact Unsuccessful", "%", "Not recorded", "%", "Total")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -272,21 +279,37 @@ Overview: all participants still in active screening
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
+######## Dummy table
+screens_dummy <- tibble(Participant_Type2=c("HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, 
+                                                "HV", "MDD", "UNSURE", "Total", NA), Screening_Successful=c("0","0","0","0","0", "1","1","1","1","1", "Total","Total","Total",
+                                                "Total","Total", NA,NA,NA,NA,NA), Freq=c("0")) %>% mutate(Screening_Successful=as.character(Screening_Successful), Freq=as.numeric(Freq))
+######## Real table
 screens <- master_IRTA_screens_latest %>% filter(!is.na(Screening_Start_Date))
-
 screens_table1 <- ctable(screens$Participant_Type2, screens$Screening_initial_contact_successful, 
                   useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
   rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.screens.Participant_Type2") %>% 
-  rename(Screening_Successful = "cross_table.screens.Screening_initial_contact_successful") %>% select(-proportions.Total)
+  rename(Screening_Successful = "cross_table.screens.Screening_initial_contact_successful") %>% select(-matches("proportions"))
 screens_table1 <- na_if(screens_table1, "<NA>")
 
-screens_table2 <- reshape(screens_table1, idvar = "Participant_Type2", timevar = "Screening_Successful", direction = "wide") %>% 
-  mutate(Unsuccessful_Percent = (proportions.0.0 * 100)) %>% mutate(Unsuccessful_Percent = round(Unsuccessful_Percent, 2)) %>%
-  mutate(Successful_Percent = (proportions.1.1 * 100)) %>% mutate(Successful_Percent = round(Successful_Percent, 2)) %>% 
-  mutate(NA_Percent = (proportions..NA..NA * 100)) %>% mutate(NA_Percent = round(NA_Percent, 2)) %>%
-  select(Participant_Type2, Freq.1, Successful_Percent, Freq.0, Unsuccessful_Percent, Freq.NA, NA_Percent, Freq.Total)
+######## Combined table
+screens_table1 <- merge.default(screens_table1, screens_dummy, all=TRUE) %>%
+ group_by(Participant_Type2, Screening_Successful) %>% arrange(desc(Freq)) %>% slice(1) %>% ungroup() %>% mutate(Screening_Successful=as.character(Screening_Successful))
+screens_table1$Screening_Successful <- replace_na(screens_table1$Screening_Successful, "Missing")
 
-rm(screens_table1)
+######## Table to print
+screens_table2 <- pivot_wider(screens_table1, id_cols = "Participant_Type2", names_from = "Screening_Successful", values_from = "Freq") %>% 
+  rename(Unsuccessful="0") %>%   rename(Successful="1")
+screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], replace_na, "0")
+screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], as.numeric)
+
+screens_table2 <- screens_table2 %>% mutate(Unsuccessful_Percent = ((Unsuccessful/Total) * 100)) %>% mutate(Unsuccessful_Percent = round(Unsuccessful_Percent, 2)) %>% 
+  mutate(Successful_Percent = ((Successful/Total) * 100)) %>% mutate(Successful_Percent = round(Successful_Percent, 2)) %>% 
+  mutate(Missing_Percent = ((Missing/Total) * 100)) %>% mutate(Missing_Percent = round(Missing_Percent, 2)) %>% 
+  select(Participant_Type2, Successful, Successful_Percent, Unsuccessful, Unsuccessful_Percent, Missing, Missing_Percent, Total)
+screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], replace_na, "0")
+
+######## Variables to remove
+rm(screens_dummy, screens, screens_table1)
 
 ```
 
@@ -298,7 +321,7 @@ screens_table2 %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%"
 
 ```
 
-Status Of those currently screening: 
+Status Of those currently screening: ******continue from here (then skip down to protocol enrollment)
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
@@ -364,26 +387,41 @@ Scheduling:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
+######## Dummy table
+scheduling_dummy <- tibble(Participant_Type2=c("HV", "MDD", "HV", "MDD", "HV", "MDD", "HV", "MDD", "Total", NA, "Total", NA, "Total", NA, "Total", NA), 
+  Eligible=c("0", "0", "1", "1", "2", "2", "3", "3", "0", "0", "1", "1", "2", "2", "3", "3"), Freq=c("0")) %>% mutate(Eligible=as.character(Eligible), Freq=as.numeric(Freq))
+
+######## Real table
 scheduling <- master_IRTA_latest %>% filter(IRTA_tracker!="REMOVED") %>% 
   select(Initials, SDAN, IRTA_tracker, Participant_Type2, Eligible, Clinical_Visit_Type, Clinical_Visit_Date, Scheduling_status, 
          Protocol) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% filter(is.na(Clinical_Visit_Date)) %>%
   mutate(Eligible = as.numeric(Eligible)) %>% filter(Eligible<4 | is.na(Eligible))
-
 scheduling_table <- ctable(scheduling$Participant_Type2, scheduling$Eligible, 
                   useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
   rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.scheduling.Participant_Type2") %>% 
-  rename(Eligible = "cross_table.scheduling.Eligible") %>% select(Participant_Type2, Eligible, Freq)
+  rename(Eligible = "cross_table.scheduling.Eligible") %>% select(Participant_Type2, Eligible, Freq) %>%
+  mutate(Eligible=as.character(Eligible)) %>% mutate(Participant_Type2=as.character(Participant_Type2))
 scheduling_table <- na_if(scheduling_table, "<NA>")
 
-scheduling_table2 <- reshape(scheduling_table, idvar = "Eligible", timevar = "Participant_Type2", direction = "wide") %>% 
-  mutate(HV_Percent = ((Freq.HV/Freq.Total) * 100)) %>% mutate(HV_Percent = round(HV_Percent, 2)) %>% 
-  mutate(MDD_Percent = ((Freq.MDD/Freq.Total) * 100)) %>% mutate(MDD_Percent = round(MDD_Percent, 2)) %>% 
-  mutate(NA_Percent = ((Freq.NA/Freq.Total) * 100)) %>% mutate(NA_Percent = round(NA_Percent, 2)) %>% 
-  select(Eligible, Freq.MDD, MDD_Percent, Freq.HV, HV_Percent, Freq.NA, NA_Percent, Freq.Total)
+######## Combined table
+scheduling_table <- merge.default(scheduling_table, scheduling_dummy, all=TRUE) %>% arrange(Eligible) %>% 
+ group_by(Participant_Type2, Eligible) %>% arrange(desc(Freq)) %>% slice(1) %>% ungroup()
+scheduling_table$Participant_Type2 <- replace_na(scheduling_table$Participant_Type2, "Missing")
+
+######## Table to print
+scheduling_table2 <- pivot_wider(scheduling_table, id_cols = "Eligible", names_from = "Participant_Type2", values_from = "Freq") 
+scheduling_table2[,2:ncol(scheduling_table2)] <- lapply(scheduling_table2[,2:ncol(scheduling_table2)], replace_na, "0")
+scheduling_table2[,2:ncol(scheduling_table2)] <- lapply(scheduling_table2[,2:ncol(scheduling_table2)], as.numeric)
+scheduling_table2 <- scheduling_table2 %>% mutate(HV_Percent = ((HV/Total) * 100)) %>% mutate(HV_Percent = round(HV_Percent, 2)) %>% 
+  mutate(MDD_Percent = ((MDD/Total) * 100)) %>% mutate(MDD_Percent = round(MDD_Percent, 2)) %>% 
+  mutate(Missing_Percent = ((Missing/Total) * 100)) %>% mutate(Missing_Percent = round(Missing_Percent, 2)) %>% 
+  select(Eligible, MDD, MDD_Percent, HV, HV_Percent, Missing, Missing_Percent, Total)
+scheduling_table2[,2:ncol(scheduling_table2)] <- lapply(scheduling_table2[,2:ncol(scheduling_table2)], replace_na, "0")
 
 scheduling_table2$Eligible <- recode(scheduling_table2$Eligible, "0"="Include: fully eligible", "1"="Include: can’t scan (braces, etc.)", 
   "2"="On hold: contact again after specified amount of time", "3"="On hold: low priority", .missing = NULL)
 
+######## Variables to remove
 rm(scheduling, scheduling_table)
 
 ```

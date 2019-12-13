@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-# ##### need the following if running script from this window 
+# ##### need the following if running script from this window
 # 
 # # directories -------------------------------------------------------------
 # 
@@ -77,7 +77,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # latest_sdq_pull <- c(to_change$latest_sdq_pull)
 # # todays_date_formatted <- c(to_change$todays_date_formatted)
 # # todays_date_formatted <- as.Date(todays_date_formatted)
-# todays_date_formatted <- as.Date("2019-11-27")
+# todays_date_formatted <- as.Date("2019-12-13")
 
 ```
 
@@ -119,7 +119,7 @@ if (exists("master_IRTA_screens_latest")==FALSE) {
 
 common_identifiers_screening <- master_IRTA_screens_latest %>% 
   select(FIRST_NAME, LAST_NAME, Initials, Participant_Type, IRTA_tracker, PLUSID, DAWBA_ID, DOB, Age_at_visit, SEX, 
-         Eligible, Scheduling_status, Clinical_Visit_Date, Clinical_Visit_Type, Referral_Date, Screening_Start_Date, 
+         Eligible, Scheduling_status, Clinical_Visit_Date, Clinical_Visit_Type, NIMH_Clinician, Referral_Date, Screening_Start_Date, 
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, City, State, Primary_clinician, Marital_Status, Metal, 
          Screening_notes, Referral_other_notes, Eligibility_notes, Scheduling_status_notes, Treatment_Notes, Referral_Source) %>% 
   mutate(source="screens")
@@ -128,7 +128,7 @@ common_identifiers_screening <- master_IRTA_screens_latest %>%
 
 common_identifiers_sheduling <- master_IRTA_latest %>% 
   select(FIRST_NAME, LAST_NAME, Initials, Participant_Type, IRTA_tracker, PLUSID, DAWBA_ID, DOB, Age_at_visit, SEX, 
-         Eligible, Scheduling_status, Clinical_Visit_Date, Clinical_Visit_Type, Referral_Date, Screening_Start_Date, 
+         Eligible, Scheduling_status, Clinical_Visit_Date, Clinical_Visit_Type, NIMH_Clinician, Referral_Date, Screening_Start_Date, 
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, City, State, Primary_clinician, Marital_Status, Metal, 
          Screening_notes, Referral_other_notes, Eligibility_notes, Scheduling_status_notes, Treatment_Notes, Referral_Source) %>% 
     group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% slice(1) %>% ungroup() %>% mutate(source="irta trackers")
@@ -147,7 +147,7 @@ common_identifiers[numeric_variables] <- lapply(common_identifiers[numeric_varia
 
 common_identifiers$Overall_date <- coalesce(as.Date(common_identifiers$Referral_Date, "%Y-%m-%d"), as.Date(common_identifiers$Screening_Start_Date, "%Y-%m-%d")) %>%
   coalesce(., as.Date(common_identifiers$Clinical_Visit_Date, "%Y-%m-%d"))
-common_identifiers <- common_identifiers %>% filter(!is.na(Overall_date)) %>% filter(Clinical_Visit_Date>todays_date_formatted | is.na(Clinical_Visit_Date))
+common_identifiers <- common_identifiers %>% filter(!is.na(Overall_date)) %>% filter(Clinical_Visit_Date>=todays_date_formatted | is.na(Clinical_Visit_Date))
 
 ```
 
@@ -338,7 +338,7 @@ sdq_plus_tracker$Notes <- na_if(sdq_plus_tracker$Notes, "")
 
 sdq_plus_tracker <- sdq_plus_tracker %>% 
   select(FIRST_NAME, LAST_NAME, Initials, Participant_Type, IRTA_tracker, PLUSID, DAWBA_ID, DOB, Age_at_visit, SEX, City, State, Marital_Status,
-         Eligible, Scheduling_status, Clinical_Visit_Date, Clinical_Visit_Type, Referral_Date, Screening_Start_Date, Referral_Source, 
+         Eligible, Scheduling_status, Clinical_Visit_Date, Clinical_Visit_Type, NIMH_Clinician, Referral_Date, Screening_Start_Date, Referral_Source, 
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, p_mfq_screen_date, MFQ_tot, p_mfq_parent, 
          p_demo_screen_date, Diagnoses_of_note, p_demo_screen_child_under_care_of, Primary_clinician, Medications, Metal_screen, Diagnostic_imaging, Notes, source)
 
@@ -412,9 +412,10 @@ for(i in seq(nrow(scheduled_v1))) {
   cat("  \n",  "  \n###",  iter, "-", temp[1,1], "", temp[1,2], "(", temp[1,3], ")")
   
   demo_table <- flextable(temp, col_keys = c("Participant_Type", "IRTA_tracker", "DOB", "Age_at_visit", "SEX", "City", "State", "Marital_Status", 
-                                       "Eligible", "DAWBA_ID", "Referral_Source", "MFQ_tot", "Clinical_Visit_Date")) %>%
+                                       "Eligible", "DAWBA_ID", "Referral_Source", "MFQ_tot", "Clinical_Visit_Date", "NIMH_Clinician")) %>%
     set_header_labels(., Participant_Type="Type", IRTA_tracker="IRTA", DOB="DOB", Age_at_visit="Age", SEX="Sex", City="City", State="State", Marital_Status="Marital Status",
-                    Eligible="Eligible", DAWBA_ID="DAWBA_ID", Referral_Source="Referral Source", MFQ_tot="MFQ tot", Clinical_Visit_Date="Clinical Visit Date") %>%
+                    Eligible="Eligible", DAWBA_ID="DAWBA_ID", Referral_Source="Referral Source", MFQ_tot="MFQ tot", Clinical_Visit_Date="Clinical Visit Date", 
+                    NIMH_Clinician="Clinician") %>%
     fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>% FitFlextableToPage(.)
 
   cat(knit_print(demo_table))
