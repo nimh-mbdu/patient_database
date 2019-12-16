@@ -2590,9 +2590,19 @@ CBT_report[parent_report] <- lapply(CBT_report[parent_report], na_if, "Unknown")
 # selecting columns
 
 inpatient_columns <- read_excel(paste0(database_location, "other_data_never_delete/names_inpatient_datebase.xlsx"))
-MATCH_tracker <- Psychometrics_treatment %>% select(inpatient_columns$select, matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
+MATCH_tracker <- Psychometrics_treatment %>% select(inpatient_columns$select, matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"),
                                                  -matches("_source")) %>% arrange(LAST_NAME, Initials, FIRST_NAME, Clinical_Visit_Date) %>%
   filter(Clinical_Visit_Code=="i") %>% select(-c_medsclin_date)
+
+# insert code to filter out future dates
+MATCH_tracker$TDiff <- as.numeric(difftime(MATCH_tracker$Clinical_Visit_Date, todays_date_formatted, tz="", units = "days"))
+MATCH_tracker <- MATCH_tracker %>% filter(TDiff<1) %>% select(-TDiff)
+
+MATCH_tracker$s_mfq1w_tot <- coalesce(MATCH_tracker$s_mfq1w_tot, MATCH_tracker$s_mfq_tot)
+MATCH_tracker$s_ari1w_tot <- coalesce(MATCH_tracker$s_ari1w_tot, MATCH_tracker$s_ari6m_tot)
+MATCH_tracker$p_mfq1w_tot <- coalesce(MATCH_tracker$p_mfq1w_tot, MATCH_tracker$p_mfq_tot)
+MATCH_tracker$p_ari1w_tot <- coalesce(MATCH_tracker$p_ari1w_tot, MATCH_tracker$p_ari6m_tot)
+MATCH_tracker <- MATCH_tracker %>% select(-matches("_ari6m_"), -matches("_mfq_"))
 
 # recoding & calculating variables
 
@@ -2601,7 +2611,6 @@ MATCH_tracker$Eligible <- recode(MATCH_tracker$Eligible, "0"="Include", "5"="Exc
                               "7"="Did not or withdrew assent/consent", "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
                               "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
                               "11"="Completed treatment", .missing = NULL)
-
 ############# exporting
 
 # Psychometrics_treatment <- Psychometrics_treatment %>% select(-FIRST_NAME_P1, -LAST_NAME_P1, -FIRST_NAME_P2, -LAST_NAME_P2)
@@ -2622,13 +2631,13 @@ if (file_save_check_combined$date_diff[1]==0) {
   Psychometrics_treatment %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_CLINICAL_updated.xlsx"))
 }
 
-CBT_report %>% write_xlsx(paste0(database_location, "CBT/MASTER_DATABASE_CBT.xlsx"))
-CBT_report %>% write_xlsx(paste0(database_location, "CBT/Backup/MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
+CBT_report %>% write_xlsx(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
+CBT_report %>% write_xlsx(paste0(CBT_backup, "MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
 
 # checking saved properly
-file_save_check <- list.files(path = paste0(database_location, "CBT/"), pattern = "^MASTER_DATABASE_CBT.xlsx", all.files = FALSE,
+file_save_check <- list.files(path = paste0(CBT_location), pattern = "^MASTER_DATABASE_CBT.xlsx", all.files = FALSE,
                               full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-file_save_check_time <- file.mtime(paste0(database_location, "CBT/", file_save_check)) %>% as.Date()
+file_save_check_time <- file.mtime(paste0(CBT_location, file_save_check)) %>% as.Date()
 file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
 file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
 
@@ -2636,16 +2645,16 @@ if (file_save_check_combined$date_diff[1]==0) {
   print("Exported as 'MASTER_DATABASE_CBT'")
 } else {
   print("Conflict: exporting as 'MASTER_DATABASE_CBT_updated'")
-  CBT_report %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_CBT_updated.xlsx"))
+  CBT_report %>% write_xlsx(paste0(CBT_location, "MASTER_DATABASE_CBT_updated.xlsx"))
 }
 
-MATCH_tracker %>% write_xlsx(paste0(database_location, "Inpatient/MASTER_DATABASE_Inpatient.xlsx"))
-MATCH_tracker %>% write_xlsx(paste0(database_location, "Inpatient/Backup/MASTER_DATABASE_Inpatient_", todays_date_formatted, ".xlsx"))
+MATCH_tracker %>% write_xlsx(paste0(inpatient_location, "MASTER_DATABASE_Inpatient.xlsx"))
+MATCH_tracker %>% write_xlsx(paste0(inpatient_backup, "MASTER_DATABASE_Inpatient_", todays_date_formatted, ".xlsx"))
 
 # checking saved properly
-file_save_check <- list.files(path = paste0(database_location, "Inpatient/"), pattern = "^MASTER_DATABASE_Inpatient.xlsx", all.files = FALSE,
+file_save_check <- list.files(path = paste0(inpatient_location), pattern = "^MASTER_DATABASE_Inpatient.xlsx", all.files = FALSE,
                               full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-file_save_check_time <- file.mtime(paste0(database_location, "Inpatient/", file_save_check)) %>% as.Date()
+file_save_check_time <- file.mtime(paste0(inpatient_location, file_save_check)) %>% as.Date()
 file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
 file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
 
@@ -2653,7 +2662,7 @@ if (file_save_check_combined$date_diff[1]==0) {
   print("Exported as 'MASTER_DATABASE_Inpatient'")
 } else {
   print("Conflict: exporting as 'MASTER_DATABASE_Inpatient_updated'")
-  MATCH_tracker %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_Inpatient_updated.xlsx"))
+  MATCH_tracker %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_Inpatient_updated.xlsx"))
 }
 
 # Creating tasks database & exporting ------------------------------------
@@ -2735,8 +2744,8 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, count_
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, 
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation,
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, 
-   how_columns, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, 
-   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before)
+   how_columns, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, 
+   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, file_save_check_combined)
 # numeric, of_interest
 
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)

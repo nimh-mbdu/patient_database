@@ -872,7 +872,7 @@ Current inpatients:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-current_inpatients <- inpatients %>% filter(Clinical_Visit_Date>two_weeks_date_formatted) %>% filter(Eligible=="Active in treatment") %>% 
+current_inpatients <- inpatients %>% filter(is.na(Eligible) | Eligible=="Active in treatment") %>% 
   select(Initials, Clinical_Visit_Date, Clinical_Visit_Number, IRTA_tracker)
 current_inpatients$Clinical_Visit_Date <- format(current_inpatients$Clinical_Visit_Date, "%B %d %Y")
 

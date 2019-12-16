@@ -45,9 +45,14 @@ ctdb_pull = paste0(database_location, "CTDB_pull/")
 sdq_pull = paste0(database_location, "SDQ_pull/")
 
 # related to the CBT database
-CBT_location = paste0(string, "Database/Master Psychometric Database/CBT/") 
+CBT_location = paste0(database_location, "CBT/") 
 CBT_backup = paste0(CBT_location, "Backup/") 
 saving_reports = paste0(CBT_location, "Reports/")
+
+# related to the CBT database
+inpatient_location = paste0(database_location, "Inpatient/") 
+inpatient_backup = paste0(inpatient_location, "Backup/") 
+inpatient_summary_location = paste0(inpatient_location, "Reports/")
 
 # task related, e.g. tracker locations 
 MID_tracker_location = paste0(sdan1, "Data/MID1/")
@@ -130,6 +135,7 @@ modules2run <- c(to_change$modules2run)
 # 9 = modules 1 & 4
 # 10 = generate clinician meeting sheet
 # 11 = modules 1 & 10
+# 12 = create inpatient summary sheet 
 
 # update master IRTA tracker and tasks database ---------------------------
 
@@ -277,6 +283,21 @@ if (modules2run==10 | modules2run==11) {
 } else {
   
   print("clinician meeting sheet not produced - NA")
+  
+}
+
+# produce inpatient summaries ---------------------------------------------
+
+if (modules2run==12) {
+  
+  suppressPackageStartupMessages(library(flextable))
+  render(paste0(scripts, 'Reports/Inpatient_summary.Rmd'), output_format = "word_document",
+         output_file = paste0("Inpatient_summary_", todays_date_formatted), output_dir = inpatient_summary_location)
+  detach(package:flextable)
+  
+} else {
+  
+  print("Inpatient summary not produced - NA")
   
 }
 
