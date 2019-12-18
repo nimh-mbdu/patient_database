@@ -106,7 +106,7 @@ master_IRTA_reordered <- master_IRTA_template %>% filter(!is.na(Current)) %>% gr
   fill(FIRST_NAME, LAST_NAME, SDAN:Handedness, Parent_CTSS_username:Metal, .direction = "up") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 master_IRTA_reordered <- master_IRTA_reordered %>% group_by(Initials) %>% arrange(Initials, Overall_date) %>% 
-  fill(Eligibility_notes, Scheduling_status_notes, Consent_Date, Protocol, Data_sharing, Treatment_Notes, Clinicals, Clinicals_date, .direction = "down") %>% 
+  fill(Consent_Date, Protocol, Data_sharing, Clinicals, Clinicals_date, .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 
 # creating an 'overall date' column, prioritizing referral date from the screening tabs of the IRTA trackers, where this is missing, inserting the screening start date instead
@@ -729,12 +729,12 @@ rm(list=ls(pattern="_meg_data"))
 rm(list=ls(pattern="_current_screens"))
 rm(list=ls(pattern="_old_screens"))
 rm(list=ls(pattern="iter"))
-rm(list=ls(pattern="age_"))
 rm(list=ls(pattern="_sets"))
 rm(list=ls(pattern="missing"))
 rm(list=ls(pattern="_reordered"))
 rm(list=ls(pattern="_template"))
 rm(list=ls(pattern="duplicate"))
+rm(list=ls(pattern="age_"))
 rm(IRTA_full, IRTA_init, j, irta_tracker_columns, date_variabes, split1, i, eligibility_variables, x, row, u, numeric, of_interest, o)
 rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, meg_reshape_master, meg_reshape, MEG_tasks, meg_combined,  
    MEG_task_QC, meg_list, MID_check, RS_check, task_check_clinical_code, task_name_check, task_number_check, prev_task_database,

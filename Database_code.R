@@ -2727,25 +2727,22 @@ if (file_save_check_combined$date_diff[1]==0) {
 
 # Removing unnecessary variables ------------------------------------------
 
-rm(list=ls(pattern="ctdb"))
-rm(list=ls(pattern="sdq"))
+rm(list=ls(pattern="subset"))
 rm(list=ls(pattern="clinical"))
 rm(list=ls(pattern="task"))
-rm(list=ls(pattern="subset"))
 rm(list=ls(pattern="iter"))
 rm(list=ls(pattern="manual"))
 rm(list=ls(pattern="common_identifiers"))
 rm(list=ls(pattern="data_"))
 rm(list=ls(pattern="parent_"))
-
-rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, count_na, gen_functioning, hand_columns, father_report, mother_report, column, 
+rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, 
    measure_name, panic_subscale, sep_subscale, social_subscale, gad_subscale, school_subscale, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d,
    fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report,
-   c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, 
-   affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation,
+   c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, 
+   affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, sdq_w_names, sdq_dates, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, 
-   how_columns, roles, tot_sum_clin, problem_solving, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, 
-   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, file_save_check_combined)
-# numeric, of_interest
-
+   how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, 
+   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, 
+   file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent, 
+   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)

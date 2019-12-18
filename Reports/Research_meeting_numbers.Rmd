@@ -161,15 +161,22 @@ if (exists("Psychometrics_treatment")==FALSE) {
           arrange(desc(Date)) %>% slice(1)
         Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
         Psychometrics_date <- c(master_database_combined$Date)
-        family_hist <- Psychometrics_treatment %>% 
-          select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
+        family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
+                                                          Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
           filter(!is.na(c_family_interview_interviewer))
-        rm(Psychometrics_treatment, master_database_file, master_database_file_time, master_database_combined)
+        rm(master_database_file, master_database_file_time, master_database_combined)
 } else {
         print("clinical database info already imported")
-        family_hist <- Psychometrics_treatment %>% 
-          select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
+        family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
+                                                          Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
           filter(!is.na(c_family_interview_interviewer))
+        master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
+        master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        Psychometrics_date <- c(master_database_combined$Date)
 }
 
 if (exists("MEG_mprage")==FALSE) {
@@ -229,8 +236,9 @@ Referrals since last week, `r last_week_date`
 
 ######## Dummy table
 referrals_table_dummy <- tibble(Participant_Type2=c("HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, 
-                                                "HV", "MDD", "UNSURE", "Total", NA), Screening_Successful=c("0","0","0","0","0", "1","1","1","1","1", "Total","Total","Total",
-                                                "Total","Total", NA,NA,NA,NA,NA), Freq=c("0")) %>% mutate(Screening_Successful=as.character(Screening_Successful), Freq=as.numeric(Freq))
+                                "HV", "MDD", "UNSURE", "Total", NA), Screening_Successful=c("0","0","0","0","0", "1","1","1","1","1", "Total","Total","Total",
+                                "Total","Total", NA,NA,NA,NA,NA), Freq=c("0")) %>% mutate(Screening_Successful=as.character(Screening_Successful), Freq=as.numeric(Freq))
+
 ######## Real table
 referrals_last_week <- master_IRTA_screens_latest %>% select(Participant_Type2, Referral_Date, Screening_initial_contact_successful)
 referrals_last_week$TDiff <- as.numeric(difftime(referrals_last_week$Referral_Date, last_week_date_formatted, tz="", units = "days"))
@@ -281,8 +289,8 @@ Overview: all participants still in active screening
 
 ######## Dummy table
 screens_dummy <- tibble(Participant_Type2=c("HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, 
-                                                "HV", "MDD", "UNSURE", "Total", NA), Screening_Successful=c("0","0","0","0","0", "1","1","1","1","1", "Total","Total","Total",
-                                                "Total","Total", NA,NA,NA,NA,NA), Freq=c("0")) %>% mutate(Screening_Successful=as.character(Screening_Successful), Freq=as.numeric(Freq))
+                        "HV", "MDD", "UNSURE", "Total", NA), Screening_Successful=c("0","0","0","0","0", "1","1","1","1","1", "Total","Total","Total",
+                        "Total","Total", NA,NA,NA,NA,NA), Freq=c("0")) %>% mutate(Screening_Successful=as.character(Screening_Successful), Freq=as.numeric(Freq))
 ######## Real table
 screens <- master_IRTA_screens_latest %>% filter(!is.na(Screening_Start_Date))
 screens_table1 <- ctable(screens$Participant_Type2, screens$Screening_initial_contact_successful, 
@@ -309,7 +317,7 @@ screens_table2 <- screens_table2 %>% mutate(Unsuccessful_Percent = ((Unsuccessfu
 screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], replace_na, "0")
 
 ######## Variables to remove
-rm(screens_dummy, screens, screens_table1)
+rm(screens_dummy, screens_table1)
 
 ```
 
@@ -321,7 +329,7 @@ screens_table2 %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%"
 
 ```
 
-Status Of those currently screening: ******continue from here (then skip down to protocol enrollment)
+Status Of those currently screening:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
@@ -662,7 +670,7 @@ meg_mmi_past <- meg_mmi_past %>% spread(., key = "Task_Name", value = "Task_Date
   ungroup() %>% filter(!is.na(MEG_MMI)) %>% distinct(., .keep_all = TRUE) %>% 
   mutate(MEG_complete=(MEG_MMI==MEG_Resting_state)) %>% mutate(MEG_complete=as.character(MEG_complete))
 meg_mmi_past <- meg_mmi_past %>% mutate(MEG_complete = replace_na(MEG_complete, "FALSE"))
-meg_mmi_past <- meg_mmi_past %>% group_by(Initials) %>% arrange(MEG_complete) %>% slice(n()) %>% ungroup()
+meg_mmi_past <- meg_mmi_past %>% group_by(Initials, MEG_MMI) %>% arrange(MEG_complete) %>% slice(n()) %>% ungroup()
   
 meg_mmi_table <- ctable(meg_mmi_past$Participant_Type2, meg_mmi_past$MEG_complete, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
   as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.meg_mmi_past.Participant_Type2") %>% 
@@ -688,8 +696,16 @@ meg_mmi_upcoming <- task_reshape_master_QC %>% filter(Task_Name == "MEG_MMI") %>
   filter(Task_Date >= todays_date_formatted) %>% select(Initials, Task_Date)
 meg_mmi_upcoming$Task_Date <- format(meg_mmi_upcoming$Task_Date, "%B %d %Y")
 
+if (nrow(meg_mmi_upcoming)=="0") {
+  meg_mmi_upcoming <- rbind(meg_mmi_upcoming, tibble(Initials=c("No upcoming MEG scheduled"), Task_Date=c(NA)))
+  }
+
 meg_mprage_missing <- MEG_mprage %>% select(Initials, Task_Date) 
 meg_mprage_missing$Days_since_scan <- as.numeric(difftime(meg_mprage_missing$Task_Date, todays_date_formatted, tz="", units = "days"))
+
+if (nrow(meg_mprage_missing)=="0") {
+  meg_mprage_missing <- rbind(meg_mprage_missing, tibble(Initials=c("No upcoming MEG scheduled"), Task_Date=c(NA), Days_since_scan=c(NA)))
+  }
 
 rm(meg_mmi, meg_mmi_past, meg_mmi_table)
 
@@ -699,7 +715,7 @@ Upcoming MEG - MMI
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-meg_mmi_upcoming %>% kable(., col.names = c("Initials", "Date")) %>% 
+meg_mmi_upcoming %>% kable(., col.names = c("Initials", "Date")) %>%
   kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -818,10 +834,14 @@ Current CBT participants:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-current_outpatients <- outpatients %>% filter(Clinical_Visit_Date>two_weeks_date_formatted) %>% filter(Eligible=="Active in treatment") %>% 
+current_outpatients <- outpatients %>% filter(Eligible=="Active in treatment") %>% 
   select(Initials, Clinical_Visit_Date, Clinical_Visit_Number, IRTA_tracker)
-
 current_outpatients$Clinical_Visit_Date <- format(current_outpatients$Clinical_Visit_Date, "%B %d %Y")
+
+if (nrow(current_outpatients)=="0") {
+  current_outpatients <- rbind(current_outpatients, tibble(Initials=c("No upcoming MEG scheduled"), Clinical_Visit_Date=c(NA), 
+                                                           Clinical_Visit_Number=c(NA), IRTA_tracker=c(NA)))
+  }
 
 rm(outpatients_tot, outpatients_total_table)
 
@@ -829,7 +849,7 @@ rm(outpatients_tot, outpatients_total_table)
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-current_outpatients %>% kable(., col.names = c("Initials", "Last CBT Date", "Visit Number", "Scheduling IRTA")) %>% 
+current_outpatients %>% kable(., col.names = c("Initials", "Last/Next CBT Date", "Visit Number", "Scheduling IRTA")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -876,6 +896,11 @@ current_inpatients <- inpatients %>% filter(is.na(Eligible) | Eligible=="Active 
   select(Initials, Clinical_Visit_Date, Clinical_Visit_Number, IRTA_tracker)
 current_inpatients$Clinical_Visit_Date <- format(current_inpatients$Clinical_Visit_Date, "%B %d %Y")
 
+if (nrow(current_inpatients)=="0") {
+  current_inpatients <- rbind(current_inpatients, tibble(Initials=c("No upcoming MEG scheduled"), Clinical_Visit_Date=c(NA), 
+                                                           Clinical_Visit_Number=c(NA), IRTA_tracker=c(NA)))
+  }
+
 rm(inpatients_tot, inpatients_total_table)
 
 ```
@@ -893,7 +918,7 @@ current_inpatients %>% kable(., col.names = c("Initials", "Last Week Recorded", 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-rm(referrals_table3a, screens_table2, screens_current_table, ready_2_review, scheduled, scheduling_table2, protocol_table2, 
+rm(screens_table2, screens_current_table, ready_2_review, scheduled, scheduling_table2, protocol_table2, 
    inpatients_table, combined, meg_mmi_table2, meg_mmi_upcoming, bloods_table2, 
    current_outpatients, current_inpatients, outpatients, outpatients_table, inpatients, family_hist_table2, 
    supreme_table, meg_mprage_missing, diag_mid_3_table, fu_dates, mid_long)
