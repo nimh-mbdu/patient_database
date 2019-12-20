@@ -58,13 +58,15 @@
   SDQ_Data_Download_raw <- SDQ_Data_Download_raw %>% filter(PlusIID != "4711-5358-6649-5157")
   SDQ_Data_Download_raw <- SDQ_Data_Download_raw %>% filter(PlusIID != "8768-8233-7459-5808")
   SDQ_Data_Download_raw <- SDQ_Data_Download_raw %>% filter(PlusIID != "2738-0093-0639-3598")
-  imported_data_23495 <- read_excel(data_23495)
-  imported_data_23544 <- read_excel(data_23544)
-  imported_data_22279 <- read_excel(data_22279)
+  imported_data_23495 <- read_excel(data_23495) %>% mutate_all(as.character)
+  imported_data_23544 <- read_excel(data_23544) %>% mutate_all(as.character)
+  imported_data_22279 <- read_excel(data_22279) %>% mutate_all(as.character)
+  imported_hyphen_issue <- read_excel(data_hyphen_issue) %>% mutate_all(as.character)
   
   SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_data_23495, all=TRUE)
   SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_data_23544, all=TRUE)
   SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_data_22279, all=TRUE)
+  SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_hyphen_issue, all=TRUE)
   
   #****** old dx checklist & mdd form (from before these were combined on sdq & the mdd form removed)
 

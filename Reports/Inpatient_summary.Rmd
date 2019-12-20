@@ -115,34 +115,34 @@ psychometric_data[,7:ncol(psychometric_data)] <- sapply(psychometric_data[,7:nco
 medication_data <- MATCH_tracker %>% filter(Initials %in% inpatient_list) %>% 
   select(Initials, Clinical_Visit_Date, Clinical_Visit_Date2, Clinical_Visit_Date3, Clinical_Visit_Type, Clinical_Visit_Number, matches("c_medsclin_"))
 
-medication_data$Medications <- paste("Medication 1: ", medication_data$c_medsclin_med1name, ": ", medication_data$c_medsclin_med1dose, medication_data$c_medsclin_med1unit, 
-                          ", freq & notes: ", medication_data$c_medsclin_med1freq, "; ", medication_data$c_medsclin_med1notes,  "; ", 
-                          "Medication 2: ", medication_data$c_medsclin_med2name, ": ", medication_data$c_medsclin_med2dose, medication_data$c_medsclin_med2unit, 
-                          ", freq & notes: ", medication_data$c_medsclin_med2freq, "; ", medication_data$c_medsclin_med2notes, "; ", 
-                          "Medication 3: ", medication_data$c_medsclin_med3name, ": ", medication_data$c_medsclin_med3dose, medication_data$c_medsclin_med3unit, 
-                          ", freq & notes: ", medication_data$c_medsclin_med3freq, "; ", medication_data$c_medsclin_med3notes, "; ", 
-                          "Medication 4: ", medication_data$c_medsclin_med4name, ": ", medication_data$c_medsclin_med4dose, medication_data$c_medsclin_med4unit, 
-                          ", freq & notes: ", medication_data$c_medsclin_med4freq, "; ", medication_data$c_medsclin_med4notes, "; ", 
-                          "Medication 5: ", medication_data$c_medsclin_med5name, ": ", medication_data$c_medsclin_med5dose, medication_data$c_medsclin_med5unit, 
-                          ", freq & notes: ", medication_data$c_medsclin_med5freq, "; ", medication_data$c_medsclin_med5notes, "; ", 
-                          "Medication 6: ", medication_data$c_medsclin_med6name, ": ", medication_data$c_medsclin_med6dose, medication_data$c_medsclin_med6unit, 
-                          ", freq & notes: ", medication_data$c_medsclin_med6freq, "; ", medication_data$c_medsclin_med6notes, "; ", 
-                          "Medication 7: ", medication_data$c_medsclin_med7name, ": ", medication_data$c_medsclin_med7dose, medication_data$c_medsclin_med7unit, 
-                          ", freq & notes: ", medication_data$c_medsclin_med7freq, "; ", medication_data$c_medsclin_med7notes, "; ", 
-                          "Medication 8: ", medication_data$c_medsclin_med8name, ": ", medication_data$c_medsclin_med8dose, medication_data$c_medsclin_med8unit, 
-                          ", freq & notes: ", medication_data$c_medsclin_med8freq, "; ", medication_data$c_medsclin_med8notes, sep="")
+medication_data$Medications <- paste("Medication 1: ", medication_data$c_medsclin_med1name, ", ", medication_data$c_medsclin_med1dose, medication_data$c_medsclin_med1unit, 
+                          ", ", medication_data$c_medsclin_med1freq, ", ", medication_data$c_medsclin_med1notes,  "; ", 
+                          "Medication 2: ", medication_data$c_medsclin_med2name, ", ", medication_data$c_medsclin_med2dose, medication_data$c_medsclin_med2unit, 
+                          ", ", medication_data$c_medsclin_med2freq, ", ", medication_data$c_medsclin_med2notes, "; ", 
+                          "Medication 3: ", medication_data$c_medsclin_med3name, ", ", medication_data$c_medsclin_med3dose, medication_data$c_medsclin_med3unit, 
+                          ", ", medication_data$c_medsclin_med3freq, ", ", medication_data$c_medsclin_med3notes, "; ", 
+                          "Medication 4: ", medication_data$c_medsclin_med4name, ", ", medication_data$c_medsclin_med4dose, medication_data$c_medsclin_med4unit, 
+                          ", ", medication_data$c_medsclin_med4freq, ", ", medication_data$c_medsclin_med4notes, "; ", 
+                          "Medication 5: ", medication_data$c_medsclin_med5name, ", ", medication_data$c_medsclin_med5dose, medication_data$c_medsclin_med5unit, 
+                          ", ", medication_data$c_medsclin_med5freq, ", ", medication_data$c_medsclin_med5notes, "; ", 
+                          "Medication 6: ", medication_data$c_medsclin_med6name, ", ", medication_data$c_medsclin_med6dose, medication_data$c_medsclin_med6unit, 
+                          ", ", medication_data$c_medsclin_med6freq, ", ", medication_data$c_medsclin_med6notes, "; ", 
+                          "Medication 7: ", medication_data$c_medsclin_med7name, ", ", medication_data$c_medsclin_med7dose, medication_data$c_medsclin_med7unit, 
+                          ", ", medication_data$c_medsclin_med7freq, ", ", medication_data$c_medsclin_med7notes, "; ", 
+                          "Medication 8: ", medication_data$c_medsclin_med8name, ", ", medication_data$c_medsclin_med8dose, medication_data$c_medsclin_med8unit, 
+                          ", ", medication_data$c_medsclin_med8freq, ", ", medication_data$c_medsclin_med8notes, sep="")
 
-medication_data$Medications <- gsub("Medication 1: NA: NANA, freq & notes: NA; NA; ", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("Medication 2: NA: NANA, freq & notes: NA; NA; ", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("Medication 3: NA: NANA, freq & notes: NA; NA; ", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("Medication 4: NA: NANA, freq & notes: NA; NA; ", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("Medication 5: NA: NANA, freq & notes: NA; NA; ", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("Medication 6: NA: NANA, freq & notes: NA; NA; ", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("Medication 7: NA: NANA, freq & notes: NA; NA; ", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("Medication 8: NA: NANA, freq & notes: NA; NA", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub(", freq & notes: NA; NA", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("Medication 1: none: 0na, freq & notes: na; NA; ", "", medication_data$Medications, fixed=TRUE)
-medication_data$Medications <- gsub("; NA;", ";", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 1: NA, NANA, NA, NA; ", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 2: NA, NANA, NA, NA; ", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 3: NA, NANA, NA, NA; ", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 4: NA, NANA, NA, NA; ", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 5: NA, NANA, NA, NA; ", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 6: NA, NANA, NA, NA; ", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 7: NA, NANA, NA, NA; ", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 8: NA, NANA, NA, NA", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub(", NA, NA", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub("Medication 1: none, 0na, na, NA; ", "", medication_data$Medications, fixed=TRUE)
+medication_data$Medications <- gsub(", NA;", ";", medication_data$Medications, fixed=TRUE)
 medication_data$Medications <- na_if(medication_data$Medications, "")
 
 medication_data <- medication_data %>% select(Initials, Clinical_Visit_Date, Clinical_Visit_Date2, Clinical_Visit_Date3, Clinical_Visit_Type, 
