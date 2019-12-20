@@ -2258,11 +2258,11 @@
       
     }
     
-    if (measure_name=="c_family_interview_") {
-      dummy1 <- measure_temp %>% select(-Initials) %>% rename(Initials="Sibling_Init") %>% filter(!is.na(Initials))
-      measure_temp <- measure_temp %>% select(-Sibling_Init) %>% merge.default(., dummy1, all=TRUE)
-      rm(dummy1) 
-    }
+    # if (measure_name=="c_family_interview_") {
+    #   dummy1 <- measure_temp %>% select(-Initials) %>% rename(Initials="Sibling_Init") %>% filter(!is.na(Initials))
+    #   measure_temp <- measure_temp %>% select(-Sibling_Init) %>% merge.default(., dummy1, all=TRUE)
+    #   rm(dummy1) 
+    # }
     
     if (measure_name=="p_demo_eval_"){
       fill_names <- measure_temp %>% select(-Initials) %>% colnames()
@@ -2409,7 +2409,7 @@
       assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
       
     } else if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
-      measure_name=="c_ksadsdx_" | measure_name=="ksads_") {
+      measure_name=="c_ksadsdx_" | measure_name=="ksads_" | measure_name=="c_family_interview_" ) {
       
       print("creating clinical subset")
       

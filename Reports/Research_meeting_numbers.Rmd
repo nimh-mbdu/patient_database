@@ -92,8 +92,7 @@ two_weeks_date_formatted <- todays_date_formatted - as.difftime(14, unit="days")
 
 if (exists("task_reshape_master_QC")==FALSE) {
         task_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^TASKS_DATABASE_QC", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE,
-                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         task_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", task_master_file)) %>% as.Date()
         task_master_combined <- tibble(File=c(task_master_file), Date=c(task_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
         task_reshape_master_QC <- read_excel(paste0(IRTA_tracker_location, task_master_combined[1]))
@@ -110,8 +109,7 @@ if (exists("task_reshape_master_QC")==FALSE) {
 
 if (exists("master_IRTA_latest")==FALSE) {
         irta_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^MASTER_IRTA_DATABASE", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE,
-                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         irta_master_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_master_file)) %>% as.Date()
         irta_master_combined <- tibble(File=c(irta_master_file), Date=c(irta_master_file_time)) %>% arrange(desc(Date)) %>% slice(1)
         master_IRTA_latest <- read_excel(paste0(IRTA_tracker_location, irta_master_combined[1]))
@@ -125,8 +123,7 @@ if (exists("master_IRTA_latest")==FALSE) {
 
 if (exists("master_IRTA_oldest_screens_latest")==FALSE) {
         irta_old_screens_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^OLD_REFERRALS_DATABASE", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE,
-                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         irta_old_screens_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_old_screens_file)) %>% as.Date()
         irta_old_screens_combined <- tibble(File=c(irta_old_screens_file), Date=c(irta_old_screens_file_time)) %>% arrange(desc(Date)) %>% slice(1)
         master_IRTA_oldest_screens_latest <- read_excel(paste0(IRTA_tracker_location, irta_old_screens_combined[1]))
@@ -139,8 +136,7 @@ if (exists("master_IRTA_oldest_screens_latest")==FALSE) {
 
 if (exists("master_IRTA_screens_latest")==FALSE) {
         irta_ongoing_screens_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^REFERRAL_AND_SCREENING_DATABASE", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE,
-                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         irta_ongoing_screens_file_time <- file.mtime(paste0(IRTA_tracker_location, "/", irta_ongoing_screens_file)) %>% as.Date()
         irta_ongoing_screens_combined <- tibble(File=c(irta_ongoing_screens_file), Date=c(irta_ongoing_screens_file_time)) %>% 
           arrange(desc(Date)) %>% slice(1)
@@ -154,25 +150,21 @@ if (exists("master_IRTA_screens_latest")==FALSE) {
 
 if (exists("Psychometrics_treatment")==FALSE) {
         master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE,
-                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
         master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
           arrange(desc(Date)) %>% slice(1)
         Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
         Psychometrics_date <- c(master_database_combined$Date)
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
-                                                          Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
-          filter(!is.na(c_family_interview_interviewer))
+          Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
         rm(master_database_file, master_database_file_time, master_database_combined)
 } else {
         print("clinical database info already imported")
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
-                                                          Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% 
-          filter(!is.na(c_family_interview_interviewer))
+          Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
         master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE,
-                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
         master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
           arrange(desc(Date)) %>% slice(1)
@@ -182,8 +174,7 @@ if (exists("Psychometrics_treatment")==FALSE) {
 if (exists("MEG_mprage")==FALSE) {
   
         meg_mprage_file <- list.files(path = paste0(IRTA_tracker_location, "QCing/"), pattern = "^MEG_need_mprage", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE,
-                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         meg_mprage_file_time <- file.mtime(paste0(IRTA_tracker_location, "QCing/", meg_mprage_file)) %>% as.Date()
         meg_mprage_combined <- tibble(File=c(meg_mprage_file), Date=c(meg_mprage_file_time)) %>% 
           arrange(desc(Date)) %>% slice(1)

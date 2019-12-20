@@ -139,7 +139,7 @@ modules2run <- c(to_change$modules2run)
 
 # update master IRTA tracker and tasks database ---------------------------
 
-if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2run==11) {
+if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2run==11 | modules2run==13) {
   
   suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
   
@@ -160,7 +160,7 @@ if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2
 
 # update master database --------------------------------------------------
 
-if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7) {
+if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7 | modules2run==13) {
 
   suppressWarnings(source(paste0(scripts, 'Database_code.R')))
   
@@ -288,7 +288,7 @@ if (modules2run==10 | modules2run==11) {
 
 # produce inpatient summaries ---------------------------------------------
 
-if (modules2run==12) {
+if (modules2run==12 | modules2run==13) {
   
   suppressPackageStartupMessages(library(flextable))
   render(paste0(scripts, 'Reports/Inpatient_summary.Rmd'), output_format = "word_document",
