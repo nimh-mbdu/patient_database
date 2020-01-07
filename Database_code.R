@@ -307,14 +307,15 @@
   
   for(i in seq_along(tot_sum)) {
     iter <- as.numeric(i)
-    # iter=2
+    # iter=1
     measure_name <- tot_sum[iter]
     
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
-      filter(!is.na(Overall_date)) %>% 
-      distinct(., .keep_all = TRUE)
-    measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
-    measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE)
+      measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
+        filter(!is.na(Overall_date)) %>% 
+        distinct(., .keep_all = TRUE)
+      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
+      measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE) %>% 
+        group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
     
     measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% ncol() %>% as.numeric()
     measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% apply(., 1, count_na)
@@ -438,7 +439,8 @@
       distinct(., .keep_all = TRUE) 
     
     measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
-    measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE)
+    measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE) %>% 
+      group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
     
     if (measure_name=="p_scared_") {
       
