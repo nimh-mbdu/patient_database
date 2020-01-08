@@ -89,6 +89,7 @@ knitr::opts_chunk$set(echo = TRUE)
 todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
 last_week_date <- last_week_date_formatted %>% format(., "%B %d %Y")
 two_weeks_date_formatted <- todays_date_formatted - as.difftime(14, unit="days")
+Psychometrics_date <- substring(latest_sdq_pull, 7, 16)
 
 if (exists("task_reshape_master_QC")==FALSE) {
         task_master_file <- list.files(path = paste0(IRTA_tracker_location), pattern = "^TASKS_DATABASE_QC", all.files = FALSE,
@@ -155,7 +156,6 @@ if (exists("Psychometrics_treatment")==FALSE) {
         master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
           arrange(desc(Date)) %>% slice(1)
         Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
-        Psychometrics_date <- c(master_database_combined$Date)
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
           Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
         rm(master_database_file, master_database_file_time, master_database_combined)
@@ -163,12 +163,6 @@ if (exists("Psychometrics_treatment")==FALSE) {
         print("clinical database info already imported")
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
           Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
-        master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL", all.files = FALSE,
-                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-        master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
-        master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
-          arrange(desc(Date)) %>% slice(1)
-        Psychometrics_date <- c(master_database_combined$Date)
 }
 
 if (exists("MEG_mprage")==FALSE) {
@@ -257,6 +251,7 @@ referrals_table2 <- referrals_table2 %>% mutate(Unsuccessful_Percent = ((Unsucce
   mutate(Missing_Percent = ((Missing/Total) * 100)) %>% mutate(Missing_Percent = round(Missing_Percent, 2)) %>% 
   select(Participant_Type2, Successful, Successful_Percent, Unsuccessful, Unsuccessful_Percent, Missing, Missing_Percent, Total)
 referrals_table2[,2:ncol(referrals_table2)] <- lapply(referrals_table2[,2:ncol(referrals_table2)], replace_na, "0")
+referrals_table2$Participant_Type2 <- gsub("Total", "TOTAL", referrals_table2$Participant_Type2)
 
 ######## Variables to remove
 rm(referrals_table_dummy, referrals_last_week, num_referrals2, referrals_table)
@@ -306,6 +301,7 @@ screens_table2 <- screens_table2 %>% mutate(Unsuccessful_Percent = ((Unsuccessfu
   mutate(Missing_Percent = ((Missing/Total) * 100)) %>% mutate(Missing_Percent = round(Missing_Percent, 2)) %>% 
   select(Participant_Type2, Successful, Successful_Percent, Unsuccessful, Unsuccessful_Percent, Missing, Missing_Percent, Total)
 screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], replace_na, "0")
+screens_table2$Participant_Type2 <- gsub("Total", "TOTAL", screens_table2$Participant_Type2)
 
 ######## Variables to remove
 rm(screens_dummy, screens_table1)
@@ -326,6 +322,10 @@ Status Of those currently screening:
 
 screens_current <- screens %>% filter(Screening_initial_contact_successful==1)
 
+screens_dummy_table <- tibble(Participant_Type2=c(NA), Parent_e_consented_freq.0=c(NA), Parent_e_consented_freq.1=c(NA), 
+                                Child_e_assent_freq.0=c(NA), Child_e_assent_freq.1=c(NA), Parent_DAWBA_completed_freq.0=c(NA), Parent_DAWBA_completed_freq.1=c(NA), 
+                                Child_DAWBA_completed_freq.0=c(NA), Child_DAWBA_completed_freq.1=c(NA)) %>% as.data.frame()
+
 screens_current_table1 <- table(screens_current$Participant_Type2, screens_current$Child_e_assented) %>% as.data.frame() %>% 
   rename(Child_e_assented = "Var2", Child_e_assent_freq = "Freq", Participant_Type2 = "Var1") %>%
   reshape(., idvar = "Participant_Type2", timevar = "Child_e_assented", direction = "wide") 
@@ -339,11 +339,13 @@ screens_current_table4 <- table(screens_current$Participant_Type2, screens_curre
   rename(Parent_DAWBA_completed = "Var2", Parent_DAWBA_completed_freq = "Freq", Participant_Type2 = "Var1") %>%
   reshape(., idvar = "Participant_Type2", timevar = "Parent_DAWBA_completed", direction = "wide") 
 
-screens_current_table <- merge.default(screens_current_table2, screens_current_table1, all=TRUE) %>% 
-  merge.default(., screens_current_table4, all=TRUE) %>% merge.default(., screens_current_table3, all=TRUE) %>% 
+screens_current_table <- merge.default(screens_current_table2, screens_current_table1, all=TRUE) %>%
+  merge.default(., screens_current_table4, all=TRUE) %>% merge.default(., screens_current_table3, all=TRUE) %>%
+  merge.default(., screens_dummy_table, all=TRUE) %>% filter(!is.na(Participant_Type2)) %>% 
   reshape(., varying = c("Parent_e_consented_freq.0", "Parent_e_consented_freq.1", "Child_e_assent_freq.0", "Child_e_assent_freq.1",
                          "Parent_DAWBA_completed_freq.0", "Parent_DAWBA_completed_freq.1", "Child_DAWBA_completed_freq.0",
                          "Child_DAWBA_completed_freq.1"), direction = "long", idvar = "Participant_Type2", new.row.names=c(1:6))
+screens_current_table[,3:6] <- lapply(screens_current_table[,3:6], replace_na, 0)
 
 rm(screens, screens_current, screens_current_table1, screens_current_table2, screens_current_table3, screens_current_table4)
 
@@ -372,6 +374,10 @@ ready_2_review <- master_IRTA_screens_latest %>%
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+if (nrow(ready_2_review)=="0") {
+  ready_2_review <- rbind(ready_2_review, tibble(Initials=c("No participants ready to review"), Participant_Type2=c(NA), DAWBA_ID=c(NA)))
+  }
 
 ready_2_review %>% kable(., col.names = c("Initials", "Participant Type", "DAWBA ID")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
@@ -754,7 +760,7 @@ bloods_table2 %>% kable(., col.names = c("Task Number", "Inpatient", "%", "Chara
 
 ##### Family History Interview completion:
 
-Numbers as of last database update (`r Psychometrics_date`). 
+Numbers as of last SDQ+ pull (`r Psychometrics_date`). 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
