@@ -69,9 +69,9 @@
   SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_hyphen_issue, all=TRUE)
   
   #****** old dx checklist & mdd form (from before these were combined on sdq & the mdd form removed)
-
-  old_ksads_checklist <- read.delim(paste0(data_old_dx_checklist),  quote="", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
-  old_mdd_form <- read.delim(paste0(data_old_mdd_form),  quote="", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
+  
+  old_ksads_checklist <- read.delim(paste0(data_old_dx_checklist),  quote="", encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
+  old_mdd_form <- read.delim(paste0(data_old_mdd_form),  quote="", encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
   old_dx_temp <- merge.default(old_ksads_checklist, old_mdd_form, all=TRUE)
   
   old_dx_temp$yfu_clin_name <- coalesce(old_dx_temp$yfu_clin_name, old_dx_temp$ksads_dx_clin_name)
@@ -164,6 +164,7 @@
     distinct(., .keep_all = TRUE)
   manual_combined$Overall_date <- as.Date(manual_combined$Overall_date)
   manual_combined$c_ksadsdx_date <- as.Date(manual_combined$c_ksadsdx_date, "%d-%m-%Y")
+  manual_combined$c_ksadsdx_epset_baseline_visit_date <- as.Date(manual_combined$c_ksadsdx_epset_baseline_visit_date, "%d-%m-%Y")
   
   # Clean up -------------------------------------------
   
@@ -724,25 +725,28 @@
   fix_var <- c("c_ksadsdx_clin_name", "c_ksadsdx_visit_type",  "c_ksadsdx_eligibility",  "c_ksadsdx_eligibility_other", "c_ksadsdx_primary_dx",  "c_ksadsdx_primary_dx_other",  
                "c_ksadsdx_dx_detailed",  "c_ksadsdx_dx_detailed_descrip", "c_ksadsdx_treatment_notes",  "c_ksadsdx_notes_overall", "c_ksadsdx_epset_current_mdd", 
                "c_ksadsdx_epset_current_submdd", "c_ksadsdx_epset_current_mddsympt", "c_ksadsdx_epset_current_mania", "c_ksadsdx_epset_current_hypomania", "c_ksadsdx_comorbid_dx_old", 
-               "c_ksadsdx_ongoing_other_comorbid_dx")
+               "c_ksadsdx_ongoing_other_comorbid_dx", "c_ksadsdx_how_interviewed")
   
   diagnosis_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx')) 
   
   diagnosis_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx'))
   diagnosis_subset_sdq <- merge.default(diagnosis_subset_sdq, diagnosis_manual, all=TRUE)
+  
   diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], as.character)
   diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], na_if, '')
 
   diagnosis_subset_sdq$c_ksadsdx_date <- as.Date(diagnosis_subset_sdq$c_ksadsdx_date)
   diagnosis_subset_sdq$c_ksadsdx_date <- coalesce(diagnosis_subset_sdq$c_ksadsdx_date, diagnosis_subset_sdq$Overall_date) 
-  diagnosis_subset_sdq <- diagnosis_subset_sdq %>% select(-Overall_date)
-  
+
   diagnosis_subset_sdq$no_columns <- diagnosis_subset_sdq %>% select(c_ksadsdx_eligibility, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, c_ksadsdx_comorbid_dx_old, c_ksadsdx_ongoing_other_comorbid_dx) %>% 
     ncol() %>% as.numeric()
   diagnosis_subset_sdq$NA_count <- diagnosis_subset_sdq %>% select(c_ksadsdx_eligibility, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, c_ksadsdx_comorbid_dx_old, c_ksadsdx_ongoing_other_comorbid_dx) %>% 
     apply(., 1, count_na)
   diagnosis_subset_sdq$diff <- c(diagnosis_subset_sdq$no_columns - diagnosis_subset_sdq$NA_count)
   diagnosis_subset_sdq <- diagnosis_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  
+  diagnosis_subset_sdq <- diagnosis_subset_sdq %>% group_by(Initials, c_ksadsdx_date) %>% arrange(Initials, c_ksadsdx_date, source) %>%
+    slice(1) %>% ungroup()%>% select(-Overall_date)
   
   diagnosis_subset_sdq[fix_var[2]] <- lapply(diagnosis_subset_sdq[fix_var[2]], FUN = function(x) recode(x, "0"="baseline", "1"="12 month FU", "2"="24 month FU", "9"="Inpatient Treatment", "10"="Outpatient Treatment", .missing = NULL))
   diagnosis_subset_sdq[fix_var[3]] <- lapply(diagnosis_subset_sdq[fix_var[3]], FUN = function(x) recode(x, "0"="Include", "1"="Include: can't scan", "5"="Excluded: does not meet criteria", "6"="Excluded: meets exclusionary criteria", "777"="Excluded: withdrew", .missing = NULL))
@@ -753,6 +757,7 @@
   diagnosis_subset_sdq[fix_var[13]] <- lapply(diagnosis_subset_sdq[fix_var[13]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
   diagnosis_subset_sdq[fix_var[14]] <- lapply(diagnosis_subset_sdq[fix_var[14]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
   diagnosis_subset_sdq[fix_var[15]] <- lapply(diagnosis_subset_sdq[fix_var[15]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
+  diagnosis_subset_sdq[fix_var[18]] <- lapply(diagnosis_subset_sdq[fix_var[18]], FUN = function(x) recode(x, "0"="face-to-face assessment", "1"="phone assessment", .missing = "face-to-face assessment"))
   
   fill_names <- diagnosis_subset_sdq %>% select(-Initials, -c_ksadsdx_date) %>% colnames()
   diagnosis_subset_sdq <- diagnosis_subset_sdq %>% group_by(Initials, c_ksadsdx_date) %>% fill(., names(fill_names), .direction = c("down")) %>%
@@ -840,7 +845,7 @@
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_ksadsdx_date, measurement_TDiff_abs) %>%
     slice(1) %>%
     ungroup() %>%
-    filter(measurement_TDiff_abs<=60) %>% 
+    # filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
   
   diagnosis_subset_clinical <- merge.default(clinical_DB_date, diagnosis_subset_sdq, all=TRUE) %>% 
