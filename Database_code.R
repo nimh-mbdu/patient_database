@@ -308,20 +308,27 @@
   
   for(i in seq_along(tot_sum)) {
     iter <- as.numeric(i)
-    # iter=1
+    # iter=2
     measure_name <- tot_sum[iter]
     
       measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
         filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
+      
+      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% ncol() %>% as.numeric()
+      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% apply(., 1, count_na)
+      measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
+      measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff) 
+      
       measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
+      
+      measure_temp_manual$no_columns <- measure_temp_manual %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% ncol() %>% as.numeric()
+      measure_temp_manual$NA_count <- measure_temp_manual %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% apply(., 1, count_na)
+      measure_temp_manual$diff <- c(measure_temp_manual$no_columns - measure_temp_manual$NA_count)
+      measure_temp_manual <- measure_temp_manual %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
       measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE) %>% 
         group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
-    
-    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% ncol() %>% as.numeric()
-    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% apply(., 1, count_na)
-    measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
-    measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
     
     if (measure_name=="p_mfq_" | measure_name=="p_mfq1w_" | measure_name=="p_ari1w_" | measure_name=="p_ari6m_") {
       measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric)
@@ -438,10 +445,7 @@
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE) 
-    
     measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
-    measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE) %>% 
-      group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
     
     if (measure_name=="p_scared_") {
       
@@ -449,6 +453,14 @@
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% apply(., 1, count_na)
       measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
+      measure_temp_manual$no_columns <- measure_temp_manual %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% ncol() %>% as.numeric()
+      measure_temp_manual$NA_count <- measure_temp_manual %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% apply(., 1, count_na)
+      measure_temp_manual$diff <- c(measure_temp_manual$no_columns - measure_temp_manual$NA_count)
+      measure_temp_manual <- measure_temp_manual %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+
+      measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE) %>% 
+        group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
       
       measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% rowSums(na.rm=TRUE)
@@ -463,6 +475,14 @@
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
       measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
+      measure_temp_manual$no_columns <- measure_temp_manual %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
+      measure_temp_manual$NA_count <- measure_temp_manual %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+      measure_temp_manual$diff <- c(measure_temp_manual$no_columns - measure_temp_manual$NA_count)
+      measure_temp_manual <- measure_temp_manual %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
+      measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE) %>% 
+        group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
       
       measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
@@ -728,7 +748,6 @@
                "c_ksadsdx_ongoing_other_comorbid_dx", "c_ksadsdx_how_interviewed")
   
   diagnosis_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx')) 
-  
   diagnosis_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx'))
   diagnosis_subset_sdq <- merge.default(diagnosis_subset_sdq, diagnosis_manual, all=TRUE)
   
@@ -2527,12 +2546,12 @@ CBT_report <- Psychometrics_treatment %>%
 CBT_report$TDiff <- as.numeric(difftime(CBT_report$Clinical_Visit_Date, todays_date_formatted, tz="", units = "days"))
 CBT_report <- CBT_report %>% filter(TDiff<1) %>% select(-TDiff)
 
-CBT_report$s_mfq1w_tot <- coalesce(CBT_report$s_mfq1w_tot, CBT_report$s_mfq_tot)
-CBT_report$s_ari1w_tot <- coalesce(CBT_report$s_ari1w_tot, CBT_report$s_ari6m_tot)
-CBT_report$p_mfq1w_tot <- coalesce(CBT_report$p_mfq1w_tot, CBT_report$p_mfq_tot)
-CBT_report$p_ari1w_tot <- coalesce(CBT_report$p_ari1w_tot, CBT_report$p_ari6m_tot)
-CBT_report$p_mfq1w_parent <- coalesce(CBT_report$p_mfq1w_parent, CBT_report$p_mfq_parent)
-CBT_report$p_ari1w_parent <- coalesce(CBT_report$p_ari1w_parent, CBT_report$p_ari6m_parent)
+CBT_report$s_mfq1w_tot <- coalesce(as.character(CBT_report$s_mfq1w_tot), as.character(CBT_report$s_mfq_tot))
+CBT_report$s_ari1w_tot <- coalesce(as.character(CBT_report$s_ari1w_tot), as.character(CBT_report$s_ari6m_tot))
+CBT_report$p_mfq1w_tot <- coalesce(as.character(CBT_report$p_mfq1w_tot), as.character(CBT_report$p_mfq_tot))
+CBT_report$p_ari1w_tot <- coalesce(as.character(CBT_report$p_ari1w_tot), as.character(CBT_report$p_ari6m_tot))
+CBT_report$p_mfq1w_parent <- coalesce(as.character(CBT_report$p_mfq1w_parent), as.character(CBT_report$p_mfq_parent))
+CBT_report$p_ari1w_parent <- coalesce(as.character(CBT_report$p_ari1w_parent), as.character(CBT_report$p_ari6m_parent))
 CBT_report <- CBT_report %>% select(-matches("_ari6m_"), -matches("_mfq_"))
 
 # CBT_report2 <- CBT_report2 %>% group_by(Initials) %>% slice(c(1, n())) %>% ungroup()
@@ -2607,10 +2626,10 @@ MATCH_tracker <- Psychometrics_treatment %>% select(inpatient_columns$select, ma
 MATCH_tracker$TDiff <- as.numeric(difftime(MATCH_tracker$Clinical_Visit_Date, todays_date_formatted, tz="", units = "days"))
 MATCH_tracker <- MATCH_tracker %>% filter(TDiff<1) %>% select(-TDiff)
 
-MATCH_tracker$s_mfq1w_tot <- coalesce(MATCH_tracker$s_mfq1w_tot, MATCH_tracker$s_mfq_tot)
-MATCH_tracker$s_ari1w_tot <- coalesce(MATCH_tracker$s_ari1w_tot, MATCH_tracker$s_ari6m_tot)
-MATCH_tracker$p_mfq1w_tot <- coalesce(MATCH_tracker$p_mfq1w_tot, MATCH_tracker$p_mfq_tot)
-MATCH_tracker$p_ari1w_tot <- coalesce(MATCH_tracker$p_ari1w_tot, MATCH_tracker$p_ari6m_tot)
+MATCH_tracker$s_mfq1w_tot <- coalesce(as.character(MATCH_tracker$s_mfq1w_tot), as.character(MATCH_tracker$s_mfq_tot))
+MATCH_tracker$s_ari1w_tot <- coalesce(as.character(MATCH_tracker$s_ari1w_tot), as.character(MATCH_tracker$s_ari6m_tot))
+MATCH_tracker$p_mfq1w_tot <- coalesce(as.character(MATCH_tracker$p_mfq1w_tot), as.character(MATCH_tracker$p_mfq_tot))
+MATCH_tracker$p_ari1w_tot <- coalesce(as.character(MATCH_tracker$p_ari1w_tot), as.character(MATCH_tracker$p_ari6m_tot))
 MATCH_tracker <- MATCH_tracker %>% select(-matches("_ari6m_"), -matches("_mfq_"))
 
 # recoding & calculating variables
