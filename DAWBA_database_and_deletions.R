@@ -157,120 +157,120 @@ dawba_w_names$Eligible <- recode(dawba_w_names$Eligible, "0"="Include",
 
 # criterion a = a lot of worry beyond normal (pz1) plus a lot of worry about a specific body part (pz2a-pz2i)
 
-pca <- dawba_w_names %>% select(DAWBA_ID, PLUSID, Initials, p_dawba_bdd_1_concerns_appearance, matches("p_dawba_bdd_2"), -p_dawba_bdd_2_text)
+pca <- dawba_w_names %>% select(DAWBA_ID, PLUSID, Initials, p_bdd_1_concerns_appearance, matches("p_bdd_2"), -p_bdd_2_text)
 pca[,4:ncol(pca)]  <- lapply(pca[,4:ncol(pca)], as.numeric)
-pca$no_columns <- pca %>% select(p_dawba_bdd_1_concerns_appearance, matches('p_dawba_bdd_2')) %>% ncol() %>% as.numeric()
-pca$NA_count <- pca %>% select(p_dawba_bdd_1_concerns_appearance, matches('p_dawba_bdd_2')) %>% apply(., 1, count_na)
+pca$no_columns <- pca %>% select(p_bdd_1_concerns_appearance, matches('p_bdd_2')) %>% ncol() %>% as.numeric()
+pca$NA_count <- pca %>% select(p_bdd_1_concerns_appearance, matches('p_bdd_2')) %>% apply(., 1, count_na)
 pca$diff <- c(pca$no_columns - pca$NA_count)
 pca <- pca %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-pca$p_dawba_bdd_2_sum <- pca %>% select(matches("p_dawba_bdd_2")) %>% rowSums(na.rm=TRUE)
-pca2 <- pca %>% filter(p_dawba_bdd_1_concerns_appearance=="2" | 
-                         (p_dawba_bdd_1_concerns_appearance=="1" & 
-                            (p_dawba_bdd_2a_skin_condition=="2" | p_dawba_bdd_2b_skin_colour=="2" | p_dawba_bdd_2c_hair_colour_or_condition=="2" | 
-                               p_dawba_bdd_2d_muscle_bulk=="2" | p_dawba_bdd_2e_body_shape_or_size=="2" | 
-                               p_dawba_bdd_2f_facial_features=="2" | p_dawba_bdd_2g_other_body_part=="2" | 
-                               p_dawba_bdd_2h_asymmetry=="2" | p_dawba_bdd_2i_other_aspect_of_appearance=="2"))) %>% 
-  mutate(p_dawba_bdd_criterion_a = 1) %>% select(DAWBA_ID, p_dawba_bdd_criterion_a)
-pca <- left_join(pca, pca2, all=TRUE) %>% select(DAWBA_ID, PLUSID, Initials, p_dawba_bdd_2_sum, p_dawba_bdd_criterion_a)
+pca$p_bdd_2_sum <- pca %>% select(matches("p_bdd_2")) %>% rowSums(na.rm=TRUE)
+pca2 <- pca %>% filter(p_bdd_1_concerns_appearance=="2" | 
+                         (p_bdd_1_concerns_appearance=="1" & 
+                            (p_bdd_2a_skin_condition=="2" | p_bdd_2b_skin_colour=="2" | p_bdd_2c_hair_colour_or_condition=="2" | 
+                               p_bdd_2d_muscle_bulk=="2" | p_bdd_2e_body_shape_or_size=="2" | 
+                               p_bdd_2f_facial_features=="2" | p_bdd_2g_other_body_part=="2" | 
+                               p_bdd_2h_asymmetry=="2" | p_bdd_2i_other_aspect_of_appearance=="2"))) %>% 
+  mutate(p_bdd_criterion_a = 1) %>% select(DAWBA_ID, p_bdd_criterion_a)
+pca <- left_join(pca, pca2, all=TRUE) %>% select(DAWBA_ID, PLUSID, Initials, p_bdd_2_sum, p_bdd_criterion_a)
 
 # criterion b = repetitive behaviours
 
-pcb <- dawba_w_names %>% select(DAWBA_ID, PLUSID, Initials, matches("p_dawba_bdd_4"))
+pcb <- dawba_w_names %>% select(DAWBA_ID, PLUSID, Initials, matches("p_bdd_4"))
 pcb[,4:ncol(pcb)]  <- lapply(pcb[,4:ncol(pcb)], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=1, .missing = NULL))
-pcb$no_columns <- pcb %>% select(matches('p_dawba_bdd_4')) %>% ncol() %>% as.numeric()
-pcb$NA_count <- pcb %>% select(matches('p_dawba_bdd_4')) %>% apply(., 1, count_na)
+pcb$no_columns <- pcb %>% select(matches('p_bdd_4')) %>% ncol() %>% as.numeric()
+pcb$NA_count <- pcb %>% select(matches('p_bdd_4')) %>% apply(., 1, count_na)
 pcb$diff <- c(pcb$no_columns - pcb$NA_count)
 pcb <- pcb %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-pcb$p_dawba_bdd_4_sum <- pcb %>% select(matches("p_dawba_bdd_4")) %>% rowSums(na.rm=TRUE)
-pcb <- pcb %>% mutate(p_dawba_bdd_criterion_b = ifelse(p_dawba_bdd_4_sum>2, 1, NA)) %>% 
-  select(DAWBA_ID, PLUSID, Initials, p_dawba_bdd_4_sum, p_dawba_bdd_criterion_b)
+pcb$p_bdd_4_sum <- pcb %>% select(matches("p_bdd_4")) %>% rowSums(na.rm=TRUE)
+pcb <- pcb %>% mutate(p_bdd_criterion_b = ifelse(p_bdd_4_sum>2, 1, NA)) %>% 
+  select(DAWBA_ID, PLUSID, Initials, p_bdd_4_sum, p_bdd_criterion_b)
 
 # criterion c = clinically significant distress 
 
 pcc <- dawba_w_names %>% 
-  select(DAWBA_ID, PLUSID, Initials, p_dawba_bdd_5a_time_spent_worrying_appearance,
-         p_dawba_bdd_5b_time_spent_hiding_improving_appearance,
-         p_dawba_bdd_8_distress, p_dawba_bdd_9a_impact_on_family_life,
-         p_dawba_bdd_9b_impact_on_friendships, p_dawba_bdd_9c_impact_on_learning,
-         p_dawba_bdd_9d_impact_on_leisure) 
+  select(DAWBA_ID, PLUSID, Initials, p_bdd_5a_time_spent_worrying_appearance,
+         p_bdd_5b_time_spent_hiding_improving_appearance,
+         p_bdd_8_distress, p_bdd_9a_impact_on_family_life,
+         p_bdd_9b_impact_on_friendships, p_bdd_9c_impact_on_learning,
+         p_bdd_9d_impact_on_leisure) 
 pcc[,4:5]  <- lapply(pcc[,4:5], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=0, `3`=3, `4`=3, .missing = NULL))
-pcc <- pcc %>% filter(p_dawba_bdd_5a_time_spent_worrying_appearance=="3" | p_dawba_bdd_5b_time_spent_hiding_improving_appearance=="3" |
-                        p_dawba_bdd_8_distress=="3" | p_dawba_bdd_9a_impact_on_family_life=="3" |
-                        p_dawba_bdd_9b_impact_on_friendships=="3" | p_dawba_bdd_9b_impact_on_friendships=="3" |
-                        p_dawba_bdd_9c_impact_on_learning=="3" | p_dawba_bdd_9d_impact_on_leisure=="3") %>% 
-  mutate(p_dawba_bdd_criterion_c = 1) %>% 
-  select(DAWBA_ID, PLUSID, Initials, p_dawba_bdd_criterion_c)
+pcc <- pcc %>% filter(p_bdd_5a_time_spent_worrying_appearance=="3" | p_bdd_5b_time_spent_hiding_improving_appearance=="3" |
+                        p_bdd_8_distress=="3" | p_bdd_9a_impact_on_family_life=="3" |
+                        p_bdd_9b_impact_on_friendships=="3" | p_bdd_9b_impact_on_friendships=="3" |
+                        p_bdd_9c_impact_on_learning=="3" | p_bdd_9d_impact_on_leisure=="3") %>% 
+  mutate(p_bdd_criterion_c = 1) %>% 
+  select(DAWBA_ID, PLUSID, Initials, p_bdd_criterion_c)
 
 # recombining 
 
 p_bdd_combined <- merge.default(pca, pcb, all=TRUE) %>% merge.default(., pcc, all=TRUE)
 
-p_bdd_combined$p_dawba_bdd_criterion_a[is.na(p_bdd_combined$p_dawba_bdd_criterion_a)] <- 0
-p_bdd_combined$p_dawba_bdd_criterion_b[is.na(p_bdd_combined$p_dawba_bdd_criterion_b)] <- 0
-p_bdd_combined$p_dawba_bdd_criterion_c[is.na(p_bdd_combined$p_dawba_bdd_criterion_c)] <- 0
+p_bdd_combined$p_bdd_criterion_a[is.na(p_bdd_combined$p_bdd_criterion_a)] <- 0
+p_bdd_combined$p_bdd_criterion_b[is.na(p_bdd_combined$p_bdd_criterion_b)] <- 0
+p_bdd_combined$p_bdd_criterion_c[is.na(p_bdd_combined$p_bdd_criterion_c)] <- 0
 
 # determining whether a diagnosis is met 
 
-p_bdd_combined <- p_bdd_combined %>% mutate(p_dawba_bdd_diag = (as.numeric(p_dawba_bdd_criterion_a) + as.numeric(p_dawba_bdd_criterion_b) + as.numeric(p_dawba_bdd_criterion_c)))
+p_bdd_combined <- p_bdd_combined %>% mutate(p_bdd_diag = (as.numeric(p_bdd_criterion_a) + as.numeric(p_bdd_criterion_b) + as.numeric(p_bdd_criterion_c)))
 
 #####
 # Child
 
-sca <- dawba_w_names %>% select(DAWBA_ID, PLUSID, Initials, s_dawba_bdd_1_concerns_appearance, matches("s_dawba_bdd_2"), -s_dawba_bdd_2_text)
+sca <- dawba_w_names %>% select(DAWBA_ID, PLUSID, Initials, s_bdd_1_concerns_appearance, matches("s_bdd_2"), -s_bdd_2_text)
 sca[,4:ncol(sca)]  <- lapply(sca[,4:ncol(sca)], as.numeric)
-sca$no_columns <- sca %>% select(s_dawba_bdd_1_concerns_appearance, matches('s_dawba_bdd_2')) %>% ncol() %>% as.numeric()
-sca$NA_count <- sca %>% select(s_dawba_bdd_1_concerns_appearance, matches('s_dawba_bdd_2')) %>% apply(., 1, count_na)
+sca$no_columns <- sca %>% select(s_bdd_1_concerns_appearance, matches('s_bdd_2')) %>% ncol() %>% as.numeric()
+sca$NA_count <- sca %>% select(s_bdd_1_concerns_appearance, matches('s_bdd_2')) %>% apply(., 1, count_na)
 sca$diff <- c(sca$no_columns - sca$NA_count)
 sca <- sca %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-sca$s_dawba_bdd_2_sum <- sca %>% select(matches("s_dawba_bdd_2")) %>% rowSums(na.rm=TRUE)
-sca2 <- sca %>% filter(s_dawba_bdd_1_concerns_appearance=="2" | 
-                         (s_dawba_bdd_1_concerns_appearance=="1" & 
-                            (s_dawba_bdd_2a_skin_condition=="2" | s_dawba_bdd_2b_skin_colour=="2" | s_dawba_bdd_2c_hair_colour_or_condition=="2" | 
-                               s_dawba_bdd_2d_muscle_bulk=="2" | s_dawba_bdd_2e_body_shape_or_size=="2" | 
-                               s_dawba_bdd_2f_facial_features=="2" | s_dawba_bdd_2g_other_body_part=="2" | 
-                               s_dawba_bdd_2h_asymmetry=="2" | s_dawba_bdd_2i_other_aspect_of_appearance=="2"))) %>% 
-  mutate(s_dawba_bdd_criterion_a = 1) %>% select(DAWBA_ID, s_dawba_bdd_criterion_a)
-sca <- left_join(sca, sca2, all=TRUE) %>% select(DAWBA_ID, PLUSID, Initials, s_dawba_bdd_2_sum, s_dawba_bdd_criterion_a)
+sca$s_bdd_2_sum <- sca %>% select(matches("s_bdd_2")) %>% rowSums(na.rm=TRUE)
+sca2 <- sca %>% filter(s_bdd_1_concerns_appearance=="2" | 
+                         (s_bdd_1_concerns_appearance=="1" & 
+                            (s_bdd_2a_skin_condition=="2" | s_bdd_2b_skin_colour=="2" | s_bdd_2c_hair_colour_or_condition=="2" | 
+                               s_bdd_2d_muscle_bulk=="2" | s_bdd_2e_body_shape_or_size=="2" | 
+                               s_bdd_2f_facial_features=="2" | s_bdd_2g_other_body_part=="2" | 
+                               s_bdd_2h_asymmetry=="2" | s_bdd_2i_other_aspect_of_appearance=="2"))) %>% 
+  mutate(s_bdd_criterion_a = 1) %>% select(DAWBA_ID, s_bdd_criterion_a)
+sca <- left_join(sca, sca2, all=TRUE) %>% select(DAWBA_ID, PLUSID, Initials, s_bdd_2_sum, s_bdd_criterion_a)
 
 # criterion b = repetitive behaviours
 
-scb <- dawba_w_names %>% select(DAWBA_ID, PLUSID, Initials, matches("s_dawba_bdd_4"))
+scb <- dawba_w_names %>% select(DAWBA_ID, PLUSID, Initials, matches("s_bdd_4"))
 scb[,4:ncol(scb)]  <- lapply(scb[,4:ncol(scb)], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=1, .missing = NULL))
-scb$no_columns <- scb %>% select(matches('s_dawba_bdd_4')) %>% ncol() %>% as.numeric()
-scb$NA_count <- scb %>% select(matches('s_dawba_bdd_4')) %>% apply(., 1, count_na)
+scb$no_columns <- scb %>% select(matches('s_bdd_4')) %>% ncol() %>% as.numeric()
+scb$NA_count <- scb %>% select(matches('s_bdd_4')) %>% apply(., 1, count_na)
 scb$diff <- c(scb$no_columns - scb$NA_count)
 scb <- scb %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-scb$s_dawba_bdd_4_sum <- scb %>% select(matches("s_dawba_bdd_4")) %>% rowSums(na.rm=TRUE)
-scb <- scb %>% mutate(s_dawba_bdd_criterion_b = ifelse(s_dawba_bdd_4_sum>2, 1, NA)) %>% 
-  select(DAWBA_ID, PLUSID, Initials, s_dawba_bdd_4_sum, s_dawba_bdd_criterion_b)
+scb$s_bdd_4_sum <- scb %>% select(matches("s_bdd_4")) %>% rowSums(na.rm=TRUE)
+scb <- scb %>% mutate(s_bdd_criterion_b = ifelse(s_bdd_4_sum>2, 1, NA)) %>% 
+  select(DAWBA_ID, PLUSID, Initials, s_bdd_4_sum, s_bdd_criterion_b)
 
 # criterion c = clinically significant distress 
 
 scc <- dawba_w_names %>% 
-  select(DAWBA_ID, PLUSID, Initials, s_dawba_bdd_5a_time_spent_worrying_appearance,
-         s_dawba_bdd_5b_time_spent_hiding_improving_appearance,
-         s_dawba_bdd_8_distress, s_dawba_bdd_9a_impact_on_family_life,
-         s_dawba_bdd_9b_impact_on_friendships, s_dawba_bdd_9c_impact_on_learning,
-         s_dawba_bdd_9d_impact_on_leisure) 
+  select(DAWBA_ID, PLUSID, Initials, s_bdd_5a_time_spent_worrying_appearance,
+         s_bdd_5b_time_spent_hiding_improving_appearance,
+         s_bdd_8_distress, s_bdd_9a_impact_on_family_life,
+         s_bdd_9b_impact_on_friendships, s_bdd_9c_impact_on_learning,
+         s_bdd_9d_impact_on_leisure) 
 scc[,4:5]  <- lapply(scc[,4:5], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=0, `3`=3, `4`=3, .missing = NULL))
-scc <- scc %>% filter(s_dawba_bdd_5a_time_spent_worrying_appearance=="3" | s_dawba_bdd_5b_time_spent_hiding_improving_appearance=="3" |
-                        s_dawba_bdd_8_distress=="3" | s_dawba_bdd_9a_impact_on_family_life=="3" |
-                        s_dawba_bdd_9b_impact_on_friendships=="3" | s_dawba_bdd_9b_impact_on_friendships=="3" |
-                        s_dawba_bdd_9c_impact_on_learning=="3" | s_dawba_bdd_9d_impact_on_leisure=="3") %>% 
-  mutate(s_dawba_bdd_criterion_c = 1) %>% 
-  select(DAWBA_ID, PLUSID, Initials, s_dawba_bdd_criterion_c)
+scc <- scc %>% filter(s_bdd_5a_time_spent_worrying_appearance=="3" | s_bdd_5b_time_spent_hiding_improving_appearance=="3" |
+                        s_bdd_8_distress=="3" | s_bdd_9a_impact_on_family_life=="3" |
+                        s_bdd_9b_impact_on_friendships=="3" | s_bdd_9b_impact_on_friendships=="3" |
+                        s_bdd_9c_impact_on_learning=="3" | s_bdd_9d_impact_on_leisure=="3") %>% 
+  mutate(s_bdd_criterion_c = 1) %>% 
+  select(DAWBA_ID, PLUSID, Initials, s_bdd_criterion_c)
 
 # recombining 
 
 s_bdd_combined <- merge.default(sca, scb, all=TRUE) %>% merge.default(., scc, all=TRUE)
 
-s_bdd_combined$s_dawba_bdd_criterion_a[is.na(s_bdd_combined$s_dawba_bdd_criterion_a)] <- 0
-s_bdd_combined$s_dawba_bdd_criterion_b[is.na(s_bdd_combined$s_dawba_bdd_criterion_b)] <- 0
-s_bdd_combined$s_dawba_bdd_criterion_c[is.na(s_bdd_combined$s_dawba_bdd_criterion_c)] <- 0
+s_bdd_combined$s_bdd_criterion_a[is.na(s_bdd_combined$s_bdd_criterion_a)] <- 0
+s_bdd_combined$s_bdd_criterion_b[is.na(s_bdd_combined$s_bdd_criterion_b)] <- 0
+s_bdd_combined$s_bdd_criterion_c[is.na(s_bdd_combined$s_bdd_criterion_c)] <- 0
 
 # determining whether a diagnosis is met 
 
-s_bdd_combined <- s_bdd_combined %>% mutate(s_dawba_bdd_diag = (as.numeric(s_dawba_bdd_criterion_a) + as.numeric(s_dawba_bdd_criterion_b) + as.numeric(s_dawba_bdd_criterion_c)))
+s_bdd_combined <- s_bdd_combined %>% mutate(s_bdd_diag = (as.numeric(s_bdd_criterion_a) + as.numeric(s_bdd_criterion_b) + as.numeric(s_bdd_criterion_c)))
 
 #####
 # Integrating the BDD probabilities into the DAWBA database
