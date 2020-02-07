@@ -199,7 +199,7 @@ if (Clinician=="Kathryn") {
 
 **NIMH Psychological Treatment:**  
 
-Behavioral Activation (BA) for Adolescent Depression, Completed Visit # `r weeks_treat`.  
+Cognitive Behavioral Therapy (CBT) for Adolescent Depression, Completed Visit # `r weeks_treat`.  
 
 **Treating Clinician:** 
 

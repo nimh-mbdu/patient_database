@@ -88,10 +88,10 @@ if (exists("MATCH_tracker")==FALSE) {
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         inpatient_database_file_time <- file.mtime(paste0(inpatient_location, inpatient_database_file)) %>% as.Date()
         inpatient_database_combined <- tibble(File=c(inpatient_database_file), Date=c(inpatient_database_file_time)) %>% arrange(desc(Date)) %>% slice(1)
-        MATCH_tracker <- read_excel(paste0(inpatient_location, inpatient_database_combined[1]))
+        MATCH_tracker <- read_excel(paste0(inpatient_location, inpatient_database_combined[1])) %>% mutate_all(as.character)
         MATCH_tracker$Clinical_Visit_Date <- as.Date(MATCH_tracker$Clinical_Visit_Date)
         rm(inpatient_database_file, inpatient_database_file_time, inpatient_database_combined)
-        } 
+        }
 
 # changing date formats
 todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
@@ -106,9 +106,10 @@ current_inpatients <- MATCH_tracker %>% group_by(Initials) %>% arrange(Clinical_
 inpatient_list <- c(current_inpatients$Initials)
 
 psychometric_data <- MATCH_tracker %>% filter(Initials %in% inpatient_list) %>% 
-  select(Initials, Clinical_Visit_Date, Clinical_Visit_Date2, Clinical_Visit_Date3, Clinical_Visit_Type, Clinical_Visit_Number, s_mfq1w_tot, s_ari1w_tot, 
-         s_scared_tot, s_shaps_tot, s_lsas_tot, s_vadis_tot, s_rumination_tot, s_chocir_symptom_tot, s_chocir_impairment_tot, s_seq_tot, p_conners_tot, c_snap_tot,
-         c_cybocs_ob_tot, c_cybocs_com_tot)
+  select(Initials, Clinical_Visit_Date, Clinical_Visit_Date2, Clinical_Visit_Date3, Clinical_Visit_Type, Clinical_Visit_Number, s_mfq1w_tot, s_ari1w_tot,
+         s_scared_tot, s_shaps_tot, s_lsas_tot, s_vadis_tot, s_rumination_tot, s_chocir_symptom_tot, s_chocir_impairment_tot, s_seq_tot, p_conners_tot,
+         c_snap_tot, c_cybocs_ob_tot, c_cybocs_com_tot)
+psychometric_data[,7:ncol(psychometric_data)] <- sapply(psychometric_data[,7:ncol(psychometric_data)], as.numeric)
 psychometric_data[,7:ncol(psychometric_data)] <- sapply(psychometric_data[,7:ncol(psychometric_data)], round, 0)
 
 # medications 
