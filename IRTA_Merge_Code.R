@@ -325,6 +325,10 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
     group_by(Initials) %>% slice(1) %>% ungroup() %>% filter(Participant_Type2=="MDD" | Participant_Type2=="HV") %>% 
     filter(!str_detect(Participant_Type, "Fox")) %>% distinct(., .keep_all = TRUE) %>% filter(is.na(DAWBA_ID)) %>% 
     filter(str_detect(Protocol, "0037")) %>% filter(Overall_date > as.Date("2018-05-01")) %>% mutate(reason18="Missing DAWBA ID") 
+  task_missing_protocol <- task_reshape_master %>% select(FIRST_NAME:Clinical_Visit_Type, Protocol) %>% 
+    group_by(Initials) %>% arrange(Overall_date) %>% slice(1) %>% ungroup() %>% filter(is.na(Protocol)) %>% 
+    filter(Participant_Type2=="MDD" | Participant_Type2=="HV") %>% filter(!str_detect(Participant_Type, "Fox")) %>% 
+    filter(Clinical_Visit_Date < todays_date_formatted) %>% mutate(reason19="Missing protocol number")
   
   # comparing to previous version 
   task_master_file <- list.files(path = paste0(IRTA_tracker_location, "IRTA_Master_Backups/"), pattern = "^TASKS_DATABASE_QC", all.files = FALSE,
@@ -334,7 +338,7 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
   task_master_combined <- tibble(File=c(task_master_file), Date=c(task_master_file_time)) 
   task_master_combined$date_diff <- as.numeric(difftime(last_week_date_formatted, task_master_combined$Date, tz="", units = "days"))
   task_master_combined$day_of_week <- weekdays(as.Date(task_master_combined$Date))
-  task_master_combined <- task_master_combined %>% filter(day_of_week=="Wednesday") %>% arrange(date_diff) %>% slice(1)
+  task_master_combined <- task_master_combined %>% filter(day_of_week=="Wednesday") %>% arrange(date_diff) %>% filter(date_diff>=0) %>% slice(1)
   prev_task_database <- read_excel(paste0(IRTA_tracker_location, "IRTA_Master_Backups/", task_master_combined[1]))  %>%
     select(Initials:Participant_Type, Eligible:Task_Visit_Type) %>% mutate(source2="old version of tracker")
   date_variabes <- c("DOB", "Task_Date")
@@ -346,7 +350,7 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
     mutate(source1="new version of tracker") %>% merge.default(., prev_task_database, all=TRUE) %>% filter(is.na(source1) | is.na(source2))
   historical_check$Info_source <- coalesce(historical_check$source1, historical_check$source2)
   historical_check <- historical_check %>% select(-source1, -source2) %>% group_by(Initials) %>% filter(n()>1) %>% ungroup() %>% 
-    mutate(reason19="Information change from previous tracker merge: check deliberate vs. accidental. Origin of information") 
+    mutate(reason20="Information change from previous tracker merge: check deliberate vs. accidental. Origin of information") 
   
 # combining the above 
   task_errors_combined <- merge.default(task_name_check, task_duplicate_date, all=TRUE) %>% merge.default(., task_duplicate_v_type, all=TRUE) %>% 
@@ -355,14 +359,15 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
     merge.default(., duplicate_sdan, all=TRUE) %>% merge.default(., task_missing_sex, all=TRUE) %>% merge.default(., task_missing_dob, all=TRUE) %>% 
     merge.default(., task_missing_initials, all=TRUE) %>% merge.default(., task_missing_eligible, all=TRUE) %>% merge.default(., task_missing_clinical_date, all=TRUE) %>% 
     merge.default(., task_check_clinical_code, all=TRUE) %>% merge.default(., task_missing_scheduling, all=TRUE) %>% merge.default(., task_missing_dawbaid, all=TRUE) %>% 
-    merge.default(., historical_check, all=TRUE) %>% select(-FIRST_NAME, -LAST_NAME)
+    merge.default(., task_missing_protocol, all=TRUE) %>% merge.default(., historical_check, all=TRUE) %>% select(-FIRST_NAME, -LAST_NAME)
   
   task_errors_combined$QC_task <- paste(task_errors_combined$reason1, task_errors_combined$reason2, task_errors_combined$reason3, task_errors_combined$reason4, 
                                         task_errors_combined$reason5, task_errors_combined$reason6, sep = "; ")
   task_errors_combined$QC_other <- paste(task_errors_combined$reason7, task_errors_combined$reason8, task_errors_combined$reason9, task_errors_combined$reason10, 
                                          task_errors_combined$reason11, task_errors_combined$reason12, task_errors_combined$reason13, task_errors_combined$reason14, 
-                                         task_errors_combined$reason15, task_errors_combined$reason16, task_errors_combined$reason17, task_errors_combined$reason18, sep = "; ")
-  task_errors_combined$QC_historical <- paste(task_errors_combined$reason19, task_errors_combined$Info_source, sep = "; ")
+                                         task_errors_combined$reason15, task_errors_combined$reason16, task_errors_combined$reason17, task_errors_combined$reason18, 
+                                         task_errors_combined$reason19, sep = "; ")
+  task_errors_combined$QC_historical <- paste(task_errors_combined$reason20, task_errors_combined$Info_source, sep = "; ")
   
   task_errors_combined$QC_task <- gsub("NA; ", "", task_errors_combined$QC_task, fixed=TRUE)
   task_errors_combined$QC_task <- gsub("; NA", "", task_errors_combined$QC_task, fixed=TRUE)
