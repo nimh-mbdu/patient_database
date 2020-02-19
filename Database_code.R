@@ -51,7 +51,7 @@
   #****** SDQ+ = where we collect our own psychometric data 
 
   SDQ_Data_Download_raw <- read.delim(paste0(sdq_pull, latest_sdq_pull, ".txt"),  quote="",  
-                                    encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
+                                    encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE) %>% mutate_all(as.character)
   
   #****** adding special cases
 
@@ -70,8 +70,10 @@
   
   #****** old dx checklist & mdd form (from before these were combined on sdq & the mdd form removed)
   
-  old_ksads_checklist <- read.delim(paste0(data_old_dx_checklist),  quote="", encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
-  old_mdd_form <- read.delim(paste0(data_old_mdd_form),  quote="", encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
+  old_ksads_checklist <- read.delim(paste0(data_old_dx_checklist),  quote="", encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE) %>% 
+    mutate_all(as.character)
+  old_mdd_form <- read.delim(paste0(data_old_mdd_form),  quote="", encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE) %>% 
+    mutate_all(as.character)
   old_dx_temp <- merge.default(old_ksads_checklist, old_mdd_form, all=TRUE)
   
   old_dx_temp$yfu_clin_name <- coalesce(old_dx_temp$yfu_clin_name, old_dx_temp$ksads_dx_clin_name)
@@ -311,7 +313,7 @@
     # iter=2
     measure_name <- tot_sum[iter]
     
-      measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
+      measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
         filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
       
@@ -320,7 +322,7 @@
       measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff) 
       
-      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
+      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name))
       
       measure_temp_manual$no_columns <- measure_temp_manual %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% ncol() %>% as.numeric()
       measure_temp_manual$NA_count <- measure_temp_manual %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% apply(., 1, count_na)
@@ -331,10 +333,10 @@
         group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
     
     if (measure_name=="p_mfq_" | measure_name=="p_mfq1w_" | measure_name=="p_ari1w_" | measure_name=="p_ari6m_") {
-      measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% rowSums(na.rm=TRUE)
     } else {
-      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,5:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
     }
     
@@ -349,20 +351,20 @@
     measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
 
     if (measure_name=="s_mfq1w_") {
-      measure_temp_sdq[,7:19] <- sapply(measure_temp_sdq[,7:19], replace_na, '-9')
+      measure_temp_sdq[,5:17] <- sapply(measure_temp_sdq[,5:17], replace_na, '-9')
       measure_temp_sdq <- measure_temp_sdq %>% 
         filter(s_mfq1w_1_unhappy<4 & s_mfq1w_2_didnt_enjoy<4 & s_mfq1w_3_tired<4 & s_mfq1w_4_restless<4 &
                  s_mfq1w_5_no_good<4 & s_mfq1w_6_cried<4 & s_mfq1w_7_hard_think<4 & s_mfq1w_8_hate_myself<4 &
                  s_mfq1w_9_bad_person<4 & s_mfq1w_10_lonely<4 & s_mfq1w_11_nobody_love<4 & s_mfq1w_12_good_other_kid<4 &
                  s_mfq1w_13_all_wrong<4)
-      measure_temp_sdq[,7:19] <- lapply(measure_temp_sdq[,7:19], na_if, '-9')
-      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches(measure_name)) 
+      measure_temp_sdq[,5:17] <- lapply(measure_temp_sdq[,5:17], na_if, '-9')
+      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches(measure_name)) 
     } else if (measure_name=="p_mfq1w_") {
       measure_temp_sdq <- measure_temp_sdq
-      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches(measure_name)) 
+      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches(measure_name)) 
     } else {
       measure_temp_sdq <- measure_temp_sdq
-      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches(measure_name)) %>% 
+      measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches(measure_name)) %>% 
       rename(date_temp = ends_with("_date")) %>% rename(tempcomplete = ends_with("_complete")) %>% rename(temptotal = ends_with("_tot")) %>% 
         filter(!is.na(temptotal))
       }
@@ -373,7 +375,7 @@
     measure_temp_combined <- merge.default(measure_temp_ctdb, measure_temp_sdq, all=TRUE) %>% 
       rename(measure_temp_source = source) %>% 
       group_by(Initials, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
+      arrange(Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
       slice(1) %>%
       ungroup()
 
@@ -442,10 +444,10 @@
     iter <- as.numeric(i)
     # iter=2
     measure_name <- scared[iter]
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE) 
-    measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name))
+    measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name))
     
     if (measure_name=="p_scared_") {
       
@@ -462,7 +464,7 @@
       measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE) %>% 
         group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
       
-      measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% rowSums(na.rm=TRUE)
       
       measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-p_scared_parent, -p_scared_parent_other) %>% complete.cases(.)
@@ -484,7 +486,7 @@
       measure_temp_sdq <- merge.default(measure_temp_sdq, measure_temp_manual, all=TRUE) %>% 
         group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
       
-      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,5:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], as.numeric)
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
       
       measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
@@ -504,7 +506,7 @@
     measure_temp_sdq$date_temp <- measure_temp_sdq$Overall_date
     measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     
-    measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches(measure_name)) %>% 
+    measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches(measure_name)) %>% 
       rename(date_temp = ends_with("_date")) %>% rename(tempcomplete = ends_with("_complete")) %>% 
       rename(panic_subscale_temp = ends_with("panic_tot")) %>% rename(gad_subscale_temp = ends_with("gad_tot")) %>% 
       rename(sep_subscale_temp = ends_with("sep_tot")) %>% rename(social_subscale_temp = ends_with("social_tot")) %>% 
@@ -514,7 +516,7 @@
     measure_temp_combined <- merge.default(measure_temp_ctdb, measure_temp_sdq, all=TRUE) %>% 
       rename(measure_temp_source = source) %>% 
       group_by(Initials, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
+      arrange(Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
       slice(1) %>% 
       ungroup()
     
@@ -583,13 +585,13 @@
 #####
 # lsas:
   
-  s_lsas_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_lsas_')) %>% 
+  s_lsas_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_lsas_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_lsas_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_lsas_'))
+  s_lsas_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_lsas_'))
   s_lsas_subset_sdq <- merge.default(s_lsas_subset_sdq, s_lsas_manual, all=TRUE)
     
-  s_lsas_subset_sdq[,7:ncol(s_lsas_subset_sdq)] <- sapply(s_lsas_subset_sdq[,7:ncol(s_lsas_subset_sdq)], as.numeric) 
+  s_lsas_subset_sdq[,5:ncol(s_lsas_subset_sdq)] <- sapply(s_lsas_subset_sdq[,5:ncol(s_lsas_subset_sdq)], as.numeric) 
   
   s_lsas_subset_sdq$no_columns <- s_lsas_subset_sdq %>% select(matches('s_lsas_')) %>% ncol() %>% as.numeric()
   s_lsas_subset_sdq$NA_count <- s_lsas_subset_sdq %>% select(matches('s_lsas_')) %>% apply(., 1, count_na)
@@ -612,13 +614,13 @@
   s_lsas_subset_sdq$s_lsas_date <- s_lsas_subset_sdq$Overall_date
   s_lsas_subset_sdq <- s_lsas_subset_sdq %>% select(-Overall_date)
   
-  s_lsas_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('s_lsas_')) %>% 
+  s_lsas_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches('s_lsas_')) %>% 
     filter(!is.na(s_lsas_date))
   
   s_lsas_subset <- merge.default(s_lsas_subset_ctdb, s_lsas_subset_sdq, all=TRUE) %>% 
     rename(s_lsas_source = source) %>% 
     group_by(Initials, s_lsas_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Initials, s_lsas_date, desc(s_lsas_tot), desc(s_lsas_source)) %>%
+    arrange(Initials, s_lsas_date, desc(s_lsas_tot), desc(s_lsas_source)) %>%
     slice(1) %>% 
     ungroup()
   
@@ -657,13 +659,13 @@
 #####
 # shaps
   
-  s_shaps_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_shaps_')) %>% 
+  s_shaps_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_shaps_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_shaps_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_shaps_'))
+  s_shaps_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_shaps_'))
   s_shaps_subset_sdq <- merge.default(s_shaps_subset_sdq, s_shaps_manual, all=TRUE)
   
-  s_shaps_subset_sdq[,7:20] <- sapply(s_shaps_subset_sdq[,7:20], as.numeric) 
+  s_shaps_subset_sdq[,5:18] <- sapply(s_shaps_subset_sdq[,5:18], as.numeric) 
   
   s_shaps_subset_sdq$no_columns <- s_shaps_subset_sdq %>% select(matches('s_shaps_')) %>% ncol() %>% as.numeric()
   s_shaps_subset_sdq$NA_count <- s_shaps_subset_sdq %>% select(matches('s_shaps_')) %>% apply(., 1, count_na)
@@ -675,14 +677,14 @@
   s_shaps_subset_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), s_shaps_subset_sdq$date_temp, tz="", units = "days"))
   temp_before <- s_shaps_subset_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp, -date_temp_diff)
   s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp, -date_temp_diff)
-  temp_before[,7:ncol(temp_before)]  <- lapply(temp_before[,7:ncol(temp_before)], FUN = function(x) recode(x, `3`=5, `2`=6, `1`=2, `0`=3, .missing = NULL))
-  temp_before[,7:ncol(temp_before)]  <- lapply(temp_before[,7:ncol(temp_before)], FUN = function(x) recode(x, `5`=0, `6`=1, `2`=2, `3`=3, .missing = NULL))
+  temp_before[,5:ncol(temp_before)]  <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `3`=5, `2`=6, `1`=2, `0`=3, .missing = NULL))
+  temp_before[,5:ncol(temp_before)]  <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `5`=0, `6`=1, `2`=2, `3`=3, .missing = NULL))
   s_shaps_subset_sdq <- merge.default(s_shaps_subset_sdq, temp_before, all=TRUE)
 
   s_shaps_binary <- s_shaps_subset_sdq
-  s_shaps_binary[,7:20]  <- lapply(s_shaps_binary[,7:20], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=1, `3`=1, .missing = NULL))
+  s_shaps_binary[,5:18]  <- lapply(s_shaps_binary[,5:18], FUN = function(x) recode(x, `0`=0, `1`=0, `2`=1, `3`=1, .missing = NULL))
   s_shaps_binary$s_shaps_binary_tot <- s_shaps_binary %>% select(matches('s_shaps_')) %>% rowSums(na.rm=TRUE) 
-  s_shaps_binary <- s_shaps_binary %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, s_shaps_binary_tot)
+  s_shaps_binary <- s_shaps_binary %>% select(PLUSID, Initials, source, Overall_date, s_shaps_binary_tot)
   
   s_shaps_subset_sdq$s_shaps_tot <- s_shaps_subset_sdq %>% select(matches('s_shaps_')) %>% rowSums(na.rm=TRUE)
   
@@ -695,14 +697,14 @@
   s_shaps_subset_sdq$s_shaps_date <- s_shaps_subset_sdq$Overall_date
   s_shaps_subset_sdq <- s_shaps_subset_sdq %>% select(-Overall_date)
   
-  s_shaps_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('s_shaps_')) %>% 
+  s_shaps_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches('s_shaps_')) %>% 
     filter(!is.na(s_shaps_date))
-  s_shaps_subset_ctdb[,7:20]  <- lapply(s_shaps_subset_ctdb[,7:20], FUN = function(x) recode(x, `1`=0, `2`=1, `3`=2, `4`=3, .missing = NULL))
+  s_shaps_subset_ctdb[,5:18]  <- lapply(s_shaps_subset_ctdb[,5:18], FUN = function(x) recode(x, `1`=0, `2`=1, `3`=2, `4`=3, .missing = NULL))
   
   s_shaps_subset <- merge.default(s_shaps_subset_ctdb, s_shaps_subset_sdq, all=TRUE) %>% 
     rename(s_shaps_source = source) %>% 
     group_by(Initials, s_shaps_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Initials, s_shaps_date, desc(s_shaps_tot), desc(s_shaps_source)) %>%
+    arrange(Initials, s_shaps_date, desc(s_shaps_tot), desc(s_shaps_source)) %>%
     slice(1) %>% 
     ungroup()
   
@@ -743,18 +745,18 @@
 # Diagnosis ---------------------------------------------------------------
 
   fix_var <- c("c_ksadsdx_clin_name", "c_ksadsdx_visit_type",  "c_ksadsdx_eligibility",  "c_ksadsdx_eligibility_other", "c_ksadsdx_primary_dx",  "c_ksadsdx_primary_dx_other",  
-               "c_ksadsdx_dx_detailed",  "c_ksadsdx_dx_detailed_descrip", "c_ksadsdx_treatment_notes",  "c_ksadsdx_notes_overall", "c_ksadsdx_epset_current_mdd", 
+               "c_ksadsdx_dx_detailed",  "c_ksadsdx_dx_detailed_descrip", "c_ksadsdx_treatment_week_no",  "c_ksadsdx_treatment_notes",  "c_ksadsdx_notes_overall", "c_ksadsdx_epset_current_mdd", 
                "c_ksadsdx_epset_current_submdd", "c_ksadsdx_epset_current_mddsympt", "c_ksadsdx_epset_current_mania", "c_ksadsdx_epset_current_hypomania", "c_ksadsdx_comorbid_dx_old", 
                "c_ksadsdx_ongoing_other_comorbid_dx", "c_ksadsdx_how_interviewed")
   
-  diagnosis_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx')) 
-  diagnosis_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_ksadsdx'))
+  diagnosis_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('c_ksadsdx')) %>% mutate_all(as.character)
+  diagnosis_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('c_ksadsdx')) %>% mutate_all(as.character)
   diagnosis_subset_sdq <- merge.default(diagnosis_subset_sdq, diagnosis_manual, all=TRUE)
   
-  diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], as.character)
-  diagnosis_subset_sdq[fix_var] <- lapply(diagnosis_subset_sdq[fix_var], na_if, '')
-
-  diagnosis_subset_sdq$c_ksadsdx_date <- as.Date(diagnosis_subset_sdq$c_ksadsdx_date, "%d-%m-%Y")
+  diagnosis_subset_sdq[5:ncol(diagnosis_subset_sdq)] <- lapply(diagnosis_subset_sdq[5:ncol(diagnosis_subset_sdq)], na_if, '')
+  diagnosis_subset_sdq$c_ksadsdx_date <- as.Date(diagnosis_subset_sdq$c_ksadsdx_date)
+  diagnosis_subset_sdq$Overall_date <- as.Date(diagnosis_subset_sdq$Overall_date)
+  diagnosis_subset_sdq$c_ksadsdx_epset_baseline_visit_date <- as.Date(diagnosis_subset_sdq$c_ksadsdx_epset_baseline_visit_date)
   diagnosis_subset_sdq$c_ksadsdx_date <- coalesce(diagnosis_subset_sdq$c_ksadsdx_date, diagnosis_subset_sdq$Overall_date) 
 
   diagnosis_subset_sdq$no_columns <- diagnosis_subset_sdq %>% select(c_ksadsdx_eligibility, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, c_ksadsdx_comorbid_dx_old, c_ksadsdx_ongoing_other_comorbid_dx) %>% 
@@ -764,8 +766,13 @@
   diagnosis_subset_sdq$diff <- c(diagnosis_subset_sdq$no_columns - diagnosis_subset_sdq$NA_count)
   diagnosis_subset_sdq <- diagnosis_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
-  diagnosis_subset_sdq <- diagnosis_subset_sdq %>% group_by(Initials, c_ksadsdx_date) %>% arrange(Initials, c_ksadsdx_date, source) %>%
-    slice(1) %>% ungroup() %>% select(-Overall_date)
+  diagnosis_subset_sdq <- diagnosis_subset_sdq %>% group_by(Initials, c_ksadsdx_date) %>%
+    fill(c_ksadsdx_visit_type:c_ksadsdx_comorbid_dx_old, .direction = "down") %>%
+    fill(c_ksadsdx_visit_type:c_ksadsdx_comorbid_dx_old, .direction = "up") %>%
+    distinct(., .keep_all = TRUE) %>% 
+    arrange(Initials, c_ksadsdx_date, source) %>%
+    slice(1) %>%
+    ungroup() %>% select(-Overall_date)
   
   diagnosis_subset_sdq[fix_var[2]] <- lapply(diagnosis_subset_sdq[fix_var[2]], FUN = function(x) recode(x, "0"="baseline", "1"="12 month FU", "2"="24 month FU", "9"="Inpatient Treatment", "10"="Outpatient Treatment", .missing = NULL))
   diagnosis_subset_sdq[fix_var[3]] <- lapply(diagnosis_subset_sdq[fix_var[3]], FUN = function(x) recode(x, "0"="Include", "1"="Include: can't scan", "5"="Excluded: does not meet criteria", "6"="Excluded: meets exclusionary criteria", "777"="Excluded: withdrew", .missing = NULL))
@@ -783,7 +790,7 @@
     fill(., names(fill_names), .direction = c("up")) %>% ungroup() %>% distinct(., .keep_all = TRUE)
   
   # collapsing comorbid diagnoses into one variable 
-  comorbid <- diagnosis_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, c_ksadsdx_date, matches("_ongoing_"), c_ksadsdx_comorbid_dx_old) %>% 
+  comorbid <- diagnosis_subset_sdq %>% select(PLUSID, Initials, c_ksadsdx_date, matches("_ongoing_"), c_ksadsdx_comorbid_dx_old) %>% 
     select(-c_ksadsdx_ongoing_other, -c_ksadsdx_ongoing_specific_phob_descrip)
   
   comorbid$c_ksadsdx_comorbid_dx_old <- gsub("[", "", comorbid$c_ksadsdx_comorbid_dx_old, fixed=TRUE)
@@ -892,10 +899,10 @@
 #####
 # IQ:
   
-  c_wasi_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_wasi_')) %>% 
+  c_wasi_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('c_wasi_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  c_wasi_subset_sdq[,7:9] <- sapply(c_wasi_subset_sdq[,7:9], as.character) 
+  c_wasi_subset_sdq[,5:7] <- sapply(c_wasi_subset_sdq[,5:7], as.character) 
   
   c_wasi_subset_sdq$no_columns <- c_wasi_subset_sdq %>% select(matches('c_wasi_')) %>% ncol() %>% as.numeric()
   c_wasi_subset_sdq$NA_count <- c_wasi_subset_sdq %>% select(matches('c_wasi_')) %>% apply(., 1, count_na)
@@ -905,13 +912,13 @@
   c_wasi_subset_sdq$c_wasi_date <- c_wasi_subset_sdq$Overall_date
   c_wasi_subset_sdq <- c_wasi_subset_sdq %>% select(-Overall_date)
   
-  c_wasi_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('c_wasi_')) %>% 
+  c_wasi_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches('c_wasi_')) %>% 
     filter(!is.na(c_wasi_date))
 
   c_wasi_subset <- merge.default(c_wasi_subset_ctdb, c_wasi_subset_sdq, all=TRUE) %>% 
     rename(c_wasi_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Initials, desc(c_wasi_date), desc(c_wasi_iq), desc(c_wasi_source)) %>%
+    group_by(Initials) %>% 
+    arrange(Initials, desc(c_wasi_date), desc(c_wasi_iq), desc(c_wasi_source)) %>%
     slice(1) %>% 
     ungroup()
   
@@ -924,10 +931,10 @@
 #####
 # TANNER: 
   
-  s_tanner_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_tanner_')) %>% 
+  s_tanner_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_tanner_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_tanner_subset_sdq[,7:10] <- sapply(s_tanner_subset_sdq[,7:10], as.character) 
+  s_tanner_subset_sdq[,5:8] <- sapply(s_tanner_subset_sdq[,5:8], as.character) 
   
   s_tanner_subset_sdq$no_columns <- s_tanner_subset_sdq %>% select(matches('s_tanner_')) %>% ncol() %>% as.numeric()
   s_tanner_subset_sdq$NA_count <- s_tanner_subset_sdq %>% select(matches('s_tanner_')) %>% apply(., 1, count_na)
@@ -937,13 +944,13 @@
   s_tanner_subset_sdq$s_tanner_date <- s_tanner_subset_sdq$Overall_date
   s_tanner_subset_sdq <- s_tanner_subset_sdq %>% select(-Overall_date)
   
-  s_tanner_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('s_tanner_')) %>% 
+  s_tanner_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches('s_tanner_')) %>% 
     filter(!is.na(s_tanner_date))
   
   s_tanner_subset <- merge.default(s_tanner_subset_ctdb, s_tanner_subset_sdq, all=TRUE) %>% 
     rename(s_tanner_source = source) %>% 
     group_by(Initials, s_tanner_date) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Initials, s_tanner_date, desc(s_tanner_source)) %>%
+    arrange(Initials, s_tanner_date, desc(s_tanner_source)) %>%
     slice(1) %>% 
     ungroup()
   
@@ -974,10 +981,10 @@
 #####
 # Handedness - needs date 
   
-  s_handedness_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_handedness_')) %>% 
+  s_handedness_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_handedness_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_handedness_subset_sdq[,7:ncol(s_handedness_subset_sdq)] <- sapply(s_handedness_subset_sdq[,7:ncol(s_handedness_subset_sdq)], as.numeric) 
+  s_handedness_subset_sdq[,5:ncol(s_handedness_subset_sdq)] <- sapply(s_handedness_subset_sdq[,5:ncol(s_handedness_subset_sdq)], as.numeric) 
   
   s_handedness_subset_sdq$no_columns <- s_handedness_subset_sdq %>% select(matches('s_handedness_')) %>% ncol() %>% as.numeric()
   s_handedness_subset_sdq$NA_count <- s_handedness_subset_sdq %>% select(matches('s_handedness_')) %>% apply(., 1, count_na)
@@ -1022,10 +1029,10 @@
   s_handedness_subset_sdq$s_handedness_ehi_complete[s_handedness_subset_sdq$s_handedness_ehi_complete=="TRUE"] <- "1"
 
   s_handedness_subset_sdq$s_handedness_ehi_date <- s_handedness_subset_sdq$Overall_date
-  s_handedness_subset_sdq <- s_handedness_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, s_handedness_ehi_tot, s_handedness_ehi_date, s_handedness_ehi_complete) %>% 
+  s_handedness_subset_sdq <- s_handedness_subset_sdq %>% select(PLUSID, Initials, source, s_handedness_ehi_tot, s_handedness_ehi_date, s_handedness_ehi_complete) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_handedness_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches('s_handedness')) %>% 
+  s_handedness_subset_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches('s_handedness')) %>% 
     filter(!is.na(s_handedness_ehi_date) | !is.na(s_handedness1_date))
   
   s_handedness_subset_ctdb$s_handedness_ehi_date <- coalesce(s_handedness_subset_ctdb$s_handedness_ehi_date, s_handedness_subset_ctdb$s_handedness1_date)
@@ -1036,8 +1043,8 @@
   
   s_handedness_subset <- merge.default(s_handedness_subset_ctdb, s_handedness_subset_sdq, all=TRUE) %>% 
     rename(s_handedness_ehi_source = source) %>% 
-    group_by(FIRST_NAME, LAST_NAME) %>% 
-    arrange(FIRST_NAME, LAST_NAME, Initials, desc(s_handedness_ehi_date), desc(s_handedness_ehi_tot), desc(s_handedness_ehi_source)) %>%
+    group_by(Initials) %>% 
+    arrange(Initials, desc(s_handedness_ehi_date), desc(s_handedness_ehi_tot), desc(s_handedness_ehi_source)) %>%
     slice(1) %>%
     ungroup()
   s_handedness_subset$s_handedness_ehi_tot <- as.numeric(s_handedness_subset$s_handedness_ehi_tot)
@@ -1064,9 +1071,9 @@
   c_medsclin_sdq$c_medsclin_date <- coalesce(c_medsclin_sdq$c_medsclin_date, c_medsclin_sdq$Overall_date) 
   c_medsclin_sdq <- c_medsclin_sdq %>% select(-Overall_date)
 
-  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], as.character)
-  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], na_if, 999)
-  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], na_if, "") 
+  c_medsclin_sdq[,5:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,5:ncol(c_medsclin_sdq)], as.character)
+  c_medsclin_sdq[,5:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,5:ncol(c_medsclin_sdq)], na_if, 999)
+  c_medsclin_sdq[,5:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,5:ncol(c_medsclin_sdq)], na_if, "") 
 
   c_medsclin_sdq$no_columns <- c_medsclin_sdq %>% select(c_medsclin_treatment_changes, matches("med1name")) %>% ncol() %>% as.numeric()
   c_medsclin_sdq$NA_count <- c_medsclin_sdq %>% select(c_medsclin_treatment_changes, matches("med1name")) %>% apply(., 1, count_na)
@@ -1075,7 +1082,7 @@
   
   ###
 
-  c_medsclin1yr_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, c_medsclin1yr_date, c_medsclin1yr_baseline_date,
+  c_medsclin1yr_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, c_medsclin1yr_date, c_medsclin1yr_baseline_date,
                                            c_medsclin1yr_clinician_name, c_medsclin1yr_02_med1name:c_medsclin1yr_othernotes) %>% 
     filter(!is.na(Overall_date)) %>% 
     distinct(., .keep_all = TRUE)
@@ -1085,9 +1092,9 @@
   c_medsclin1yr_sdq$c_medsclin1yr_baseline_date <- as.Date(c_medsclin1yr_sdq$c_medsclin1yr_baseline_date)
   c_medsclin1yr_sdq <- c_medsclin1yr_sdq %>% select(-Overall_date)
   
-  c_medsclin1yr_sdq[,8:ncol(c_medsclin1yr_sdq)] <- sapply(c_medsclin1yr_sdq[,8:ncol(c_medsclin1yr_sdq)], as.character)
-  c_medsclin1yr_sdq[,8:ncol(c_medsclin1yr_sdq)] <- sapply(c_medsclin1yr_sdq[,8:ncol(c_medsclin1yr_sdq)], na_if, 999)
-  c_medsclin1yr_sdq[,8:ncol(c_medsclin1yr_sdq)] <- sapply(c_medsclin1yr_sdq[,8:ncol(c_medsclin1yr_sdq)], na_if, "") 
+  c_medsclin1yr_sdq[,6:ncol(c_medsclin1yr_sdq)] <- sapply(c_medsclin1yr_sdq[,6:ncol(c_medsclin1yr_sdq)], as.character)
+  c_medsclin1yr_sdq[,6:ncol(c_medsclin1yr_sdq)] <- sapply(c_medsclin1yr_sdq[,6:ncol(c_medsclin1yr_sdq)], na_if, 999)
+  c_medsclin1yr_sdq[,6:ncol(c_medsclin1yr_sdq)] <- sapply(c_medsclin1yr_sdq[,6:ncol(c_medsclin1yr_sdq)], na_if, "") 
   
   c_medsclin1yr_sdq$no_columns <- c_medsclin1yr_sdq %>% select(matches("med1name")) %>% ncol() %>% as.numeric()
   c_medsclin1yr_sdq$NA_count <- c_medsclin1yr_sdq %>% select(matches("med1name")) %>% apply(., 1, count_na)
@@ -1194,7 +1201,7 @@
     # iter=2
     measure_name <- tot_sum_clin[iter]
     
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE)
     
@@ -1211,19 +1218,19 @@
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
       }  
     
-    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
     
     if (measure_name=="s_promis_") {
       print("recoding measure")
       measure_temp_sdq <- measure_temp_sdq %>% 
         select(PLUSID:source, s_promis_1_restless, s_promis_4_falling_asleep, s_promis_5_troublesleeping, s_promis_8_stayingasleep,
                s_promis_2_satisfied, s_promis_3_refreshing, s_promis_6_enough_sleep, s_promis_7_quality)
-      measure_temp_sdq[,7:10] <- lapply(measure_temp_sdq[,7:10], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
-      measure_temp_sdq[,11:14] <- lapply(measure_temp_sdq[,11:14], FUN = function(x) recode(x, `0`=5, `1`=9, `2`=8, `3`=2, `4`=1, .missing = NULL))
-      measure_temp_sdq[,11:14] <- lapply(measure_temp_sdq[,11:14], FUN = function(x) recode(x, `5`=5, `9`=4, `8`=3, `2`=2, `1`=1, .missing = NULL))
+      measure_temp_sdq[,5:8] <- lapply(measure_temp_sdq[,5:8], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+      measure_temp_sdq[,9:12] <- lapply(measure_temp_sdq[,9:12], FUN = function(x) recode(x, `0`=5, `1`=9, `2`=8, `3`=2, `4`=1, .missing = NULL))
+      measure_temp_sdq[,9:12] <- lapply(measure_temp_sdq[,9:12], FUN = function(x) recode(x, `5`=5, `9`=4, `8`=3, `2`=2, `1`=1, .missing = NULL))
     } else if (measure_name=="s_mpss_") {
       print("recoding measure")
-      measure_temp_sdq[,7:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `6`=7, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+      measure_temp_sdq[,5:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `6`=7, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
     } else if (measure_name=="s_bads_") {
       print("recoding measure")
       measure_temp_sdq <- measure_temp_sdq %>% 
@@ -1233,15 +1240,15 @@
                s_bads_13_time_thinking, s_bads_14_not_tried_solutions, s_bads_15_think_past, s_bads_16_didnt_see_friends, s_bads_17_array_activities,
                s_bads_18_not_social, s_bads_19_pushed_people, s_bads_20_cut_off_from_people, s_bads_21_time_off, s_bads_22_not_active, s_bads_24_distract, 
                s_bads_25_felt_bad)
-      measure_temp_sdq[,14:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,14:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `0`=7, `1`=8, `2`=9, `3`=3, `4`=2, `5`=1, `6`=0, .missing = NULL))
-      measure_temp_sdq[,14:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,14:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `7`=6, `8`=5, `9`=4, `3`=3, `2`=2, `1`=1, `0`=0, .missing = NULL))
+      measure_temp_sdq[,12:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,12:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `0`=7, `1`=8, `2`=9, `3`=3, `4`=2, `5`=1, `6`=0, .missing = NULL))
+      measure_temp_sdq[,12:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,12:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `7`=6, `8`=5, `9`=4, `3`=3, `2`=2, `1`=1, `0`=0, .missing = NULL))
     } else if (measure_name=="s_chs_") {
       print("recoding measure")
       # recoding CHS scores from SDQ that were obtained before June 22nd 2018: coding went from 0-5 -> 1-6
       measure_temp_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), measure_temp_sdq$date_temp, tz="", units = "days"))
       temp_before <- measure_temp_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp_diff)
       measure_temp_sdq <- measure_temp_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp_diff)
-      temp_before[,7:ncol(temp_before)] <- lapply(temp_before[,7:ncol(temp_before)], FUN = function(x) recode(x, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+      temp_before[,5:ncol(temp_before)] <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
       measure_temp_sdq <- merge.default(measure_temp_sdq, temp_before, all=TRUE)
     } else {
       print("no recoding necessary for this measure")
@@ -1249,7 +1256,7 @@
     
     if (measure_name=="c_cadam_") {
       
-      measure_temp_sdq[,11:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,11:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric)
       
       measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(c_cadam_1_sad_facial:c_cadam_15_leisure_activities) %>% ncol() %>% as.numeric()
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(c_cadam_1_sad_facial:c_cadam_15_leisure_activities) %>% apply(., 1, count_na)
@@ -1260,7 +1267,7 @@
       
     } else if (measure_name=="c_cdrs_") {
       
-      measure_temp_sdq[,10:(ncol(measure_temp_sdq))] <- sapply(measure_temp_sdq[,10:(ncol(measure_temp_sdq))], as.numeric)
+      measure_temp_sdq[,8:(ncol(measure_temp_sdq))] <- sapply(measure_temp_sdq[,8:(ncol(measure_temp_sdq))], as.numeric)
       
       measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(c_cdrs_1_depress_feel:c_cdrs_18_mood_liability) %>% ncol() %>% as.numeric()
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(c_cdrs_1_depress_feel:c_cdrs_18_mood_liability) %>% apply(., 1, count_na)
@@ -1273,7 +1280,7 @@
       
     } else if (measure_name=="p_conners_") {
       
-      measure_temp_sdq[,10:(ncol(measure_temp_sdq))] <- sapply(measure_temp_sdq[,10:(ncol(measure_temp_sdq))], as.numeric)
+      measure_temp_sdq[,8:(ncol(measure_temp_sdq))] <- sapply(measure_temp_sdq[,8:(ncol(measure_temp_sdq))], as.numeric)
       
       measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(p_conners_1_angry:p_conners_80_blurts_answers) %>% ncol() %>% as.numeric()
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(p_conners_1_angry:p_conners_80_blurts_answers) %>% apply(., 1, count_na)
@@ -1284,7 +1291,7 @@
       
     } else {
       
-      measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,5:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], as.numeric)
       
       measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
@@ -1342,12 +1349,12 @@
     # iter=2
     measure_name <- CASE[iter]
     
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       distinct(., .keep_all = TRUE)
     
     measure_temp_sdq$date_temp <- measure_temp_sdq$Overall_date
-    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, date_temp, matches(measure_name))
-    measure_temp_sdq[,8:(ncol(measure_temp_sdq)-1)] <- sapply(measure_temp_sdq[,8:(ncol(measure_temp_sdq)-1)], as.numeric) 
+    measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID, Initials, source, date_temp, matches(measure_name))
+    measure_temp_sdq[,6:(ncol(measure_temp_sdq)-1)] <- sapply(measure_temp_sdq[,6:(ncol(measure_temp_sdq)-1)], as.numeric) 
 
     measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches("_if")) %>% ncol() %>% as.numeric()
     measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches("_if")) %>% apply(., 1, count_na)
@@ -1454,10 +1461,10 @@
 #####
 # SEQ - SEQ (SELF-EFFICACY QUESTIONNAIRE) child
   
-  s_seq_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_seq_')) %>% 
+  s_seq_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_seq_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_seq_subset_sdq[,7:ncol(s_seq_subset_sdq)] <- sapply(s_seq_subset_sdq[,7:ncol(s_seq_subset_sdq)], as.numeric) 
+  s_seq_subset_sdq[,5:ncol(s_seq_subset_sdq)] <- sapply(s_seq_subset_sdq[,5:ncol(s_seq_subset_sdq)], as.numeric) 
   
   s_seq_subset_sdq$no_columns <- s_seq_subset_sdq %>% select(matches('s_seq_')) %>% ncol() %>% as.numeric()
   s_seq_subset_sdq$NA_count <- s_seq_subset_sdq %>% select(matches('s_seq_')) %>% apply(., 1, count_na)
@@ -1469,7 +1476,7 @@
   s_seq_subset_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), s_seq_subset_sdq$date_temp, tz="", units = "days"))
   temp_before <- s_seq_subset_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp, -date_temp_diff)
   s_seq_subset_sdq <- s_seq_subset_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp, -date_temp_diff)
-  temp_before[,7:ncol(temp_before)]  <- lapply(temp_before[,7:ncol(temp_before)], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+  temp_before[,5:ncol(temp_before)]  <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
   s_seq_subset_sdq <- merge.default(s_seq_subset_sdq, temp_before, all=TRUE)
   
   s_seq_subset_sdq$s_seq_tot <- s_seq_subset_sdq %>% select(matches('s_seq_')) %>% rowSums(na.rm=TRUE)
@@ -1523,7 +1530,7 @@
     # iter=2
     measure_name <- FAD[iter]
     
-    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       distinct(., .keep_all = TRUE)
   
     measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(fad_normal), matches(fad_reverse)) %>% ncol() %>% as.numeric()
@@ -1532,15 +1539,15 @@
     measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
 
     if (measure_name == "p_fad_") {
-      measure_temp_sdq[,9:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,9:ncol(measure_temp_sdq)], as.numeric) 
-      measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, p_fad_parent, p_fad_parent_other, matches(fad_normal), matches(fad_reverse))
-      measure_temp_sdq[,34:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,34:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
-      measure_temp_sdq[,34:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,34:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
-    } else {
       measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric) 
-      measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, matches(fad_normal), matches(fad_reverse))
+      measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, p_fad_parent, p_fad_parent_other, matches(fad_normal), matches(fad_reverse))
       measure_temp_sdq[,32:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,32:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
       measure_temp_sdq[,32:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,32:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
+    } else {
+      measure_temp_sdq[,5:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], as.numeric) 
+      measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, matches(fad_normal), matches(fad_reverse))
+      measure_temp_sdq[,30:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,30:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
+      measure_temp_sdq[,30:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,30:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
     }
     
     problem_solving <- c("_2_|_12_|_24_|_38_|_50_|_60_")
@@ -1601,11 +1608,11 @@
 #####
 # FASA - FAMILY ACCOMODATION SCALE ANXIETY (parent report)
   
-  p_fasa_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, p_fasa_responder, 
+  p_fasa_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, p_fasa_responder, 
                                               p_fasa_responder_other, p_fasa_1_reassure:p_fasa_13_anxiety_worsen) %>% 
     distinct(., .keep_all = TRUE)
   
-  p_fasa_subset_sdq[,9:ncol(p_fasa_subset_sdq)] <- sapply(p_fasa_subset_sdq[,9:ncol(p_fasa_subset_sdq)], as.numeric) 
+  p_fasa_subset_sdq[,7:ncol(p_fasa_subset_sdq)] <- sapply(p_fasa_subset_sdq[,7:ncol(p_fasa_subset_sdq)], as.numeric) 
   
   p_fasa_subset_sdq$no_columns <- p_fasa_subset_sdq %>% select(p_fasa_1_reassure:p_fasa_13_anxiety_worsen) %>% ncol() %>% as.numeric()
   p_fasa_subset_sdq$NA_count <- p_fasa_subset_sdq %>% select(p_fasa_1_reassure:p_fasa_13_anxiety_worsen) %>% apply(., 1, count_na)
@@ -1653,12 +1660,12 @@
 #####
 # BA activities expectation & outcome
   
-  s_baexpout_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_baexpout_')) %>% 
+  s_baexpout_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_baexpout_')) %>% 
     distinct(., .keep_all = TRUE)
   
   s_baexpout_subset_sdq$s_baexpout_date <- as.Date(s_baexpout_subset_sdq$s_baexpout_date)
   s_baexpout_subset_sdq$s_baexpout_date <- coalesce(s_baexpout_subset_sdq$s_baexpout_date, s_baexpout_subset_sdq$Overall_date) 
-  s_baexpout_subset_sdq <- s_baexpout_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, s_baexpout_date, 
+  s_baexpout_subset_sdq <- s_baexpout_subset_sdq %>% select(PLUSID, Initials, source, s_baexpout_date, 
                                                             s_baexpout_clinician_name,
                                                             s_baexpout_weeks_treat:s_baexpout_act_1_type, s_baexpout_act_1_notes:s_baexpout_act_2_type,
                                                             s_baexpout_act_2_notes:s_baexpout_act_3_type, s_baexpout_act_3_notes:s_baexpout_act_4_type,
@@ -1667,14 +1674,14 @@
                                                             s_baexpout_act_3_moodbef:s_baexpout_act_3_again, s_baexpout_act_4_moodbef:s_baexpout_act_4_again, 
                                                             s_baexpout_act_5_moodbef:s_baexpout_act_5_again)
   
-  s_baexpout_subset_sdq[,9:24] <- sapply(s_baexpout_subset_sdq[,9:24], as.character) 
-  s_baexpout_subset_sdq[,25:ncol(s_baexpout_subset_sdq)] <- sapply(s_baexpout_subset_sdq[,25:ncol(s_baexpout_subset_sdq)], as.numeric) 
+  s_baexpout_subset_sdq[,7:22] <- sapply(s_baexpout_subset_sdq[,7:22], as.character) 
+  s_baexpout_subset_sdq[,23:ncol(s_baexpout_subset_sdq)] <- sapply(s_baexpout_subset_sdq[,23:ncol(s_baexpout_subset_sdq)], as.numeric) 
   
-  s_baexpout_subset_sdq[,10]  <- lapply(s_baexpout_subset_sdq[,10], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
-  s_baexpout_subset_sdq[,13]  <- lapply(s_baexpout_subset_sdq[,13], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
-  s_baexpout_subset_sdq[,16]  <- lapply(s_baexpout_subset_sdq[,16], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
-  s_baexpout_subset_sdq[,19]  <- lapply(s_baexpout_subset_sdq[,19], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
-  s_baexpout_subset_sdq[,22]  <- lapply(s_baexpout_subset_sdq[,22], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,8]  <- lapply(s_baexpout_subset_sdq[,8], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,11]  <- lapply(s_baexpout_subset_sdq[,11], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,14]  <- lapply(s_baexpout_subset_sdq[,14], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,17]  <- lapply(s_baexpout_subset_sdq[,17], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
+  s_baexpout_subset_sdq[,20]  <- lapply(s_baexpout_subset_sdq[,20], FUN = function(x) recode(x, `1`= "Something active", `2`= "Something artistic", `3`= "Something musical", `4`= "Something funny",`5`= "Something relaxing",`6`= "Something social", .missing = NULL))
   
   s_baexpout_subset_sdq$no_columns <- s_baexpout_subset_sdq %>% select(s_baexpout_act_1_moodbef:s_baexpout_act_5_again) %>% ncol() %>% as.numeric()
   s_baexpout_subset_sdq$NA_count <- s_baexpout_subset_sdq %>% select(s_baexpout_act_1_moodbef:s_baexpout_act_5_again) %>% apply(., 1, count_na)
@@ -1735,16 +1742,16 @@
 #####
 # SNAP
   
-  c_snap_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_snap_')) %>% 
+  c_snap_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('c_snap_')) %>% 
     distinct(., .keep_all = TRUE)
   
   c_snap_subset_sdq$c_snap_date <- as.Date(c_snap_subset_sdq$c_snap_date)
   c_snap_subset_sdq$c_snap_date <- coalesce(c_snap_subset_sdq$c_snap_date, c_snap_subset_sdq$Overall_date) 
-  c_snap_subset_sdq <- c_snap_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, c_snap_date, source, c_snap_clinician_name, c_snap_clinician_role,
+  c_snap_subset_sdq <- c_snap_subset_sdq %>% select(PLUSID, Initials, c_snap_date, source, c_snap_clinician_name, c_snap_clinician_role,
                                                     c_snap_visit_type, c_snap_treatment_week, c_snap_1_fail_attention:c_snap_18_interrupts)
   
-  c_snap_subset_sdq[,7:ncol(c_snap_subset_sdq)]  <- lapply(c_snap_subset_sdq[,7:ncol(c_snap_subset_sdq)], na_if, "")
-  c_snap_subset_sdq[,11:ncol(c_snap_subset_sdq)] <- sapply(c_snap_subset_sdq[,11:ncol(c_snap_subset_sdq)], as.numeric) 
+  c_snap_subset_sdq[,5:ncol(c_snap_subset_sdq)]  <- lapply(c_snap_subset_sdq[,5:ncol(c_snap_subset_sdq)], na_if, "")
+  c_snap_subset_sdq[,9:ncol(c_snap_subset_sdq)] <- sapply(c_snap_subset_sdq[,9:ncol(c_snap_subset_sdq)], as.numeric) 
   
   c_snap_subset_sdq$no_columns <- c_snap_subset_sdq %>% select(matches('c_snap_')) %>% select(-c_snap_date) %>% ncol() %>% as.numeric()
   c_snap_subset_sdq$NA_count <- c_snap_subset_sdq %>% select(matches('c_snap_')) %>% select(-c_snap_date) %>% apply(., 1, count_na)
@@ -1789,10 +1796,10 @@
 
   ### clinician completed symptom assessment 
   
-  c_cybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, c_cybocs_date, matches('c_cybocs_ob_'), matches('c_cybocs_com_')) %>% 
+  c_cybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, c_cybocs_date, matches('c_cybocs_ob_'), matches('c_cybocs_com_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  c_cybocs_subset_sdq[,8:ncol(c_cybocs_subset_sdq)] <- sapply(c_cybocs_subset_sdq[,8:ncol(c_cybocs_subset_sdq)], as.numeric) 
+  c_cybocs_subset_sdq[,6:ncol(c_cybocs_subset_sdq)] <- sapply(c_cybocs_subset_sdq[,6:ncol(c_cybocs_subset_sdq)], as.numeric) 
   
   c_cybocs_subset_sdq$no_columns <- c_cybocs_subset_sdq %>% select(matches('c_cybocs_')) %>% ncol() %>% as.numeric()
   c_cybocs_subset_sdq$NA_count <- c_cybocs_subset_sdq %>% select(matches('c_cybocs_')) %>% apply(., 1, count_na)
@@ -1832,7 +1839,7 @@
   
   ### self report symptom checklist 
   
-  s_cybocs_list_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_cybocs_list_')) %>% 
+  s_cybocs_list_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_cybocs_list_')) %>% 
     distinct(., .keep_all = TRUE)
   
   s_cybocs_list_subset_sdq$s_cybocs_list_date <- as.Date(s_cybocs_list_subset_sdq$s_cybocs_list_date)
@@ -1840,8 +1847,8 @@
   
   s_cybocs_list_subset_sdq <- s_cybocs_list_subset_sdq %>% select(PLUSID:source, s_cybocs_list_date, matches("s_cybocs_list_com_"), matches("s_cybocs_list_ob_"))
   
-  s_cybocs_list_subset_sdq[,7:ncol(s_cybocs_list_subset_sdq)]  <- lapply(s_cybocs_list_subset_sdq[,7:ncol(s_cybocs_list_subset_sdq)], as.character)
-  s_cybocs_list_subset_sdq[,7:ncol(s_cybocs_list_subset_sdq)]  <- lapply(s_cybocs_list_subset_sdq[,7:ncol(s_cybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `777`="Never", .missing = NULL))
+  s_cybocs_list_subset_sdq[,5:ncol(s_cybocs_list_subset_sdq)]  <- lapply(s_cybocs_list_subset_sdq[,5:ncol(s_cybocs_list_subset_sdq)], as.character)
+  s_cybocs_list_subset_sdq[,5:ncol(s_cybocs_list_subset_sdq)]  <- lapply(s_cybocs_list_subset_sdq[,5:ncol(s_cybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `777`="Never", .missing = NULL))
   
   s_cybocs_list_subset_sdq$no_columns <- s_cybocs_list_subset_sdq %>% select(matches("s_cybocs_list_com_"), matches("s_cybocs_list_ob_")) %>% ncol() %>% as.numeric()
   s_cybocs_list_subset_sdq$NA_count <- s_cybocs_list_subset_sdq %>% select(matches("s_cybocs_list_com_"), matches("s_cybocs_list_ob_")) %>% apply(., 1, count_na)
@@ -1874,7 +1881,7 @@
   
   ### clinician completed symptom assessment 
   
-  c_bddybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('c_bddybocs_')) %>% 
+  c_bddybocs_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('c_bddybocs_')) %>% 
     distinct(., .keep_all = TRUE)
   
   c_bddybocs_subset_sdq$c_bddybocs_date <- as.Date(c_bddybocs_subset_sdq$c_bddybocs_date)
@@ -1888,7 +1895,7 @@
            c_bddybocs_8_distress_activities, c_bddybocs_9_resistance_against_compulsions, c_bddybocs_10_control_over_behavior, c_bddybocs_11_insight, 
            c_bddybocs_12_avoidance)
 
-  c_bddybocs_subset_sdq[,14:ncol(c_bddybocs_subset_sdq)] <- sapply(c_bddybocs_subset_sdq[,14:ncol(c_bddybocs_subset_sdq)], as.numeric) 
+  c_bddybocs_subset_sdq[,12:ncol(c_bddybocs_subset_sdq)] <- sapply(c_bddybocs_subset_sdq[,12:ncol(c_bddybocs_subset_sdq)], as.numeric) 
   
   c_bddybocs_subset_sdq$no_columns <- c_bddybocs_subset_sdq %>% 
     select(c_bddybocs_1_time_thoughts_body_defect, c_bddybocs_2_interference_body_defectA, c_bddybocs_3_distress_body_defect,
@@ -1948,16 +1955,16 @@
   
   ### self report symptom checklist 
   
-  s_bddybocs_list_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_bddybocs_list_')) %>% 
+  s_bddybocs_list_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_bddybocs_list_')) %>% 
     distinct(., .keep_all = TRUE)
 
   s_bddybocs_list_subset_sdq$s_bddybocs_list_date <- as.Date(s_bddybocs_list_subset_sdq$s_bddybocs_list_date)
   s_bddybocs_list_subset_sdq$s_bddybocs_list_date <- coalesce(s_bddybocs_list_subset_sdq$s_bddybocs_list_date, s_bddybocs_list_subset_sdq$Overall_date) 
   s_bddybocs_list_subset_sdq <- s_bddybocs_list_subset_sdq %>% select(-Overall_date)
   
-  s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], as.character)
-  s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `77 7`="Never", .missing = NULL))
-  s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,7:ncol(s_bddybocs_list_subset_sdq)], na_if, "")
+  s_bddybocs_list_subset_sdq[,5:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,5:ncol(s_bddybocs_list_subset_sdq)], as.character)
+  s_bddybocs_list_subset_sdq[,5:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,5:ncol(s_bddybocs_list_subset_sdq)], FUN = function(x) recode(x, `0`="Past", `1`="Current", `2`="Both Past & Current", `77 7`="Never", .missing = NULL))
+  s_bddybocs_list_subset_sdq[,5:ncol(s_bddybocs_list_subset_sdq)]  <- lapply(s_bddybocs_list_subset_sdq[,5:ncol(s_bddybocs_list_subset_sdq)], na_if, "")
   
   s_bddybocs_list_subset_sdq$no_columns <- s_bddybocs_list_subset_sdq %>% select(s_bddybocs_list_face:s_bddybocs_list_height) %>% ncol() %>% as.numeric()
   s_bddybocs_list_subset_sdq$NA_count <- s_bddybocs_list_subset_sdq %>% select(s_bddybocs_list_face:s_bddybocs_list_height) %>% apply(., 1, count_na)
@@ -1995,11 +2002,11 @@
     # iter=1
   measure_name <- CHoCIR[iter]
   
-  measure_temp_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
+  measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
     distinct(., .keep_all = TRUE)
 
-  measure_temp_sdq[,7:38] <- sapply(measure_temp_sdq[,7:38], as.numeric) 
-  measure_temp_sdq[,7:38] <- sapply(measure_temp_sdq[,7:38], na_if, '777') 
+  measure_temp_sdq[,5:36] <- sapply(measure_temp_sdq[,5:36], as.numeric) 
+  measure_temp_sdq[,5:36] <- sapply(measure_temp_sdq[,5:36], na_if, '777') 
   
   measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches("_1_washing_hands"):matches("_38_avoiding_because_of_thoughts")) %>% ncol() %>% as.numeric()
   measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches("_1_washing_hands"):matches("_38_avoiding_because_of_thoughts")) %>% apply(., 1, count_na)
@@ -2063,15 +2070,15 @@
 #####
 # CPSS - THE CHILD PTSD SYMPTOM SCALE
   
-  s_cpss_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches('s_cpss_')) %>% 
+  s_cpss_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_cpss_')) %>% 
     distinct(., .keep_all = TRUE)
   
   s_cpss_subset_sdq$s_cpss_date <- as.Date(s_cpss_subset_sdq$s_cpss_date)
   s_cpss_subset_sdq$s_cpss_date <- coalesce(s_cpss_subset_sdq$s_cpss_date, s_cpss_subset_sdq$Overall_date) 
-  s_cpss_subset_sdq <- s_cpss_subset_sdq %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, s_cpss_date, source, s_cpss_event,
+  s_cpss_subset_sdq <- s_cpss_subset_sdq %>% select(PLUSID, Initials, s_cpss_date, source, s_cpss_event,
                                                     s_cpss_time_since, s_cpss_1_thoughts:s_cpss_24_happiness)
   
-  s_cpss_subset_sdq[,9:ncol(s_cpss_subset_sdq)] <- sapply(s_cpss_subset_sdq[,9:ncol(s_cpss_subset_sdq)], as.numeric) 
+  s_cpss_subset_sdq[,7:ncol(s_cpss_subset_sdq)] <- sapply(s_cpss_subset_sdq[,7:ncol(s_cpss_subset_sdq)], as.numeric) 
   
   s_cpss_subset_sdq$no_columns <- s_cpss_subset_sdq %>% select(s_cpss_1_thoughts:s_cpss_24_happiness) %>% ncol() %>% as.numeric()
   s_cpss_subset_sdq$NA_count <- s_cpss_subset_sdq %>% select(s_cpss_1_thoughts:s_cpss_24_happiness) %>% apply(., 1, count_na)
@@ -2117,11 +2124,11 @@
 #####
 # ASCQ - ADOLESCENT SOCIAL COGNITIONS QUESTIONNAIRE
 
-  s_ascq_subset_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches('s_ascq_')) %>% 
+  s_ascq_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches('s_ascq_')) %>% 
     distinct(., .keep_all = TRUE)
   
-  s_ascq_subset_sdq[,7:ncol(s_ascq_subset_sdq)] <- sapply(s_ascq_subset_sdq[,7:ncol(s_ascq_subset_sdq)], as.numeric) 
-  s_ascq_subset_sdq[,7:35]  <- lapply(s_ascq_subset_sdq[,7:35], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
+  s_ascq_subset_sdq[,5:ncol(s_ascq_subset_sdq)] <- sapply(s_ascq_subset_sdq[,5:ncol(s_ascq_subset_sdq)], as.numeric) 
+  s_ascq_subset_sdq[,5:33]  <- lapply(s_ascq_subset_sdq[,5:33], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
   
   s_ascq_subset_sdq$no_columns <- s_ascq_subset_sdq %>% select(matches('s_ascq_')) %>% ncol() %>% as.numeric()
   s_ascq_subset_sdq$NA_count <- s_ascq_subset_sdq %>% select(matches('s_ascq_')) %>% apply(., 1, count_na)
@@ -2174,16 +2181,16 @@
     print(paste("************************LOOP = ", measure_name))
 
     if (measure_name=="s_medsctdb_") {
-      measure_temp <- ctdb_w_plusid %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, s_medsctdb_list, s_medsctdb_changes, s_medsctdb_date) %>% 
+      measure_temp <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, s_medsctdb_list, s_medsctdb_changes, s_medsctdb_date) %>% 
         filter(!is.na(s_medsctdb_date))
     } else if (measure_name=="c_family_interview_") {
-      measure_temp <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
+      measure_temp <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
         filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
       measure_temp <- merge.default(measure_temp, common_identifiers_child_sib, all=TRUE) %>% 
-        select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Sibling_Init, source, matches(measure_name))
+        select(PLUSID, Initials, Sibling_Init, source, matches(measure_name))
     } else {
-      measure_temp <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, matches(measure_name)) %>% 
+      measure_temp <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
         filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
     }
@@ -2192,8 +2199,8 @@
         measure_name=="s_fua_" | measure_name=="p_fua_") {
       print("creating date variable for measure")
       measure_temp$date_temp <- measure_temp$Overall_date
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
-      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
     } else if (measure_name=="p_demo_screen_") {
       print("creating date variable for measure")
       measure_temp$date_temp <- measure_temp$Overall_date
@@ -2201,7 +2208,7 @@
       measure_temp$p_demo_screen_date_ekg <- as.Date(measure_temp$p_demo_screen_date_ekg)
       measure_temp$p_demo_screen_date_eeg <- as.Date(measure_temp$p_demo_screen_date_eeg)
       measure_temp$p_demo_screen_date_ct <- as.Date(measure_temp$p_demo_screen_date_ct)
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
       fix_na_cols <- measure_temp %>% select(matches(measure_name)) %>% 
         select(-p_demo_screen_date_ekg, -p_demo_screen_date_eeg, -p_demo_screen_date_ct, -p_demo_screen_date_mri) %>% colnames()
       measure_temp[fix_na_cols]  <- lapply(measure_temp[fix_na_cols], na_if, "")
@@ -2210,55 +2217,55 @@
       measure_temp <- measure_temp %>% rename(date_temp = (paste0(measure_name, "1_date")))
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
-      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
     } else if (measure_name=="ksads_") {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = c_ksads_date)
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
-      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
     } else if (measure_name=="c_cgi_") {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = (paste0(measure_name, "date")))
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
       measure_temp$c_cgi_date_completed_by_clinician <- as.Date(measure_temp$c_cgi_date_completed_by_clinician)
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
-      measure_temp[,8:ncol(measure_temp)]  <- lapply(measure_temp[,8:ncol(measure_temp)], na_if, "")
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,6:ncol(measure_temp)]  <- lapply(measure_temp[,6:ncol(measure_temp)], na_if, "")
     } else if (measure_name=="s_medsctdb_") {
       print("date included in CTDB pull")
       measure_temp <- measure_temp %>% rename(date_temp = s_medsctdb_date)
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
-      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
     } else if (measure_name=="c_blood_") {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = c_blood_draw_date)
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
-      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
     } else if (measure_name=="c_family_interview_") {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = "c_family_interview_date")
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date)
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Sibling_Init, date_temp, source, matches(measure_name))
-      measure_temp[,8:ncol(measure_temp)]  <- lapply(measure_temp[,8:ncol(measure_temp)], na_if, "")
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, Sibling_Init, date_temp, source, matches(measure_name))
+      measure_temp[,6:ncol(measure_temp)]  <- lapply(measure_temp[,6:ncol(measure_temp)], na_if, "")
     } else {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = (paste0(measure_name, "date")))
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
-      measure_temp <- measure_temp %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, date_temp, source, matches(measure_name))
-      measure_temp[,7:ncol(measure_temp)]  <- lapply(measure_temp[,7:ncol(measure_temp)], na_if, "")
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
     }  
       
     if (measure_name=="p_demo_eval_"){
       measure_temp$p_demo_eval_6_race <- gsub("while", "white",measure_temp$p_demo_eval_6_race)
-      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, Overall_date, matches(measure_name)) %>% 
+      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
         rename(date_temp="Overall_date") %>% filter(!is.na(p_demo_eval_6_race) | !is.na(p_demo_eval_7_hispanic))
       measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
     }
