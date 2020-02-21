@@ -593,7 +593,7 @@ MEG_missing$QC_missing <- gsub("; NA", "", MEG_missing$QC_missing, fixed=TRUE)
 MEG_missing <- MEG_missing %>% select(-matches("reason")) %>% arrange(Initials, Task_Date)
 MEG_missing[of_interest] <- lapply(MEG_missing[of_interest], na_if, '666')
 MEG_task_QC[of_interest] <- lapply(MEG_task_QC[of_interest], na_if, '666')
-MEG_task_QC <- MEG_task_QC %>% select(SDAN, Task_Name, Task_Date, Include)
+MEG_task_QC <- MEG_task_QC %>% select(SDAN, Initials, Task_Name, Task_Date, Include)
 
 ##### list of MPRAGE from IRTA trackers 
 

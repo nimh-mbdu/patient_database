@@ -77,7 +77,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # latest_sdq_pull <- c(to_change$latest_sdq_pull)
 # # todays_date_formatted <- c(to_change$todays_date_formatted)
 # # todays_date_formatted <- as.Date(todays_date_formatted)
-# todays_date_formatted <- as.Date("2019-12-13")
+# todays_date_formatted <- as.Date("2020-02-13")
 
 ```
 
@@ -158,7 +158,8 @@ common_identifiers <- common_identifiers %>% filter(!is.na(Overall_date)) %>% fi
 # loading raw SDQ+ data 
 
 SDQ_Data_Download_raw <- read.delim(paste0(sdq_pull, latest_sdq_pull, ".txt"),  quote="", 
-                                    encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE)
+                                    encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE) %>% 
+  mutate_all(as.character)
 
 # creating date column 
 
@@ -302,6 +303,8 @@ p_mfq_screen_sdq <- SDQ_Data_Download_raw %>% select(PLUSID, Overall_date, match
   rename(p_mfq_screen_date = "Overall_date") %>% filter(!is.na(p_mfq_screen_date)) %>% distinct(., .keep_all = TRUE)
 
 # removing NAs
+
+p_mfq_screen_sdq[,4:ncol(p_mfq_screen_sdq)] <- lapply(p_mfq_screen_sdq[,4:ncol(p_mfq_screen_sdq)], as.numeric)
 
 p_mfq_screen_sdq[,3:ncol(p_mfq_screen_sdq)] <- lapply(p_mfq_screen_sdq[,3:ncol(p_mfq_screen_sdq)], na_if, "-2")
 p_mfq_screen_sdq[,3:ncol(p_mfq_screen_sdq)] <- lapply(p_mfq_screen_sdq[,3:ncol(p_mfq_screen_sdq)], na_if, "")
