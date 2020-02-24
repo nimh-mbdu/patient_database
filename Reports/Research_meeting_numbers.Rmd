@@ -497,6 +497,101 @@ protocol_table2 %>% kable(., col.names = c("Diagnosis", "Signed into Characteriz
 
 ```
 
+##### Longitudinal clinical follow up
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+baseline <- Psychometrics_treatment %>% 
+  select(Initials, IRTA_tracker, Participant_Type2, Protocol, Eligible, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_visit_type, c_ksadsdx_date) %>% 
+  filter(!is.na(c_ksadsdx_visit_type) & c_ksadsdx_visit_type != "Inpatient Treatment" & c_ksadsdx_visit_type != "Outpatient Treatment")
+baseline$Clinical_Visit_Date <- as.Date(baseline$Clinical_Visit_Date)
+baseline$c_ksadsdx_date <- as.Date(baseline$c_ksadsdx_date)
+baseline$c_ksadsdx_TDiff <- as.numeric(difftime(baseline$Clinical_Visit_Date, baseline$c_ksadsdx_date, tz="", units = "days"))
+baseline <- baseline %>% mutate(measurement_TDiff_abs=abs(c_ksadsdx_TDiff)) %>% 
+  group_by(Initials, c_ksadsdx_visit_type) %>% arrange(Initials, c_ksadsdx_visit_type, measurement_TDiff_abs) %>% 
+  slice(1) %>% ungroup() %>% select(-measurement_TDiff_abs) %>% arrange(Initials, Clinical_Visit_Date)
+
+baseline_removed <- baseline %>% group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% filter(IRTA_tracker=="REMOVED" | n()==1) %>% ungroup() %>% 
+  filter(IRTA_tracker=="REMOVED" | !str_detect(Protocol, "0037") | str_detect(Protocol, "SCREENING") |
+           Eligible =="4" | Eligible =="5" | Eligible =="6" | Eligible =="7") 
+removed_initials <- baseline_removed$Initials
+baseline$exclude <- (baseline$Initials %in% removed_initials) %>% as.character()
+
+#### completed annual FU visit 
+FU_completed <- baseline %>% group_by(Initials) %>% filter(n()>1) %>% ungroup() %>% 
+  select(-c_ksadsdx_TDiff, -exclude, -Protocol, -Clinical_Visit_Type) %>% filter(c_ksadsdx_visit_type!="baseline")
+MDD_one_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="12 month FU") %>% filter(Participant_Type2=="MDD") %>% nrow() %>% as.numeric()
+MDD_two_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="24 month FU") %>% filter(Participant_Type2=="MDD") %>% nrow() %>% as.numeric()
+HV_one_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="12 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
+HV_two_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="24 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
+
+FU_completed_summary <- tibble(Type=c("12 month", "12 month", "24 month", "24 month"), Diagnosis=c("MDD", "HV", "MDD", "HV"), 
+                               Freq=c(MDD_one_year, HV_one_year, MDD_two_year, HV_two_year))
+
+#### eligible for annual FU - not yet completed 
+baseline_keep <- baseline %>% filter(exclude=="FALSE") %>% group_by(Initials) %>% filter(n()==1) %>% ungroup() %>% 
+  select(-c_ksadsdx_TDiff, -exclude, -Protocol, -Clinical_Visit_Type)
+
+baseline_keep <- baseline_keep %>% mutate(expt_FU_date = (c_ksadsdx_date + 365))
+baseline_keep$expt_FU_date_TDiff <- as.numeric(difftime(baseline_keep$expt_FU_date, todays_date_formatted, tz="", units = "days"))
+
+baseline_keep <- baseline_keep %>% mutate(status = 
+    ifelse((expt_FU_date_TDiff < -30), 1, # more than one month overdue 
+    ifelse((expt_FU_date_TDiff >= -30 & expt_FU_date_TDiff < 0), 2, # less than one month overdue
+    ifelse((expt_FU_date_TDiff >= 0 & expt_FU_date_TDiff < 31), 3, # due within the next month
+    ifelse((expt_FU_date_TDiff >= 31 & expt_FU_date_TDiff < 191), 4, # due in >1 month but <6 months
+    ifelse((expt_FU_date_TDiff >= 191 & expt_FU_date_TDiff < 275), 5, # due in >6 months but <9 months
+    ifelse((expt_FU_date_TDiff >= 275), 6, #due in >9 months
+           0)))))))
+
+temp1 <- ctable(baseline_keep$status, baseline_keep$Participant_Type2, useNA = "no",
+                           prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
+  rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.baseline_keep.Participant_Type2") %>%
+  rename(Status = "cross_table.baseline_keep.status") %>% select(-proportions.Total)
+
+temp2 <- pivot_wider(temp1, id_cols = "Status", names_from = "Participant_Type2", values_from = "Freq") %>% 
+  mutate(HV_percent = (HV/(HV+MDD)*100)) %>% mutate(MDD_percent = (MDD/(HV+MDD)*100)) %>% 
+  mutate(HV_percent = round(HV_percent, 2), MDD_percent = round(MDD_percent, 2))
+MDD_6_months <- temp2 %>% filter(Status == "2" | Status == "3" | Status == "4") %>% select(MDD) %>% colSums() %>% as.numeric()
+HV_6_months <- temp2 %>% filter(Status == "2" | Status == "3" | Status == "4") %>% select(HV) %>% colSums() %>% as.numeric()
+
+rest_temp <- tibble(Status=c(1, 2, 3, 4, 5, 6), Descrip=c("more than one month overdue", "less than one month overdue", "due <1 month, i.e. by:", 
+      "due >1 month & <6 months, i.e. by:", "due >6 months & <9 months, i.e. by:", "due >9 months by:"))
+date_temp <- c((todays_date_formatted + 30), (todays_date_formatted + 190), (todays_date_formatted + 274), (todays_date_formatted + 365)) %>% 
+  as.tibble() %>% rename(Date = value) %>% mutate(Status=c(3, 4, 5, 6))
+descrip_table <- merge.default(rest_temp, date_temp, all=TRUE)
+
+temp3 <- merge.default(temp2, descrip_table, all=TRUE) %>%
+  select(Descrip, Date, MDD, MDD_percent, HV, HV_percent, Total)
+temp3$Descrip <- replace_na(temp3$Descrip, "Total")
+
+rm(baseline, baseline_removed, removed_initials, FU_completed, one_year, two_year, baseline_keep, temp1, temp2, rest_temp, date_temp, descrip_table)
+
+```
+
+Completed annual follow up
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+FU_completed_summary %>% kable(., col.names = c("Follow up type", "Diagnosis", "Number completed")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Completed baseline, eligible for annual follow up
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+temp3 %>% kable(., col.names = c("Status", "", "MDD", "%", "HV", "%", "Total")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Summary: 
+
+* MDDs due in next 6 months: `r MDD_6_months`
+* HVs due in next 6 months: `r HV_6_months`
+
 ***
 
 #### 2. Task Numbers 
