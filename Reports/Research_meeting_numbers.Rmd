@@ -194,18 +194,21 @@ if (exists("MEG_mprage")==FALSE) {
 
 #### Outline:
 
-1. Recruitment summary
+1. Recruitment & retention summary
     + Referrals
     + Screening status update  
     + Scheduling 
     + 18-M-0037 enrollment 
+    + Longitudinal clinical follow ups
 2. Task numbers
     + MID
+    + SUPREME
     + MEG
     + Bloods 
+    + Family History Interview
 3. Treatment
-    + BA enrollment
-    + MATCH CBT 
+    + Outpatients
+    + Inpatients 
 
 ***
 
@@ -565,6 +568,8 @@ temp3 <- merge.default(temp2, descrip_table, all=TRUE) %>%
   select(Descrip, Date, MDD, MDD_percent, HV, HV_percent, Total)
 temp3$Descrip <- replace_na(temp3$Descrip, "Total")
 
+overdue <- baseline_keep %>% filter(status==1) %>% select(Initials, IRTA_tracker, Participant_Type2, expt_FU_date_TDiff)
+
 rm(baseline, baseline_removed, removed_initials, FU_completed, one_year, two_year, baseline_keep, temp1, temp2, rest_temp, date_temp, descrip_table)
 
 ```
@@ -591,6 +596,15 @@ Summary:
 
 * MDDs due in next 6 months: `r MDD_6_months`
 * HVs due in next 6 months: `r HV_6_months`
+
+Participants long overdue for clinical follow up
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+overdue %>% arrange(expt_FU_date_TDiff) %>% kable(., col.names = c("Initials", "IRTA", "Diagnosis", "Days overdue")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
 
 ***
 
@@ -890,7 +904,7 @@ family_hist_table2 %>% kable(., col.names = c("Clinical Visit Type", "MDD", "%",
 
 ***
 
-##### BA enrollment:
+##### Outpatient enrollment:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
