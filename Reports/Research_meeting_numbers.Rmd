@@ -268,6 +268,59 @@ referrals_table2 %>% kable(., col.names = c("Diagnosis", "Contact Successful", "
 
 ```
 
+Referrals since BSC cut-off, November 30th 2018
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+MDD_postcards <- tibble(date=c("2019-02-08", "2019-09-20", "2020-01-17")) %>% mutate(date = as.Date(date))
+HV_postcards <- tibble(date=c("2019-04-26", "2019-07-08")) %>% mutate(date = as.Date(date))
+
+suppressWarnings(source(paste0(scripts, 'Reports/Referrals_summary.R')))
+
+```
+
+By 3-month period
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+    
+summary_3months %>% kable(., col.names = c("Quarter", "Starting", "Ending", "Diagnosis", "Number of referrals in period")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+By mail out period
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+    
+summary_mail_periods %>% kable(., col.names = c("Diagnosis", "Description", "Number of referrals in period")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Graph showing postcards
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
+
+referrals_final %>%
+  ggplot(aes(x = Date, y = Freq, group = Participant_Type2, color = Participant_Type2)) +
+  geom_point(size=3) +
+  geom_line(size=0.25) +
+  scale_colour_manual(values = c("#FF0066","#000000")) +
+  scale_x_date(date_break = "1 month", date_labels = "%m/%y") +
+  scale_y_continuous(expand = c(0, 1)) +
+  geom_vline(xintercept = (HV_postcards$date), size=1, colour="#FF0000") +
+  geom_vline(xintercept = (MDD_postcards$date), size=1, colour="#000000") +
+  geom_text(aes(x=as.Date("2019-02-08"), label="189,000\n", y=22), colour="#000000", angle=90, text=element_text(size=9)) +
+  geom_text(aes(x=as.Date("2019-04-26"), label="108,000\n", y=22), colour="#FF0000", angle=90, text=element_text(size=9)) +
+  geom_text(aes(x=as.Date("2019-07-08"), label="50,000\n", y=22), colour="#FF0000", angle=90, text=element_text(size=9)) +
+  geom_text(aes(x=as.Date("2019-09-20"), label="150,000\n", y=22), colour="#000000", angle=90, text=element_text(size=9)) +
+  geom_text(aes(x=as.Date("2020-01-17"), label="150,000\n", y=22), colour="#000000", angle=90, text=element_text(size=9)) +
+  # ylim(0,23) +
+  theme_classic() +
+  ggtitle("Referrals since BSC\n") + ylab("Number of referrals\n") + xlab("\nDate\n") + labs(color = "Diagnosis")
+
+```
+
 ***
 
 ##### Screening:
@@ -561,7 +614,7 @@ HV_6_months <- temp2 %>% filter(Status == "2" | Status == "3" | Status == "4") %
 rest_temp <- tibble(Status=c(1, 2, 3, 4, 5, 6), Descrip=c("more than one month overdue", "less than one month overdue", "due <1 month, i.e. by:", 
       "due >1 month & <6 months, i.e. by:", "due >6 months & <9 months, i.e. by:", "due >9 months by:"))
 date_temp <- c((todays_date_formatted + 30), (todays_date_formatted + 190), (todays_date_formatted + 274), (todays_date_formatted + 365)) %>% 
-  as.tibble() %>% rename(Date = value) %>% mutate(Status=c(3, 4, 5, 6))
+  as_tibble() %>% rename(Date = value) %>% mutate(Status=c(3, 4, 5, 6))
 descrip_table <- merge.default(rest_temp, date_temp, all=TRUE)
 
 temp3 <- merge.default(temp2, descrip_table, all=TRUE) %>%
@@ -570,7 +623,8 @@ temp3$Descrip <- replace_na(temp3$Descrip, "Total")
 
 overdue <- baseline_keep %>% filter(status==1) %>% select(Initials, IRTA_tracker, Participant_Type2, expt_FU_date_TDiff)
 
-rm(baseline, baseline_removed, removed_initials, FU_completed, one_year, two_year, baseline_keep, temp1, temp2, rest_temp, date_temp, descrip_table)
+rm(baseline, baseline_removed, removed_initials, FU_completed, baseline_keep, temp1, temp2, rest_temp, date_temp, descrip_table, 
+   MDD_one_year, MDD_two_year, HV_one_year, HV_two_year)
 
 ```
 

@@ -81,6 +81,7 @@ suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(shiny))
 suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(ggpubr))
+suppressPackageStartupMessages(library(chron))
 
 # things to check and may need to modify before running -------------------
 
