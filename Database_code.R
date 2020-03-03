@@ -168,6 +168,10 @@
   manual_combined$c_ksadsdx_date <- as.Date(manual_combined$c_ksadsdx_date, "%d-%m-%Y")
   manual_combined$c_ksadsdx_epset_baseline_visit_date <- as.Date(manual_combined$c_ksadsdx_epset_baseline_visit_date, "%d-%m-%Y")
   
+  manual_daily_mfq <- read_excel(paste0(database_location, "other_data_never_delete/inpatient_daily_mfq_manual_entry_2020-03-03.xlsx")) %>% mutate_all(as.character)
+  manual_daily_mfq$s_mfq1d_date <- as.Date(manual_daily_mfq$s_mfq1d_date)
+  manual_daily_mfq$s_mfq1d_time <- as.ITime(manual_daily_mfq$s_mfq1d_time)
+  
   # Clean up -------------------------------------------
   
   # ****** SDQ+
@@ -2167,6 +2171,37 @@
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
   
+#####
+# Daily MFQ - inpatients only 
+  
+  s_mfq1d_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_mfq1d_')) %>% 
+    distinct(., .keep_all = TRUE) %>% rename(s_mfq1d_date = Overall_date)
+  manual_daily_mfq <- manual_daily_mfq %>% mutate(source = "MANUAL") %>% 
+    select(PLUSID, Initials, source, s_mfq1d_date, s_mfq1d_adjusted_date, s_mfq1d_1_unhappy:s_mfq1d_13_all_wrong, s_mfq1d_manual_tot)
+  
+  s_mfq1d_subset_sdq[,5:17] <- sapply(s_mfq1d_subset_sdq[,5:17], as.numeric) 
+  manual_daily_mfq[,6:19] <- sapply(manual_daily_mfq[,6:19], as.numeric)
+  manual_daily_mfq[,6:19] <- sapply(manual_daily_mfq[,6:19], round, 0)
+  
+  s_mfq1d_subset_sdq$no_columns <- s_mfq1d_subset_sdq %>% select(s_mfq1d_1_unhappy:s_mfq1d_13_all_wrong) %>% ncol() %>% as.numeric()
+  s_mfq1d_subset_sdq$NA_count <- s_mfq1d_subset_sdq %>% select(s_mfq1d_1_unhappy:s_mfq1d_13_all_wrong) %>% apply(., 1, count_na)
+  s_mfq1d_subset_sdq$diff <- c(s_mfq1d_subset_sdq$no_columns - s_mfq1d_subset_sdq$NA_count)
+  s_mfq1d_subset_sdq <- s_mfq1d_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  
+  s_mfq1d_subset <- merge.default(s_mfq1d_subset_sdq, manual_daily_mfq, all=TRUE)
+  
+  s_mfq1d_subset$s_mfq1d_tot <- s_mfq1d_subset %>% select(s_mfq1d_1_unhappy:s_mfq1d_13_all_wrong) %>% rowSums(na.rm=TRUE)
+  
+  s_mfq1d_subset$s_mfq1d_complete <- s_mfq1d_subset %>% select(s_mfq1d_1_unhappy:s_mfq1d_13_all_wrong) %>% complete.cases(.)
+  s_mfq1d_subset$s_mfq1d_complete[s_mfq1d_subset$s_mfq1d_complete=="FALSE"] <- "0"
+  s_mfq1d_subset$s_mfq1d_complete[s_mfq1d_subset$s_mfq1d_complete=="TRUE"] <- "1"
+  
+  demo_daily_mfq <- master_IRTA_latest %>% arrange(Initials, desc(Clinical_Visit_Date)) %>% filter(Clinical_Visit_Code=="i") %>% 
+    select(FIRST_NAME, LAST_NAME, Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker, Eligible, SEX, DOB, Handedness) %>% 
+    group_by(Initials) %>% slice(1) %>% ungroup()
+  
+  s_mfq1d_subset_clinical <- merge.default(demo_daily_mfq, s_mfq1d_subset, all=TRUE) %>% rename(s_mfq1d_source = source)
+  
 # Measures where no scoring is necessary ----------------------------------
   
   variables_no_scoring <- c('c_family_hist_', 'p_demo_eval_', 'p_demo_screen_', 'c_blood_', 's_menstruation_', 
@@ -2646,6 +2681,13 @@ MATCH_tracker$Eligible <- recode(MATCH_tracker$Eligible, "0"="Include", "5"="Exc
                               "7"="Did not or withdrew assent/consent", "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
                               "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
                               "11"="Completed treatment", .missing = NULL)
+
+s_mfq1d_subset_clinical$Eligible <- recode(s_mfq1d_subset_clinical$Eligible, "0"="Include", "5"="Excluded: does not meet criteria",
+                                 "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+                                 "7"="Did not or withdrew assent/consent", "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
+                                 "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
+                                 "11"="Completed treatment", .missing = NULL)
+
 ############# exporting
 
 # Psychometrics_treatment <- Psychometrics_treatment %>% select(-FIRST_NAME_P1, -LAST_NAME_P1, -FIRST_NAME_P2, -LAST_NAME_P2)
@@ -2698,6 +2740,23 @@ if (file_save_check_combined$date_diff[1]==0) {
 } else {
   print("Conflict: exporting as 'MASTER_DATABASE_Inpatient_updated'")
   MATCH_tracker %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_Inpatient_updated.xlsx"))
+}
+
+s_mfq1d_subset_clinical %>% write_xlsx(paste0(inpatient_location, "MASTER_DATABASE_daily_MFQ.xlsx"))
+s_mfq1d_subset_clinical %>% write_xlsx(paste0(inpatient_backup, "MASTER_DATABASE_daily_MFQ_", todays_date_formatted, ".xlsx"))
+
+# checking saved properly
+file_save_check <- list.files(path = paste0(inpatient_location), pattern = "^MASTER_DATABASE_daily_MFQ.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(inpatient_location, file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'MASTER_DATABASE_daily_MFQ'")
+} else {
+  print("Conflict: exporting as 'MASTER_DATABASE_daily_MFQ_updated'")
+  MATCH_tracker %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_daily_MFQ_updated.xlsx"))
 }
 
 # Creating tasks database & exporting ------------------------------------
