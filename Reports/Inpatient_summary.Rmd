@@ -91,12 +91,24 @@ if (exists("MATCH_tracker")==FALSE) {
         MATCH_tracker <- read_excel(paste0(inpatient_location, inpatient_database_combined[1])) %>% mutate_all(as.character)
         MATCH_tracker$Clinical_Visit_Date <- as.Date(MATCH_tracker$Clinical_Visit_Date)
         rm(inpatient_database_file, inpatient_database_file_time, inpatient_database_combined)
+}
+
+if (exists("s_mfq1d_final")==FALSE) {
+        inpatient_database_file <- list.files(path = paste0(inpatient_location), pattern = "^MASTER_DATABASE_daily_MFQ", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        inpatient_database_file_time <- file.mtime(paste0(inpatient_location, inpatient_database_file)) %>% as.Date()
+        inpatient_database_combined <- tibble(File=c(inpatient_database_file), Date=c(inpatient_database_file_time)) %>% arrange(desc(Date)) %>% slice(1)
+        s_mfq1d_final <- read_excel(paste0(inpatient_location, inpatient_database_combined[1])) %>% mutate_all(as.character)
+        s_mfq1d_final$s_mfq1d_date <- as.Date(s_mfq1d_final$s_mfq1d_date)
+        rm(inpatient_database_file, inpatient_database_file_time, inpatient_database_combined)
         }
 
 # changing date formats
 todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
 MATCH_tracker$Clinical_Visit_Date2 <- format(MATCH_tracker$Clinical_Visit_Date, "%b-%d")
 MATCH_tracker$Clinical_Visit_Date3 <- format(MATCH_tracker$Clinical_Visit_Date, "%B-%d-%Y")
+s_mfq1d_final$s_mfq1d_date2 <- format(s_mfq1d_final$s_mfq1d_date, "%b-%d")
+s_mfq1d_final$s_mfq1d_date3 <- format(s_mfq1d_final$s_mfq1d_date, "%B-%d-%Y")
 
 # Data needed for inpatient summaries -------------------------------------
 
@@ -105,12 +117,17 @@ current_inpatients <- MATCH_tracker %>% group_by(Initials) %>% arrange(Clinical_
 
 inpatient_list <- c(current_inpatients$Initials)
 
+# clinical database
 psychometric_data <- MATCH_tracker %>% filter(Initials %in% inpatient_list) %>% 
   select(Initials, Clinical_Visit_Date, Clinical_Visit_Date2, Clinical_Visit_Date3, Clinical_Visit_Type, Clinical_Visit_Number, s_mfq1w_tot, s_ari1w_tot,
          s_scared_tot, s_shaps_tot, s_lsas_tot, s_vadis_tot, s_rumination_tot, s_chocir_symptom_tot, s_chocir_impairment_tot, s_seq_tot, p_conners_tot,
-         c_snap_tot, c_cybocs_ob_tot, c_cybocs_com_tot)
+         c_snap_tot, c_cybocs_ob_tot, c_cybocs_com_tot, c_ygtss_severity_tot, c_ygtss_tot)
 psychometric_data[,7:ncol(psychometric_data)] <- sapply(psychometric_data[,7:ncol(psychometric_data)], as.numeric)
 psychometric_data[,7:ncol(psychometric_data)] <- sapply(psychometric_data[,7:ncol(psychometric_data)], round, 0)
+
+# daily MFQs
+daily_mfqs <- s_mfq1d_final %>% filter(Initials %in% inpatient_list) %>% 
+  select(Initials, s_mfq1d_date, s_mfq1d_date3, s_mfq1d_tot) %>% arrange(s_mfq1d_date)
 
 # medications 
 medication_data <- MATCH_tracker %>% filter(Initials %in% inpatient_list) %>% 
@@ -200,6 +217,7 @@ for(i in seq(nrow(current_inpatients))) {
   temp_demo <- current_inpatients %>% filter(Initials==Participant)
   temp_meds <- medication_data %>% filter(Initials==Participant) %>% arrange(as.numeric(Clinical_Visit_Number))
   temp_psych <- psychometric_data %>% filter(Initials==Participant) %>% arrange(as.numeric(Clinical_Visit_Number))
+  temp_daily_mfq <- daily_mfqs %>% filter(Initials==Participant) %>% arrange(as.numeric(s_mfq1d_date))
 
   cat("  \n",  "  \n###",  iter, "->", as.character(temp_demo[1,1]), as.character(temp_demo[1,2]), "(", as.character(temp_demo[1,3]), ")", "-> SDAN:", 
       as.character(temp_demo[1,4]), "-> Age:", as.character(temp_demo[1,5]), "-> Sex:", as.character(temp_demo[1,6]), "-> Diagnosis:", as.character(temp_demo[1,7]), 
@@ -214,14 +232,23 @@ for(i in seq(nrow(current_inpatients))) {
   cat("  \nInpatient scores:")
   questionnaire_data <- flextable(temp_psych, col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", 
       "s_lsas_tot", "s_vadis_tot", "s_rumination_tot", "s_chocir_symptom_tot", "s_chocir_impairment_tot", "s_seq_tot", "p_conners_tot", "c_snap_tot", "c_cybocs_ob_tot",
-      "c_cybocs_com_tot")) %>% set_header_labels(., Clinical_Visit_Number="Week",  Clinical_Visit_Date2="Date", s_mfq1w_tot="MFQ", s_ari1w_tot="ARI",
+      "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot")) %>% 
+    set_header_labels(., Clinical_Visit_Number="Week",  Clinical_Visit_Date2="Date", s_mfq1w_tot="MFQ", s_ari1w_tot="ARI",
        s_scared_tot="SCARED", s_shaps_tot="SHAPS", s_lsas_tot="LSAS", s_vadis_tot="VADIS", s_rumination_tot="RUM", s_chocir_symptom_tot="CHOCIR:S",
        s_chocir_impairment_tot="CHOCIR:I", s_seq_tot="SEQ", p_conners_tot="CONNERS", c_snap_tot="SNAP", c_cybocs_ob_tot="CYBOCS:O",
-       c_cybocs_com_tot="CYBOCS:C") %>% colformat_num(col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot",
+       c_cybocs_com_tot="CYBOCS:C", c_ygtss_severity_tot="YGTSS:S", c_ygtss_tot="YGTSS:T") %>% 
+    colformat_num(col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot",
       "s_shaps_tot", "s_lsas_tot", "s_vadis_tot", "s_rumination_tot", "s_chocir_symptom_tot", "s_chocir_impairment_tot", "s_seq_tot", "p_conners_tot", "c_snap_tot",
-      "c_cybocs_ob_tot", "c_cybocs_com_tot"), digits = 0, na_str = "") %>% fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>%
+      "c_cybocs_ob_tot", "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot"), digits = 0, na_str = "") %>% 
+    fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>%
     FitFlextableToPage2(.)
   cat(knit_print(questionnaire_data))
+  
+  cat("  \nDaily MFQs:")
+  daily_mfq_data <- flextable(temp_daily_mfq, col_keys = c("s_mfq1d_date3", "s_mfq1d_tot")) %>%
+    set_header_labels(., s_mfq1d_date3="Date", s_mfq1d_tot="Daily MFQ total") %>%
+    fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>% FitFlextableToPage2(.)
+  cat(knit_print(daily_mfq_data))
   
   cat("  \n",  "  \n***")
 
@@ -233,13 +260,16 @@ for(i in seq(nrow(current_inpatients))) {
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 
-measures <- tibble(Abbreviation=c("MFQ", "ARI", "SCARED", "SHAPS", "LSAS", "VADIS", "RUM", "CHOCIR:S", "CHOCIR:I", "SEQ", "CONNERS", "SNAP", "CYBOCS:O", "CYBOCS:C"),
+measures <- tibble(Abbreviation=c("MFQ", "ARI", "SCARED", "SHAPS", "LSAS", "VADIS", "RUM", "CHOCIR:S", "CHOCIR:I", "SEQ", "CONNERS", 
+                                  "SNAP", "CYBOCS:O", "CYBOCS:C", "YGTSS:S", "YGTSS:T"),
                    Measure=c("Mood and Feelings Questionnaire", "Affective Reactivity Index", "Self-Report for Childhood Anxiety Related Emotional Disorders", 
                              "Snaith-Hamilton Pleasure Scale", "Liebowitz Social Anxiety Scale", "Child Depression Rating Scale", "Rumination Scale", 
                              "Obsession Compulsive Inventory Revised (symptom total)", "Obsession Compulsive Inventory Revised (impairment total)", 
                              "Self-efficacy Questionnaire", "Conners Comprehensive Behavior Rating Scale", "Swanson, Nolan and Pelham-IV Questionnaire", 
                              "Children's Yale-Brown Obsessive Compulsive Scale (obsessions subscale)", 
-                             "Children's Yale-Brown Obsessive Compulsive Scale (compulsions subscale)"))
+                             "Children's Yale-Brown Obsessive Compulsive Scale (compulsions subscale)", 
+                             "Yale Global Tic Severity Scale (severity subscale)", 
+                             "Yale Global Tic Severity Scale (total = severity + impairment)"))
 measure_table <- flextable(measures) %>% fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>% FitFlextableToPage2(.)
 cat(knit_print(measure_table))
 
@@ -249,7 +279,7 @@ cat(knit_print(measure_table))
 
 # removing finished variables
 
-rm(temp_demo, temp_meds, temp_psych, questionnaire_data, med_data, FitFlextableToPage2)
+rm(temp_demo, temp_meds, temp_psych, temp_daily_mfq, questionnaire_data, med_data, daily_mfq_data, FitFlextableToPage2)
 rm(med_repeats, med_temp, Participant, i, j, iter, iter2, medication_data, current_inpatients, psychometric_data, inpatient_list)
 
 ```

@@ -172,6 +172,10 @@
   manual_daily_mfq$s_mfq1d_date <- as.Date(manual_daily_mfq$s_mfq1d_date)
   manual_daily_mfq$s_mfq1d_time <- as.ITime(manual_daily_mfq$s_mfq1d_time)
   
+  manual_ygtss <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "YGTSS Tics", skip=2) %>% 
+    select(-starts_with("x"), -Entry_date) %>% rename(c_ygtss_date = "Measure_date") %>% mutate_all(as.character) %>% mutate(c_ygtss_source = "MANUAL")
+  manual_ygtss$c_ygtss_date <- as.Date(manual_ygtss$c_ygtss_date)
+  
   # Clean up -------------------------------------------
   
   # ****** SDQ+
@@ -2172,6 +2176,43 @@
     select(-measurement_TDiff_abs)
   
 #####
+# YGTSS - Yale Global Tic Severity Scale
+  
+  c_ygtss_subset_sdq <- manual_ygtss %>% select(Initials, SDAN, c_ygtss_date, c_ygtss_source, c_ygtss_number_motor:c_ygtss_impairment) %>%
+    distinct(., .keep_all = TRUE)
+
+  c_ygtss_subset_sdq[,5:ncol(c_ygtss_subset_sdq)] <- sapply(c_ygtss_subset_sdq[,5:ncol(c_ygtss_subset_sdq)], as.numeric)
+
+  c_ygtss_subset_sdq$no_columns <- c_ygtss_subset_sdq %>% select(c_ygtss_number_motor:c_ygtss_impairment) %>% ncol() %>% as.numeric()
+  c_ygtss_subset_sdq$NA_count <- c_ygtss_subset_sdq %>% select(c_ygtss_number_motor:c_ygtss_impairment) %>% apply(., 1, count_na)
+  c_ygtss_subset_sdq$diff <- c(c_ygtss_subset_sdq$no_columns - c_ygtss_subset_sdq$NA_count)
+  c_ygtss_subset_sdq <- c_ygtss_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  
+  c_ygtss_subset_sdq$c_ygtss_severity_tot <- c_ygtss_subset_sdq %>% select(c_ygtss_number_motor:c_ygtss_interference_phonic) %>% rowSums(na.rm=TRUE)
+  c_ygtss_subset_sdq$c_ygtss_tot <- c_ygtss_subset_sdq %>% select(c_ygtss_number_motor:c_ygtss_impairment) %>% rowSums(na.rm=TRUE)
+
+  c_ygtss_subset_sdq$c_ygtss_complete <- c_ygtss_subset_sdq %>% select(c_ygtss_number_motor:c_ygtss_impairment) %>% complete.cases(.)
+  c_ygtss_subset_sdq$c_ygtss_complete[c_ygtss_subset_sdq$c_ygtss_complete=="FALSE"] <- "0"
+  c_ygtss_subset_sdq$c_ygtss_complete[c_ygtss_subset_sdq$c_ygtss_complete=="TRUE"] <- "1"
+
+  c_ygtss_subset_clinical <- merge.default(clinical_DB_date, c_ygtss_subset_sdq, all=TRUE) %>% arrange(Initials, c_ygtss_date) %>%
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_ygtss_source, c_ygtss_date, matches('c_ygtss_'))
+
+  c_ygtss_subset_clinical$c_ygtss_TDiff <- as.numeric(difftime(c_ygtss_subset_clinical$Clinical_Visit_Date, c_ygtss_subset_clinical$c_ygtss_date, tz="", units = "days"))
+  c_ygtss_subset_clinical <- c_ygtss_subset_clinical %>%
+    mutate(measurement_TDiff_abs=abs(c_ygtss_TDiff)) %>%
+    group_by(Initials, Clinical_Visit_Date) %>%
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>%
+    slice(1) %>%
+    ungroup() %>%
+    group_by(Initials, c_ygtss_date) %>%
+    arrange(FIRST_NAME, LAST_NAME, Initials, c_ygtss_date, measurement_TDiff_abs) %>%
+    slice(1) %>%
+    ungroup() %>%
+    filter(measurement_TDiff_abs<=60) %>%
+    select(-measurement_TDiff_abs)
+  
+#####
 # Daily MFQ - inpatients only 
   
   s_mfq1d_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_mfq1d_')) %>% 
@@ -2200,7 +2241,7 @@
     select(FIRST_NAME, LAST_NAME, Initials, SDAN, DAWBA_ID, PLUSID, IRTA_tracker, Eligible, SEX, DOB, Handedness) %>% 
     group_by(Initials) %>% slice(1) %>% ungroup()
   
-  s_mfq1d_subset_clinical <- merge.default(demo_daily_mfq, s_mfq1d_subset, all=TRUE) %>% rename(s_mfq1d_source = source)
+  s_mfq1d_final <- merge.default(demo_daily_mfq, s_mfq1d_subset, all=TRUE) %>% rename(s_mfq1d_source = source)
   
 # Measures where no scoring is necessary ----------------------------------
   
@@ -2682,7 +2723,7 @@ MATCH_tracker$Eligible <- recode(MATCH_tracker$Eligible, "0"="Include", "5"="Exc
                               "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
                               "11"="Completed treatment", .missing = NULL)
 
-s_mfq1d_subset_clinical$Eligible <- recode(s_mfq1d_subset_clinical$Eligible, "0"="Include", "5"="Excluded: does not meet criteria",
+s_mfq1d_final$Eligible <- recode(s_mfq1d_final$Eligible, "0"="Include", "5"="Excluded: does not meet criteria",
                                  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
                                  "7"="Did not or withdrew assent/consent", "8"="Ruled as ineligible for treatment during baseline assessment (didn't meet inclusionary or met exclusionary criteria)",
                                  "9"="Patient (or parent) withdrew from treatment", "10"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
@@ -2742,8 +2783,8 @@ if (file_save_check_combined$date_diff[1]==0) {
   MATCH_tracker %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_Inpatient_updated.xlsx"))
 }
 
-s_mfq1d_subset_clinical %>% write_xlsx(paste0(inpatient_location, "MASTER_DATABASE_daily_MFQ.xlsx"))
-s_mfq1d_subset_clinical %>% write_xlsx(paste0(inpatient_backup, "MASTER_DATABASE_daily_MFQ_", todays_date_formatted, ".xlsx"))
+s_mfq1d_final %>% write_xlsx(paste0(inpatient_location, "MASTER_DATABASE_daily_MFQ.xlsx"))
+s_mfq1d_final %>% write_xlsx(paste0(inpatient_backup, "MASTER_DATABASE_daily_MFQ_", todays_date_formatted, ".xlsx"))
 
 # checking saved properly
 file_save_check <- list.files(path = paste0(inpatient_location), pattern = "^MASTER_DATABASE_daily_MFQ.xlsx", all.files = FALSE,
@@ -2756,7 +2797,7 @@ if (file_save_check_combined$date_diff[1]==0) {
   print("Exported as 'MASTER_DATABASE_daily_MFQ'")
 } else {
   print("Conflict: exporting as 'MASTER_DATABASE_daily_MFQ_updated'")
-  MATCH_tracker %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_daily_MFQ_updated.xlsx"))
+  s_mfq1d_final %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_daily_MFQ_updated.xlsx"))
 }
 
 # Creating tasks database & exporting ------------------------------------
