@@ -297,7 +297,7 @@ summary_mail_periods %>% kable(., col.names = c("Diagnosis", "Description", "Num
 
 ```
 
-Graph showing postcards
+Graph showing number of referrals since last BSC, with postcard mail-outs denoted
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, fig.width=12, fig.height=8}
 
@@ -310,14 +310,14 @@ referrals_final %>%
   scale_y_continuous(expand = c(0, 1)) +
   geom_vline(xintercept = (HV_postcards$date), size=1, colour="#FF0000") +
   geom_vline(xintercept = (MDD_postcards$date), size=1, colour="#000000") +
-  geom_text(aes(x=as.Date("2019-02-08"), label="189,000\n", y=22), colour="#000000", angle=90, text=element_text(size=9)) +
-  geom_text(aes(x=as.Date("2019-04-26"), label="108,000\n", y=22), colour="#FF0000", angle=90, text=element_text(size=9)) +
-  geom_text(aes(x=as.Date("2019-07-08"), label="50,000\n", y=22), colour="#FF0000", angle=90, text=element_text(size=9)) +
-  geom_text(aes(x=as.Date("2019-09-20"), label="150,000\n", y=22), colour="#000000", angle=90, text=element_text(size=9)) +
-  geom_text(aes(x=as.Date("2020-01-17"), label="150,000\n", y=22), colour="#000000", angle=90, text=element_text(size=9)) +
-  # ylim(0,23) +
-  theme_classic() +
-  ggtitle("Referrals since BSC\n") + ylab("Number of referrals\n") + xlab("\nDate\n") + labs(color = "Diagnosis")
+  geom_text(aes(x=as.Date("2019-02-08"), label="189,000\n", y=22), colour="#000000", angle=90, text=element_text(size=10)) +
+  geom_text(aes(x=as.Date("2019-04-26"), label="108,000\n", y=22), colour="#FF0000", angle=90, text=element_text(size=10)) +
+  geom_text(aes(x=as.Date("2019-07-08"), label="50,000\n", y=22), colour="#FF0000", angle=90, text=element_text(size=10)) +
+  geom_text(aes(x=as.Date("2019-09-20"), label="150,000\n", y=22), colour="#000000", angle=90, text=element_text(size=10)) +
+  geom_text(aes(x=as.Date("2020-01-17"), label="150,000\n", y=22), colour="#000000", angle=90, text=element_text(size=10)) +
+  theme_classic() + ylab("Number of referrals\n") + xlab("\nDate\n") + labs(color = "Diagnosis") +
+  theme(axis.text.x = element_text(size=13), axis.text.y = element_text(size=13), 
+        axis.title.x = element_text(size = 16), axis.title.y = element_text(size = 16))
 
 ```
 

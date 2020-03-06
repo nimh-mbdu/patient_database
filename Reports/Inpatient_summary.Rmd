@@ -2,8 +2,8 @@
 output:
   word_document:
     fig_caption: yes
-    fig_height: 5
-    fig_width: 7
+    # fig_height: 5
+    # fig_width: 9
     reference_docx: template.docx
   html_document:
     df_print: paged
@@ -127,7 +127,7 @@ psychometric_data[,7:ncol(psychometric_data)] <- sapply(psychometric_data[,7:nco
 
 # daily MFQs
 daily_mfqs <- s_mfq1d_final %>% filter(Initials %in% inpatient_list) %>% 
-  select(Initials, s_mfq1d_date, s_mfq1d_date3, s_mfq1d_tot) %>% arrange(s_mfq1d_date)
+  select(Initials, s_mfq1d_date, s_mfq1d_date3, s_mfq1d_tot) %>% mutate(s_mfq1d_tot = as.numeric(s_mfq1d_tot)) %>% arrange(s_mfq1d_date)
 
 # medications 
 medication_data <- MATCH_tracker %>% filter(Initials %in% inpatient_list) %>% 
@@ -207,7 +207,7 @@ FitFlextableToPage2 <- function(ft, pgwidth = 10){
 
 ***
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis", fig.width=10, fig.height=6}
 
 for(i in seq(nrow(current_inpatients))) {
   # iter=1
@@ -217,7 +217,7 @@ for(i in seq(nrow(current_inpatients))) {
   temp_demo <- current_inpatients %>% filter(Initials==Participant)
   temp_meds <- medication_data %>% filter(Initials==Participant) %>% arrange(as.numeric(Clinical_Visit_Number))
   temp_psych <- psychometric_data %>% filter(Initials==Participant) %>% arrange(as.numeric(Clinical_Visit_Number))
-  temp_daily_mfq <- daily_mfqs %>% filter(Initials==Participant) %>% arrange(as.numeric(s_mfq1d_date))
+  temp_daily_mfq <- daily_mfqs %>% filter(Initials==Participant)
 
   cat("  \n",  "  \n###",  iter, "->", as.character(temp_demo[1,1]), as.character(temp_demo[1,2]), "(", as.character(temp_demo[1,3]), ")", "-> SDAN:", 
       as.character(temp_demo[1,4]), "-> Age:", as.character(temp_demo[1,5]), "-> Sex:", as.character(temp_demo[1,6]), "-> Diagnosis:", as.character(temp_demo[1,7]), 
@@ -230,8 +230,9 @@ for(i in seq(nrow(current_inpatients))) {
   cat(knit_print(med_data))
 
   cat("  \nInpatient scores:")
-  questionnaire_data <- flextable(temp_psych, col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", 
-      "s_lsas_tot", "s_vadis_tot", "s_rumination_tot", "s_chocir_symptom_tot", "s_chocir_impairment_tot", "s_seq_tot", "p_conners_tot", "c_snap_tot", "c_cybocs_ob_tot",
+  questionnaire_data <- flextable(temp_psych, col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", 
+      "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", "s_lsas_tot", "s_vadis_tot", "s_rumination_tot", "s_chocir_symptom_tot", 
+      "s_chocir_impairment_tot", "s_seq_tot", "p_conners_tot", "c_snap_tot", "c_cybocs_ob_tot",
       "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot")) %>% 
     set_header_labels(., Clinical_Visit_Number="Week",  Clinical_Visit_Date2="Date", s_mfq1w_tot="MFQ", s_ari1w_tot="ARI",
        s_scared_tot="SCARED", s_shaps_tot="SHAPS", s_lsas_tot="LSAS", s_vadis_tot="VADIS", s_rumination_tot="RUM", s_chocir_symptom_tot="CHOCIR:S",
@@ -244,11 +245,18 @@ for(i in seq(nrow(current_inpatients))) {
     FitFlextableToPage2(.)
   cat(knit_print(questionnaire_data))
   
-  cat("  \nDaily MFQs:")
-  daily_mfq_data <- flextable(temp_daily_mfq, col_keys = c("s_mfq1d_date3", "s_mfq1d_tot")) %>%
-    set_header_labels(., s_mfq1d_date3="Date", s_mfq1d_tot="Daily MFQ total") %>%
-    fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>% FitFlextableToPage2(.)
-  cat(knit_print(daily_mfq_data))
+  # cat("  \nDaily MFQs:  \n")
+  # daily_mfq_data <- flextable(temp_daily_mfq, col_keys = c("s_mfq1d_date3", "s_mfq1d_tot")) %>%
+  #   set_header_labels(., s_mfq1d_date3="Date", s_mfq1d_tot="Daily MFQ total") %>%
+  #   fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>% FitFlextableToPage2(.)
+  # cat(knit_print(daily_mfq_data))
+  
+  cat("  \n")
+  daily_mfq_graph <- temp_daily_mfq %>% 
+    ggplot(aes(x = s_mfq1d_date, y = s_mfq1d_tot)) + geom_point(size=3) + geom_line(size=0.25) +
+    scale_x_date(date_break = "1 week", date_labels = "%d/%m") + geom_text(aes(label=s_mfq1d_tot), hjust=0, vjust=-1) +
+    ylim(0,27) + theme_classic() + ggtitle("Daily MFQ\n") + ylab("MFQ total\n") + xlab("\nDate\n")
+  knit_print(daily_mfq_graph)
   
   cat("  \n",  "  \n***")
 
@@ -279,7 +287,8 @@ cat(knit_print(measure_table))
 
 # removing finished variables
 
-rm(temp_demo, temp_meds, temp_psych, temp_daily_mfq, questionnaire_data, med_data, daily_mfq_data, FitFlextableToPage2)
+rm(temp_demo, temp_meds, temp_psych, temp_daily_mfq, questionnaire_data, med_data, FitFlextableToPage2)
 rm(med_repeats, med_temp, Participant, i, j, iter, iter2, medication_data, current_inpatients, psychometric_data, inpatient_list)
+# daily_mfq_data
 
 ```
