@@ -2248,7 +2248,7 @@
   variables_no_scoring <- c('c_family_hist_', 'p_demo_eval_', 'p_demo_screen_', 'c_blood_', 's_menstruation_', 
                             's_middebrief_', 's_mar_', 's_rsdebrief_', 's_mmidebrief_', 's_medsscan_', 's_after_ba_', 
                             's_before_ba_', 's_srsors_', 'c_inpatient_ratings_', 'c_cgas_', 'c_cgi_', 's_fua_', 'p_fua_', 
-                            'ksads_', 'p_dawba_bdd_', 's_dawba_bdd_', 's_medsctdb_', 'c_family_interview_')
+                            'ksads_', 'p_dawba_bdd_', 's_dawba_bdd_', 's_medsctdb_', 'c_family_interview_', 's_suicide_')
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
@@ -2272,7 +2272,7 @@
     }
 
     if (measure_name=="p_demo_eval_" | measure_name=="s_menstruation_" | measure_name=="s_middebrief_" | measure_name=="s_mar_" |
-        measure_name=="s_fua_" | measure_name=="p_fua_") {
+        measure_name=="s_fua_" | measure_name=="p_fua_" | measure_name=="s_suicide_") {
       print("creating date variable for measure")
       measure_temp$date_temp <- measure_temp$Overall_date
       measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
@@ -2383,7 +2383,7 @@
 
     if (measure_name=="s_after_ba_" | measure_name=="s_before_ba_" | measure_name=="s_srsors_" | 
         measure_name=="c_inpatient_" | measure_name=="c_cgi_" | measure_name=="s_fua_" | measure_name=="p_fua_" |
-        measure_name=="p_dawba_bdd_" | measure_name=="s_dawba_bdd_" | measure_name=="c_family_interview_" ) {
+        measure_name=="p_dawba_bdd_" | measure_name=="s_dawba_bdd_" | measure_name=="c_family_interview_" | measure_name=="s_suicide_") {
       
       print("clinical measure only - not for tasks database")
       

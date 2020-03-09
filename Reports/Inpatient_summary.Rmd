@@ -238,7 +238,7 @@ for(i in seq(nrow(current_inpatients))) {
        s_scared_tot="SCARED", s_shaps_tot="SHAPS", s_lsas_tot="LSAS", s_vadis_tot="VADIS", s_rumination_tot="RUM", s_chocir_symptom_tot="CHOCIR:S",
        s_chocir_impairment_tot="CHOCIR:I", s_seq_tot="SEQ", p_conners_tot="CONNERS", c_snap_tot="SNAP", c_cybocs_ob_tot="CYBOCS:O",
        c_cybocs_com_tot="CYBOCS:C", c_ygtss_severity_tot="YGTSS:S", c_ygtss_tot="YGTSS:T") %>% 
-    colformat_num(col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot",
+    colformat_num(j = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot",
       "s_shaps_tot", "s_lsas_tot", "s_vadis_tot", "s_rumination_tot", "s_chocir_symptom_tot", "s_chocir_impairment_tot", "s_seq_tot", "p_conners_tot", "c_snap_tot",
       "c_cybocs_ob_tot", "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot"), digits = 0, na_str = "") %>% 
     fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>%
