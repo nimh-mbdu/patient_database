@@ -5,7 +5,7 @@ rm(list = ls()) # command to clear all variables from R environment
 # directories -------------------------------------------------------------
 
 # what device are you running this script on? 
-computer = 'pc' # set this to either 'mac' or 'pc' or 'other' (Georgia = W:/ as I have string mounted differently)
+computer = 'pc' # set this to either 'mac' or 'pc' or 'other'
 
 if (computer=="pc") {
   string = 'W:/'
@@ -121,27 +121,14 @@ FitFlextableToPage <- function(ft, pgwidth = 10){
 # modules to run ----------------------------------------------------------
 
 modules2run <- c(to_change$modules2run)
-# to overwrite the above, uncomment the below and enter number that you want to run isntead - reference the list below
+# to overwrite the above, uncomment the below and enter number that you want to run instead
 # modules2run <- c(1)
 
-# description of modules: 
-# 0 = none
-# 1 = "update master IRTA tracker and tasks database" = string-mbd/Database/Database_Scripts_Github/IRTA_Merge_Code.R
-# 2 = "update master database" = string-mbd/Database/Database_Scripts_Github/Database_code.R
-# 3 = "update DAWBA database & deletion list" = string-mbd/Database/Database_Scripts_Github/DAWBA_database_and_deletions.R
-# 4 = "produce weekly numbers" = string-mbd/Database/Database_Scripts_Github/Research_meeting_numbers.R
-# 5 = all of the above
-# 6 = modules 1 & 2
-# 7 = update master database & create CBT progress report - remember to change input the initials of the participant above & specify whether you want a progress or final report 
-# 8 = create CBT report only (master database already updated)
-# 9 = modules 1 & 4
-# 10 = generate clinician meeting sheet
-# 11 = modules 1 & 10
-# 12 = create inpatient summary sheet 
+# description of modules: see 'to_change_before_running_master_script.xlsx'
 
 # update master IRTA tracker and tasks database ---------------------------
 
-if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2run==11 | modules2run==13) {
+if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2run==11 | modules2run==13 | modules2run==15) {
   
   suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
   
@@ -162,7 +149,7 @@ if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2
 
 # update master database --------------------------------------------------
 
-if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7 | modules2run==13) {
+if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7 | modules2run==13 | modules2run==15) {
 
   suppressWarnings(source(paste0(scripts, 'Database_code.R')))
   
@@ -301,6 +288,21 @@ if (modules2run==12 | modules2run==13) {
   
   print("Inpatient summary not produced - NA")
   
+}
+
+# produce clinician supervision sheet: all treatment ----------------------
+
+if (modules2run==14 | modules2run==15) {
+  
+  suppressPackageStartupMessages(library(flextable))
+  render(paste0(scripts, 'Reports/All_treatment_summary.Rmd'), output_format = "word_document",
+         output_file = paste0("Clinician_supervision_", todays_date_formatted), output_dir = paste0(string, "Psychotherapy/Supervision/"))
+  detach(package:flextable)
+  
+} else {
+  
+  print("Treatment summary not produced - NA")
+
 }
 
 # end ---------------------------------------------------------------------
