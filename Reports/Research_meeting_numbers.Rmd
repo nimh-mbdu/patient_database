@@ -558,7 +558,7 @@ protocol_table2 %>% kable(., col.names = c("Diagnosis", "Signed into Characteriz
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
 baseline <- Psychometrics_treatment %>% 
-  select(Initials, IRTA_tracker, Participant_Type2, Protocol, Eligible, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_visit_type, c_ksadsdx_date) %>% 
+  select(Initials, IRTA_tracker, Participant_Type2, Protocol, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_visit_type, c_ksadsdx_date) %>% 
   filter(!is.na(c_ksadsdx_visit_type) & c_ksadsdx_visit_type != "Inpatient Treatment" & c_ksadsdx_visit_type != "Outpatient Treatment")
 baseline$Clinical_Visit_Date <- as.Date(baseline$Clinical_Visit_Date)
 baseline$c_ksadsdx_date <- as.Date(baseline$c_ksadsdx_date)
@@ -567,10 +567,15 @@ baseline <- baseline %>% mutate(measurement_TDiff_abs=abs(c_ksadsdx_TDiff)) %>%
   group_by(Initials, c_ksadsdx_visit_type) %>% arrange(Initials, c_ksadsdx_visit_type, measurement_TDiff_abs) %>% 
   slice(1) %>% ungroup() %>% select(-measurement_TDiff_abs) %>% arrange(Initials, Clinical_Visit_Date)
 
-baseline_removed <- baseline %>% group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% filter(IRTA_tracker=="REMOVED" | n()==1) %>% ungroup() %>% 
-  filter(IRTA_tracker=="REMOVED" | !str_detect(Protocol, "0037") | str_detect(Protocol, "SCREENING") |
-           Eligible =="4" | Eligible =="5" | Eligible =="6" | Eligible =="7") 
-removed_initials <- baseline_removed$Initials
+latest_eligibility <- Psychometrics_treatment %>% select(Initials, Eligible, IRTA_tracker, Clinical_Visit_Type, Clinical_Visit_Date, Protocol) %>% 
+  group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% slice(n()) %>% ungroup() %>% mutate(Eligible = as.numeric(Eligible))
+baseline <- latest_eligibility %>% select(Initials, Eligible) %>% merge.default(baseline, ., all=TRUE)
+latest_eligibility <- latest_eligibility %>% mutate(remove1 = ifelse((Eligible > 3 & Eligible < 11), 1, 0))
+latest_eligibility <- latest_eligibility %>% mutate(remove2 = ifelse((IRTA_tracker == "REMOVED"), 1, 0))
+latest_eligibility <- latest_eligibility %>% mutate(remove3 = ifelse((!str_detect(Protocol, "0037") | str_detect(Protocol, "SCREENING")), 1, 0))
+latest_eligibility[,7:9] <- lapply(latest_eligibility[7:9], replace_na, 0)
+latest_eligibility <- latest_eligibility %>% mutate(remove=(remove1 + remove2 + remove3)) %>% filter(remove>0)
+removed_initials <- latest_eligibility$Initials
 baseline$exclude <- (baseline$Initials %in% removed_initials) %>% as.character()
 
 #### completed annual FU visit 
@@ -621,7 +626,9 @@ temp3 <- merge.default(temp2, descrip_table, all=TRUE) %>%
   select(Descrip, Date, MDD, MDD_percent, HV, HV_percent, Total)
 temp3$Descrip <- replace_na(temp3$Descrip, "Total")
 
-overdue <- baseline_keep %>% filter(status==1) %>% select(Initials, IRTA_tracker, Participant_Type2, expt_FU_date_TDiff)
+overdue <- baseline_keep %>% filter(status==1) %>% select(Initials, IRTA_tracker, Participant_Type2, Eligible, expt_FU_date_TDiff) %>% filter(Initials!="ANHY")
+overdue$Eligible <- recode(overdue$Eligible, "0"="Include: fully eligible", "1"="Include: can’t scan (braces, etc.)", 
+  "2"="On hold: contact again after specified amount of time", "3"="On hold: low priority", "11"="Completed treatment", .missing = NULL)
 
 rm(baseline, baseline_removed, removed_initials, FU_completed, baseline_keep, temp1, temp2, rest_temp, date_temp, descrip_table, 
    MDD_one_year, MDD_two_year, HV_one_year, HV_two_year)
@@ -655,7 +662,7 @@ Participants long overdue for clinical follow up
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-overdue %>% arrange(expt_FU_date_TDiff) %>% kable(., col.names = c("Initials", "IRTA", "Diagnosis", "Days overdue")) %>%
+overdue %>% arrange(expt_FU_date_TDiff) %>% kable(., col.names = c("Initials", "IRTA", "Diagnosis", "Eligibility", "Days overdue")) %>%
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```

@@ -23,10 +23,11 @@ scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful dire
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here 
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
 weekly_numbers_location = paste0(string, "Minutes and conversation archives/Weekly Meeting Sheet/")
-clinician_sheet_location = paste0(string, "Minutes and conversation archives/Thursday Clinical Meetings/Clinician Sheet/")
+clinician_sheet_location = paste0(string, "Patient Information/Clinician Sheet/")
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring 
 graphs_location = paste0(database_location, "graphs/")
-
+clinician_supervision_location = paste0(string, "Psychotherapy/Supervision/")
+  
 # other data: 
 imputed_mfqs = paste0(database_location, 'other_data_never_delete/IMPUTED_MFQ_NEVER_DELETE.csv')
 data_23495 = paste0(database_location, 'other_data_never_delete/4711-5358-6649-5157_23495_pull_03222019_01-M-0192.xlsx') # this is the data we pulled from SDQ for the participant who signed into 0192 as an adult
@@ -50,7 +51,7 @@ CBT_location = paste0(database_location, "CBT/")
 CBT_backup = paste0(CBT_location, "Backup/") 
 saving_reports = paste0(CBT_location, "Reports/")
 
-# related to the CBT database
+# related to the Inpatient database
 inpatient_location = paste0(database_location, "Inpatient/") 
 inpatient_backup = paste0(inpatient_location, "Backup/") 
 inpatient_summary_location = paste0(inpatient_location, "Reports/")
@@ -85,7 +86,7 @@ suppressPackageStartupMessages(library(chron))
 
 # things to check and may need to modify before running -------------------
 
-to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.xlsx"))
+to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.xlsx"), sheet = "info")
 
 # date
 todays_date_formatted <- c(to_change$todays_date_formatted)
@@ -188,7 +189,7 @@ if (modules2run==4 | modules2run==5 | modules2run==9) {
   render(paste0(scripts, 'Reports/Research_meeting_numbers.Rmd'), 
          output_format = "html_document",
          # output_format = "word_document", 
-         output_file = paste0("Weekly_Numbers_", todays_date_formatted), output_dir = weekly_numbers_location)
+         output_file = paste0("Weekly_Numbers2_", todays_date_formatted), output_dir = weekly_numbers_location)
   detach(package:kableExtra)
   
 } else {
@@ -296,7 +297,7 @@ if (modules2run==14 | modules2run==15) {
   
   suppressPackageStartupMessages(library(flextable))
   render(paste0(scripts, 'Reports/All_treatment_summary.Rmd'), output_format = "word_document",
-         output_file = paste0("Clinician_supervision_", todays_date_formatted), output_dir = paste0(string, "Psychotherapy/Supervision/"))
+         output_file = paste0("Clinician_supervision_", todays_date_formatted), output_dir = clinician_supervision_location)
   detach(package:flextable)
   
 } else {
