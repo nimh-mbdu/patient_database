@@ -693,8 +693,7 @@
   s_shaps_subset_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), s_shaps_subset_sdq$date_temp, tz="", units = "days"))
   temp_before <- s_shaps_subset_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp, -date_temp_diff)
   s_shaps_subset_sdq <- s_shaps_subset_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp, -date_temp_diff)
-  temp_before[,5:ncol(temp_before)]  <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `3`=5, `2`=6, `1`=2, `0`=3, .missing = NULL))
-  temp_before[,5:ncol(temp_before)]  <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `5`=0, `6`=1, `2`=2, `3`=3, .missing = NULL))
+  temp_before[,5:ncol(temp_before)]  <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `3`=0, `2`=1, `1`=2, `0`=3, .missing = NULL))
   s_shaps_subset_sdq <- merge.default(s_shaps_subset_sdq, temp_before, all=TRUE)
 
   s_shaps_binary <- s_shaps_subset_sdq
@@ -1242,8 +1241,7 @@
         select(PLUSID:source, s_promis_1_restless, s_promis_4_falling_asleep, s_promis_5_troublesleeping, s_promis_8_stayingasleep,
                s_promis_2_satisfied, s_promis_3_refreshing, s_promis_6_enough_sleep, s_promis_7_quality)
       measure_temp_sdq[,5:8] <- lapply(measure_temp_sdq[,5:8], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
-      measure_temp_sdq[,9:12] <- lapply(measure_temp_sdq[,9:12], FUN = function(x) recode(x, `0`=5, `1`=9, `2`=8, `3`=2, `4`=1, .missing = NULL))
-      measure_temp_sdq[,9:12] <- lapply(measure_temp_sdq[,9:12], FUN = function(x) recode(x, `5`=5, `9`=4, `8`=3, `2`=2, `1`=1, .missing = NULL))
+      measure_temp_sdq[,9:12] <- lapply(measure_temp_sdq[,9:12], FUN = function(x) recode(x, `0`=5, `1`=4, `2`=3, `3`=2, `4`=1, .missing = NULL))
     } else if (measure_name=="s_mpss_") {
       print("recoding measure")
       measure_temp_sdq[,5:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `6`=7, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
@@ -1256,8 +1254,7 @@
                s_bads_13_time_thinking, s_bads_14_not_tried_solutions, s_bads_15_think_past, s_bads_16_didnt_see_friends, s_bads_17_array_activities,
                s_bads_18_not_social, s_bads_19_pushed_people, s_bads_20_cut_off_from_people, s_bads_21_time_off, s_bads_22_not_active, s_bads_24_distract, 
                s_bads_25_felt_bad)
-      measure_temp_sdq[,12:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,12:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `0`=7, `1`=8, `2`=9, `3`=3, `4`=2, `5`=1, `6`=0, .missing = NULL))
-      measure_temp_sdq[,12:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,12:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `7`=6, `8`=5, `9`=4, `3`=3, `2`=2, `1`=1, `0`=0, .missing = NULL))
+      measure_temp_sdq[,12:ncol(measure_temp_sdq)]  <- lapply(measure_temp_sdq[,12:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `0`=6, `1`=5, `2`=4, `3`=3, `4`=2, `5`=1, `6`=0, .missing = NULL))
     } else if (measure_name=="s_chs_") {
       print("recoding measure")
       # recoding CHS scores from SDQ that were obtained before June 22nd 2018: coding went from 0-5 -> 1-6
@@ -1266,6 +1263,10 @@
       measure_temp_sdq <- measure_temp_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp_diff)
       temp_before[,5:ncol(temp_before)] <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
       measure_temp_sdq <- merge.default(measure_temp_sdq, temp_before, all=TRUE)
+    } else if (measure_name=="s_covid19_") {
+      print("recoding measure")
+      measure_temp_sdq[,8:9]  <- lapply(measure_temp_sdq[,8:9], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
+      measure_temp_sdq[,18:19]  <- lapply(measure_temp_sdq[,18:19], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
     } else {
       print("no recoding necessary for this measure")
     }
@@ -1313,8 +1314,8 @@
       measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
       measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-      
-      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_9_hopeful_vaccine) %>% rowSums(na.rm=TRUE)
+  
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine) %>% rowSums(na.rm=TRUE)
       
       measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
       measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
@@ -1401,8 +1402,7 @@
     measure_temp_sdq$date_temp_diff <- as.numeric(difftime(as.Date("2018-06-22"), measure_temp_sdq$date_temp, tz="", units = "days"))
     temp_before <- measure_temp_sdq %>% filter(date_temp_diff>-1 & source=="SDQ") %>% select(-date_temp_diff)
     measure_temp_sdq <- measure_temp_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp_diff)
-    temp_before[how_columns] <- lapply(temp_before[how_columns], FUN = function(x) recode(x, `5`=-3, `4`=-2, `3`=-1, `2`=8, `1`=2, `0`=3, .missing = NULL))
-    temp_before[how_columns] <- lapply(temp_before[how_columns], FUN = function(x) recode(x, `-3`=-3, `-2`=-2, `-1`=-1, `8`=1, `2`=2, `3`=3, .missing = NULL))
+    temp_before[how_columns] <- lapply(temp_before[how_columns], FUN = function(x) recode(x, `5`=-3, `4`=-2, `3`=-1, `2`=1, `1`=2, `0`=3, .missing = NULL))
     measure_temp_sdq <- merge.default(measure_temp_sdq, temp_before, all=TRUE)
 
     measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches("_if")) %>% rowSums(na.rm=TRUE)
@@ -1573,13 +1573,11 @@
     if (measure_name == "p_fad_") {
       measure_temp_sdq[,7:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,7:ncol(measure_temp_sdq)], as.numeric) 
       measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, p_fad_parent, p_fad_parent_other, matches(fad_normal), matches(fad_reverse))
-      measure_temp_sdq[,32:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,32:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
-      measure_temp_sdq[,32:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,32:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
+      measure_temp_sdq[,32:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,32:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=4, `2`=3, `3`=2, `4`=1, .missing = NULL))
     } else {
       measure_temp_sdq[,5:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], as.numeric) 
       measure_temp_sdq <- measure_temp_sdq %>% select(PLUSID:Overall_date, matches(fad_normal), matches(fad_reverse))
-      measure_temp_sdq[,30:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,30:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=5, `2`=6, `3`=2, `4`=1, .missing = NULL))
-      measure_temp_sdq[,30:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,30:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `5`=4, `6`=3, `2`=2, `1`=1, .missing = NULL))
+      measure_temp_sdq[,30:ncol(measure_temp_sdq)] <- lapply(measure_temp_sdq[,30:ncol(measure_temp_sdq)], FUN = function(x) recode(x, `1`=4, `2`=3, `3`=2, `4`=1, .missing = NULL))
     }
     
     problem_solving <- c("_2_|_12_|_24_|_38_|_50_|_60_")
