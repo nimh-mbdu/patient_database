@@ -168,14 +168,19 @@
   manual_combined$c_ksadsdx_date <- as.Date(manual_combined$c_ksadsdx_date, "%d-%m-%Y")
   manual_combined$c_ksadsdx_epset_baseline_visit_date <- as.Date(manual_combined$c_ksadsdx_epset_baseline_visit_date, "%d-%m-%Y")
   
-  manual_daily_mfq <- read_excel(paste0(database_location, "other_data_never_delete/inpatient_daily_mfq_manual_entry_2020-03-03.xlsx")) %>% mutate_all(as.character)
+  manual_daily_mfq <- read_excel(paste0(database_location, "other_data_never_delete/inpatient_daily_mfq_manual_entry_2020-03-03.xlsx")) %>% 
+    mutate_all(as.character) %>% mutate(source = "MANUAL") 
   manual_daily_mfq$s_mfq1d_date <- as.Date(manual_daily_mfq$s_mfq1d_date)
   manual_daily_mfq$s_mfq1d_time <- as.ITime(manual_daily_mfq$s_mfq1d_time)
   
+  manual_dawba_suicide <- read_excel(paste0(database_location, "other_data_never_delete/dawba_suicide_manual_entry_2020-03-16.xlsx")) %>% 
+    mutate_all(as.character) %>% rename(date_temp="s_suicide_date")
+  manual_dawba_suicide$date_temp <- as.Date(manual_dawba_suicide$date_temp)
+
   manual_ygtss <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "YGTSS Tics", skip=2) %>% 
-    select(-starts_with("x"), -Entry_date) %>% rename(c_ygtss_date = "Measure_date") %>% mutate_all(as.character) %>% mutate(c_ygtss_source = "MANUAL")
+    select(-starts_with("x"), -Entry_date) %>% rename(c_ygtss_date = "Measure_date") %>% mutate_all(as.character) %>% mutate(c_ygtss_source = "MANUAL") 
   manual_ygtss$c_ygtss_date <- as.Date(manual_ygtss$c_ygtss_date)
-  
+
   # Clean up -------------------------------------------
   
   # ****** SDQ+
@@ -280,6 +285,9 @@
   
   manual_db_w_names <- left_join(common_identifiers_child, manual_combined, all=TRUE) %>% 
     mutate(source = "MANUAL") %>% filter(!is.na(Overall_date))
+  
+  manual_suicide_w_names <- left_join(common_identifiers_child, manual_dawba_suicide, all=TRUE) %>% 
+    mutate(source = "MANUAL") %>% filter(!is.na(date_temp))
   
   #******   
   
@@ -1202,11 +1210,11 @@
 #####
 # straightforward total sum
   
-  tot_sum_clin <- c('c_cadam_', 's_chs_', 's_vadis_', 'c_cdrs_', 's_rumination_', 's_promis_', 's_mpss_', 's_bads_', 's_asswr_', 's_aai_', 'p_conners_', 's_cfs_')
+  tot_sum_clin <- c('c_cadam_', 's_chs_', 's_vadis_', 'c_cdrs_', 's_rumination_', 's_promis_', 's_mpss_', 's_bads_', 's_asswr_', 's_aai_', 'p_conners_', 's_cfs_', 's_covid19_')
 
   for(i in seq_along(tot_sum_clin)) {
     iter <- as.numeric(i)
-    # iter=2
+    # iter=13
     measure_name <- tot_sum_clin[iter]
     
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
@@ -1214,7 +1222,7 @@
       distinct(., .keep_all = TRUE)
     
     if (measure_name=="s_chs_" | measure_name=="s_promis_" | measure_name=="s_mpss_" | measure_name=="s_bads_" | 
-        measure_name=="s_asswr_" | measure_name=="s_aai_") {
+        measure_name=="s_asswr_" | measure_name=="s_aai_" | measure_name=="s_covid19_") {
       print("creating date variable for measure")
       measure_temp_sdq$date_temp <- measure_temp_sdq$Overall_date
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
@@ -1296,6 +1304,22 @@
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
       
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(p_conners_1_angry:p_conners_80_blurts_answers) %>% rowSums(na.rm=TRUE)
+      
+    } else if (measure_name=="s_covid19_") {
+      
+      measure_temp_sdq[,5:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], as.numeric)
+      
+      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
+      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+      measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
+      measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_9_hopeful_vaccine) %>% rowSums(na.rm=TRUE)
+      
+      measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
+      measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
+      measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "tempcomplete"] <- (paste0(measure_name, "complete"))
       
     } else {
       
@@ -2217,8 +2241,7 @@
   
   s_mfq1d_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_mfq1d_')) %>% 
     distinct(., .keep_all = TRUE) %>% rename(s_mfq1d_date = Overall_date)
-  manual_daily_mfq <- manual_daily_mfq %>% mutate(source = "MANUAL") %>% 
-    select(PLUSID, Initials, source, s_mfq1d_date, s_mfq1d_adjusted_date, s_mfq1d_1_unhappy:s_mfq1d_13_all_wrong, s_mfq1d_manual_tot)
+  manual_daily_mfq <- manual_daily_mfq %>% select(PLUSID, Initials, source, s_mfq1d_date, s_mfq1d_adjusted_date, s_mfq1d_1_unhappy:s_mfq1d_13_all_wrong, s_mfq1d_manual_tot)
   
   s_mfq1d_subset_sdq[,5:17] <- sapply(s_mfq1d_subset_sdq[,5:17], as.numeric) 
   manual_daily_mfq[,6:19] <- sapply(manual_daily_mfq[,6:19], as.numeric)
@@ -2252,7 +2275,7 @@
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
-    # iter=23
+    # iter=24
     measure_name <- variables_no_scoring[iter]
     print(paste("************************LOOP = ", measure_name))
 
@@ -2340,10 +2363,12 @@
     }  
       
     if (measure_name=="p_demo_eval_"){
-      measure_temp$p_demo_eval_6_race <- gsub("while", "white",measure_temp$p_demo_eval_6_race)
+      measure_temp$p_demo_eval_6_race <- gsub("while", "white", measure_temp$p_demo_eval_6_race)
       measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
         rename(date_temp="Overall_date") %>% filter(!is.na(p_demo_eval_6_race) | !is.na(p_demo_eval_7_hispanic))
       measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
+    } else if (measure_name=="s_suicide_"){
+      measure_temp <- merge.default(measure_temp, manual_suicide_w_names, all=TRUE) %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
     }
       
     if (measure_name=="s_medsctdb_") {
@@ -2520,7 +2545,7 @@
       assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
       
     } else if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
-      measure_name=="c_ksadsdx_" | measure_name=="ksads_" | measure_name=="c_family_interview_" ) {
+      measure_name=="c_ksadsdx_" | measure_name=="ksads_" | measure_name=="c_family_interview_") {
       
       print("creating clinical subset")
       
