@@ -189,7 +189,7 @@ if (modules2run==4 | modules2run==5 | modules2run==9) {
   render(paste0(scripts, 'Reports/Research_meeting_numbers.Rmd'), 
          output_format = "html_document",
          # output_format = "word_document", 
-         output_file = paste0("Weekly_Numbers2_", todays_date_formatted), output_dir = weekly_numbers_location)
+         output_file = paste0("Weekly_Numbers_", todays_date_formatted), output_dir = weekly_numbers_location)
   detach(package:kableExtra)
   
 } else {
@@ -309,3 +309,4 @@ if (modules2run==14 | modules2run==15) {
 # end ---------------------------------------------------------------------
 
 rm(to_change)
+

@@ -158,15 +158,16 @@ if (exists("Psychometrics_treatment")==FALSE) {
         Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
           Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
+        covid19 <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, s_covid19_date, s_covid19_tot, s_covid19_11_exposed, s_covid19_12_infected) %>% filter(!is.na(s_covid19_tot))
         rm(master_database_file, master_database_file_time, master_database_combined)
 } else {
         print("clinical database info already imported")
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
           Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
+        covid19 <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, s_covid19_date, s_covid19_tot, s_covid19_11_exposed, s_covid19_12_infected) %>% filter(!is.na(s_covid19_tot))
 }
 
 if (exists("MEG_mprage")==FALSE) {
-  
         meg_mprage_file <- list.files(path = paste0(IRTA_tracker_location, "QCing/"), pattern = "^MEG_need_mprage", all.files = FALSE,
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
         meg_mprage_file_time <- file.mtime(paste0(IRTA_tracker_location, "QCing/", meg_mprage_file)) %>% as.Date()
@@ -961,6 +962,39 @@ family_hist_table2 %>% kable(., col.names = c("Clinical Visit Type", "MDD", "%",
 
 ***
 
+##### COVID19 questionnaire completion:
+
+Numbers as of last SDQ+ pull (`r Psychometrics_date`). 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+covid19_latest <- covid19 %>% group_by(Initials) %>% arrange(s_covid19_date) %>% slice(n()) %>% ungroup() %>% filter(s_covid19_date > last_week_date_formatted)
+covid19_latest[,5:6]  <- lapply(covid19_latest[,5:6], FUN = function(x) recode(x, `1`= "Yes", `0`= "No", .missing = NULL))
+
+covid19_table <- covid19 %>% group_by(Initials, IRTA_tracker) %>% tally()
+
+rm(covid19)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+covid19_table %>% kable(., col.names = c("Initials", "IRTA", "Freq")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Latest scores (where questionnaire max total = 150):
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+covid19_latest %>% kable(., col.names = c("Initials", "IRTA", "Date completed", "Total", "Exposed", "Infected")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
 #### 3. Treatment Numbers 
 
 ***
@@ -1087,7 +1121,7 @@ current_inpatients %>% kable(., col.names = c("Initials", "Last Week Recorded", 
 
 rm(screens_table2, screens_current_table, ready_2_review, scheduled, scheduling_table2, protocol_table2, 
    inpatients_table, combined, meg_mmi_table2, meg_mmi_upcoming, bloods_table2, 
-   current_outpatients, current_inpatients, outpatients, outpatients_table, inpatients, family_hist_table2, 
+   current_outpatients, current_inpatients, outpatients, outpatients_table, inpatients, family_hist_table2, covid19_table, 
    supreme_table, meg_mprage_missing, diag_mid_3_table, fu_dates, mid_long)
 rm(list=ls(pattern="denominator_"))
 rm(list=ls(pattern="numerator_"))
