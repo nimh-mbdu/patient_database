@@ -60,6 +60,7 @@ inpatient_summary_location = paste0(inpatient_location, "Reports/")
 MID_tracker_location = paste0(sdan1, "Data/MID1/")
 MMI_tracker_location = paste0(sdan1, "Data/MMI/")
 MEG_tracker_location = paste0(string, "Tasks/MEG/")
+supreme_file_location = paste0(string, "Tasks/supreme/data/")
 
 # packages ----------------------------------------------------------------
 

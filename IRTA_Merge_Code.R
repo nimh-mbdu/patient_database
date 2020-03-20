@@ -352,6 +352,26 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
   historical_check <- historical_check %>% select(-source1, -source2) %>% group_by(Initials) %>% filter(n()>1) %>% ungroup() %>% 
     mutate(reason20="Information change from previous tracker merge: check deliberate vs. accidental. Origin of information") 
   
+  # checking the existence of behavioural files 
+  
+  # Supreme 
+  supreme_irta_list <- task_reshape_master %>% filter(Task_Name=="Supreme") %>% filter(Task_Number!="999" & Task_Number!="777") %>% select(SDAN, IRTA_tracker, Task_Date, Task_Number)
+  supreme_file1 <- list.files(path = paste0(supreme_file_location), pattern = "", all.files = FALSE, full.names = FALSE, recursive = TRUE,
+                                 ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE) %>% as.data.frame()
+  supreme_file2 <- colsplit(supreme_file1$., "/", names = c("SDAN", "Task_Folder", "Folder_contents")) %>% filter(Task_Folder != "ass_bind_pickles" & Task_Folder != "note_on_combined_dirs")
+  supreme_file2a <- colsplit(supreme_file2$Task_Folder, "_", names = c("Task_Date_unformatted", "Task_Time_unformatted"))
+  supreme_file2 <- cbind(supreme_file2, supreme_file2a) 
+  supreme_file2$Task_Date <- paste(substring(supreme_file2$Task_Date_unformatted, 1, 4), substring(supreme_file2$Task_Date_unformatted, 5, 6), substring(supreme_file2$Task_Date_unformatted, 7, 8), sep = "-")
+  supreme_file2$Task_Date <- as.Date(supreme_file2$Task_Date)
+  supreme_file2$Task_Time <- paste(substring(supreme_file2$Task_Time_unformatted, 1, 2), substring(supreme_file2$Task_Time_unformatted, 3, 4), substring(supreme_file2$Task_Time_unformatted, 5, 6), sep = ":")
+  supreme_file2 <- supreme_file2 %>% group_by(SDAN, Task_Date, Task_Time) %>% mutate(Num_files = row_number()) %>% arrange(SDAN, Task_Date, Task_Time, Num_files) %>% slice(n()) %>% ungroup() %>% 
+    select(SDAN, Task_Date, Num_files) %>% distinct(., .keep_all = TRUE) %>% group_by(SDAN) %>% arrange(SDAN, Task_Date) %>% mutate(Task_Number = row_number()) %>% ungroup()
+
+  supreme_file_qc <- merge.default(supreme_irta_list, supreme_file2, all=TRUE)
+  supreme_file_missing <- supreme_file_qc %>% filter(is.na(Num_files)) %>% mutate(reason21="Behavioural files not added to directory") 
+  supreme_tracker_missing <- supreme_file_qc %>% filter(is.na(IRTA_tracker)) %>% mutate(reason22="IRTA tracker: task missing/error - check dates, task number, etc.") 
+  supreme_incomplete <- supreme_file_qc %>% filter(Num_files!=42) %>% mutate(reason23="Incorrect numbers of behavioural files: should be 42") 
+  
 # combining the above 
   task_errors_combined <- merge.default(task_name_check, task_duplicate_date, all=TRUE) %>% merge.default(., task_duplicate_v_type, all=TRUE) %>% 
     merge.default(., task_duplicate_number, all=TRUE) %>% merge.default(., task_number_check, all=TRUE) %>% merge.default(., task_scanner_missing, all=TRUE) %>% 
@@ -359,10 +379,12 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
     merge.default(., duplicate_sdan, all=TRUE) %>% merge.default(., task_missing_sex, all=TRUE) %>% merge.default(., task_missing_dob, all=TRUE) %>% 
     merge.default(., task_missing_initials, all=TRUE) %>% merge.default(., task_missing_eligible, all=TRUE) %>% merge.default(., task_missing_clinical_date, all=TRUE) %>% 
     merge.default(., task_check_clinical_code, all=TRUE) %>% merge.default(., task_missing_scheduling, all=TRUE) %>% merge.default(., task_missing_dawbaid, all=TRUE) %>% 
-    merge.default(., task_missing_protocol, all=TRUE) %>% merge.default(., historical_check, all=TRUE) %>% select(-FIRST_NAME, -LAST_NAME)
+    merge.default(., task_missing_protocol, all=TRUE) %>% merge.default(., historical_check, all=TRUE) %>% merge.default(., supreme_file_missing, all=TRUE) %>% 
+    merge.default(., supreme_tracker_missing, all=TRUE) %>% merge.default(., supreme_incomplete, all=TRUE) %>% select(-FIRST_NAME, -LAST_NAME)
   
   task_errors_combined$QC_task <- paste(task_errors_combined$reason1, task_errors_combined$reason2, task_errors_combined$reason3, task_errors_combined$reason4, 
-                                        task_errors_combined$reason5, task_errors_combined$reason6, sep = "; ")
+                                        task_errors_combined$reason5, task_errors_combined$reason6, task_errors_combined$reason21, task_errors_combined$reason22, 
+                                        task_errors_combined$reason23, sep = "; ")
   task_errors_combined$QC_other <- paste(task_errors_combined$reason7, task_errors_combined$reason8, task_errors_combined$reason9, task_errors_combined$reason10, 
                                          task_errors_combined$reason11, task_errors_combined$reason12, task_errors_combined$reason13, task_errors_combined$reason14, 
                                          task_errors_combined$reason15, task_errors_combined$reason16, task_errors_combined$reason17, task_errors_combined$reason18, 
@@ -744,5 +766,6 @@ rm(IRTA_full, IRTA_init, j, irta_tracker_columns, date_variabes, split1, i, elig
 rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, meg_reshape_master, meg_reshape, MEG_tasks, meg_combined,  
    MEG_task_QC, meg_list, MID_check, RS_check, task_check_clinical_code, task_name_check, task_number_check, prev_task_database,
    task_errors_combined, task_names, MID_resting_discrepancy, task_master_file, task_master_file_time, task_master_combined, file_save_check, 
-   file_save_check_time, file_save_check_combined, historical_check)
+   file_save_check_time, file_save_check_combined, historical_check, supreme_irta_list, supreme_file1, supreme_file2, supreme_file2a, supreme_file_qc, 
+   supreme_file_missing, supreme_tracker_missing, supreme_incomplete)
 rm(get_last_scan, get_last_visit, has_scan, is_last_v, print_dates, print_notes)
