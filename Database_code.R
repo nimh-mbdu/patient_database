@@ -1265,8 +1265,8 @@
       measure_temp_sdq <- merge.default(measure_temp_sdq, temp_before, all=TRUE)
     } else if (measure_name=="s_covid19_") {
       print("recoding measure")
-      measure_temp_sdq[,8:9]  <- lapply(measure_temp_sdq[,8:9], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
-      measure_temp_sdq[,18:19]  <- lapply(measure_temp_sdq[,18:19], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
+      covid_recode <- c("s_covid19_3b_fun", "s_covid19_3c_enjoy", "s_covid19_9_hopeful_end", "s_covid19_10_hopeful_vaccine", "s_covid19_14_relationships_family", "s_covid19_15_relationships_friends")
+      measure_temp_sdq[covid_recode]  <- lapply(measure_temp_sdq[covid_recode], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
     } else {
       print("no recoding necessary for this measure")
     }
@@ -1308,14 +1308,17 @@
       
     } else if (measure_name=="s_covid19_") {
       
-      measure_temp_sdq[,5:ncol(measure_temp_sdq)] <- sapply(measure_temp_sdq[,5:ncol(measure_temp_sdq)], as.numeric)
+      measure_temp_sdq[,5:22] <- sapply(measure_temp_sdq[,5:22], as.numeric)
+      measure_temp_sdq[,24:31] <- sapply(measure_temp_sdq[,24:31], as.numeric)
+      measure_temp_sdq[,23] <- sapply(measure_temp_sdq[,23], na_if, "")
+      measure_temp_sdq[,32] <- sapply(measure_temp_sdq[,32], na_if, "")
       
-      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
-      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% ncol() %>% as.numeric()
+      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% apply(., 1, count_na)
       measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
-      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine) %>% rowSums(na.rm=TRUE)
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% rowSums(na.rm=TRUE)
       
       measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
       measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
@@ -2823,6 +2826,34 @@ if (file_save_check_combined$date_diff[1]==0) {
   s_mfq1d_final %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_daily_MFQ_updated.xlsx"))
 }
 
+#### COVID19 sub-dataset for IRTAs
+
+covid_expected <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "easures")) %>% filter(Task_Date>"2020-03-17") %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date)
+covid_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, 
+        c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_ari1w_tot, s_ari1w_date, matches("s_covid19_")) %>% 
+  filter(!is.na(s_covid19_date)) %>% mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% select(-s_covid19_complete, -s_covid19_source) %>% 
+  mutate(Flagged_score = ifelse((s_covid19_date > "2020-03-22" & s_covid19_tot>154), 1, ifelse((s_covid19_date < "2020-03-23" & s_covid19_tot>99), 1, 0)))
+covid_dataset_w_missing <- merge.default(covid_expected, covid_dataset, all=TRUE)
+
+# QCing
+not_tracked <- covid_dataset_w_missing %>% filter(is.na(Task_Name)) %>% mutate(QC_note1 = "Missing from IRTA tracker")
+covid19_incomplete <- covid_dataset_w_missing %>% filter(is.na(s_covid19_tot)) %>% mutate(QC_note2 = "COVID19 questionnaire not completed")
+other_incomplete <- covid_dataset_w_missing %>% filter(is.na(s_mfq1w_tot) | is.na(s_ari1w_tot) | is.na(s_scared_tot)) %>% mutate(QC_note3 = "Other questionnaire not completed")
+covid_dataset_qc <- merge.default(not_tracked, covid19_incomplete, all=TRUE) %>% merge.default(., other_incomplete, all=TRUE)
+
+covid_dataset_qc$QC_notes <- paste(covid_dataset_qc$QC_note1, covid_dataset_qc$QC_note2, covid_dataset_qc$QC_note3, sep = "; ")
+covid_dataset_qc <- covid_dataset_qc %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, QC_notes)
+covid_dataset_qc$QC_notes <- gsub("NA; ", "", covid_dataset_qc$QC_notes, fixed=TRUE)
+covid_dataset_qc$QC_notes <- gsub("; NA", "", covid_dataset_qc$QC_notes, fixed=TRUE)
+covid_dataset_qc$QC_notes <- gsub("NA", "", covid_dataset_qc$QC_notes, fixed=TRUE)
+
+# Combining & exporting 
+covid_dataset_final <- left_join(covid_dataset_w_missing, covid_dataset_qc)
+covid_dataset_final %>% write_xlsx(paste0(database_location, "COVID19/COVID19_subset_", todays_date_formatted, ".xlsx"))
+
+### COVID19 sub-dataset with t-1 timepoints 
+
 # Creating tasks database & exporting ------------------------------------
 
 rm(max_tasks, measure_temp_task)
@@ -2902,5 +2933,5 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_fu
    how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, 
    measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, 
    file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent, 
-   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq)
+   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)
