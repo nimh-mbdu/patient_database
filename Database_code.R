@@ -2834,7 +2834,7 @@ covid_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Pa
         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_ari1w_tot, s_ari1w_date, matches("s_covid19_")) %>% 
   filter(!is.na(s_covid19_date)) %>% mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% select(-s_covid19_complete, -s_covid19_source) %>% 
   mutate(Flagged_score = ifelse((s_covid19_date > "2020-03-22" & s_covid19_tot>154), 1, ifelse((s_covid19_date < "2020-03-23" & s_covid19_tot>99), 1, 0)))
-covid_dataset_w_missing <- merge.default(covid_expected, covid_dataset, all=TRUE)
+covid_dataset_w_missing <- merge.default(covid_expected, covid_completed, all=TRUE)
 
 # QCing
 not_tracked <- covid_dataset_w_missing %>% filter(is.na(Task_Name)) %>% mutate(QC_note1 = "Missing from IRTA tracker")
@@ -2933,5 +2933,6 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_fu
    how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, 
    measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, 
    file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent, 
-   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue)
+   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, 
+   covid_completed, covid_expected, covid_dataset_w_missing, covid_dataset_qc, covid19_incomplete, other_incomplete, not_tracked, covid_recode)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)
