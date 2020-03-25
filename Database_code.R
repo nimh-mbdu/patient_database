@@ -2850,7 +2850,12 @@ covid_dataset_qc$QC_notes <- gsub("NA", "", covid_dataset_qc$QC_notes, fixed=TRU
 
 # Combining & exporting 
 covid_dataset_final <- left_join(covid_dataset_w_missing, covid_dataset_qc)
-covid_dataset_final %>% write_xlsx(paste0(database_location, "COVID19/COVID19_subset_", todays_date_formatted, ".xlsx"))
+if (file.exists(paste0(database_location, "COVID19/COVID19_subset_", todays_date_formatted, ".xlsx"))){
+  print("COVID19 file already exported today")
+} else {
+  print("COVID19 file exported")
+  covid_dataset_final %>% write_xlsx(paste0(database_location, "COVID19/COVID19_subset_", todays_date_formatted, ".xlsx"))
+}
 
 ### COVID19 sub-dataset with t-1 timepoints 
 
