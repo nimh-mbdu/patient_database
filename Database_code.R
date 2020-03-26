@@ -1203,13 +1203,13 @@
     ungroup() %>% 
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
-  
+    
 # Treatment measures that require scoring ---------------------------------
 
 #####
 # straightforward total sum
   
-  tot_sum_clin <- c('c_cadam_', 's_chs_', 's_vadis_', 'c_cdrs_', 's_rumination_', 's_promis_', 's_mpss_', 's_bads_', 's_asswr_', 's_aai_', 'p_conners_', 's_cfs_', 's_covid19_')
+  tot_sum_clin <- c('c_cadam_', 's_chs_', 's_vadis_', 'c_cdrs_', 's_rumination_', 's_promis_', 's_mpss_', 's_bads_', 's_asswr_', 's_aai_', 'p_conners_', 's_cfs_')
 
   for(i in seq_along(tot_sum_clin)) {
     iter <- as.numeric(i)
@@ -1221,7 +1221,7 @@
       distinct(., .keep_all = TRUE)
     
     if (measure_name=="s_chs_" | measure_name=="s_promis_" | measure_name=="s_mpss_" | measure_name=="s_bads_" | 
-        measure_name=="s_asswr_" | measure_name=="s_aai_" | measure_name=="s_covid19_") {
+        measure_name=="s_asswr_" | measure_name=="s_aai_") {
       print("creating date variable for measure")
       measure_temp_sdq$date_temp <- measure_temp_sdq$Overall_date
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
@@ -1263,10 +1263,6 @@
       measure_temp_sdq <- measure_temp_sdq %>% filter(date_temp_diff<0 | source=="MANUAL") %>% select(-date_temp_diff)
       temp_before[,5:ncol(temp_before)] <- lapply(temp_before[,5:ncol(temp_before)], FUN = function(x) recode(x, `5`=6, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
       measure_temp_sdq <- merge.default(measure_temp_sdq, temp_before, all=TRUE)
-    } else if (measure_name=="s_covid19_") {
-      print("recoding measure")
-      covid_recode <- c("s_covid19_3b_fun", "s_covid19_3c_enjoy", "s_covid19_9_hopeful_end", "s_covid19_10_hopeful_vaccine", "s_covid19_14_relationships_family", "s_covid19_15_relationships_friends")
-      measure_temp_sdq[covid_recode]  <- lapply(measure_temp_sdq[covid_recode], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
     } else {
       print("no recoding necessary for this measure")
     }
@@ -1305,25 +1301,6 @@
       measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
       
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(p_conners_1_angry:p_conners_80_blurts_answers) %>% rowSums(na.rm=TRUE)
-      
-    } else if (measure_name=="s_covid19_") {
-      
-      measure_temp_sdq[,5:22] <- sapply(measure_temp_sdq[,5:22], as.numeric)
-      measure_temp_sdq[,24:31] <- sapply(measure_temp_sdq[,24:31], as.numeric)
-      measure_temp_sdq[,23] <- sapply(measure_temp_sdq[,23], na_if, "")
-      measure_temp_sdq[,32] <- sapply(measure_temp_sdq[,32], na_if, "")
-      
-      measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% ncol() %>% as.numeric()
-      measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% apply(., 1, count_na)
-      measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
-      measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-  
-      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% rowSums(na.rm=TRUE)
-      
-      measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
-      measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
-      measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
-      names(measure_temp_sdq)[names(measure_temp_sdq) == "tempcomplete"] <- (paste0(measure_name, "complete"))
       
     } else {
       
@@ -2236,6 +2213,49 @@
     ungroup() %>%
     filter(measurement_TDiff_abs<=60) %>%
     select(-measurement_TDiff_abs)
+
+#####
+# COVID19 questionnaire
+  
+  covid19_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches("s_covid19_")) %>% 
+    filter(!is.na(Overall_date)) %>% rename(s_covid19_date = "Overall_date") %>% rename(s_covid19_source = "source") %>% 
+    distinct(., .keep_all = TRUE)
+  
+  covid_recode <- c("s_covid19_3b_fun", "s_covid19_3c_enjoy", "s_covid19_9_hopeful_end", "s_covid19_10_hopeful_vaccine", "s_covid19_14_relationships_family", "s_covid19_15_relationships_friends")
+  covid19_temp_sdq[covid_recode]  <- lapply(covid19_temp_sdq[covid_recode], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
+  
+  covid19_temp_sdq[,5:22] <- sapply(covid19_temp_sdq[,5:22], as.numeric)
+  covid19_temp_sdq[,24:31] <- sapply(covid19_temp_sdq[,24:31], as.numeric)
+  covid19_temp_sdq[,23] <- sapply(covid19_temp_sdq[,23], na_if, "")
+  covid19_temp_sdq[,32] <- sapply(covid19_temp_sdq[,32], na_if, "")
+  
+  covid19_temp_sdq$no_columns <- covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% ncol() %>% as.numeric()
+  covid19_temp_sdq$NA_count <- covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% apply(., 1, count_na)
+  covid19_temp_sdq$diff <- c(covid19_temp_sdq$no_columns - covid19_temp_sdq$NA_count)
+  covid19_temp_sdq <- covid19_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  
+  covid19_temp_sdq$s_covid19_tot <- covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% rowSums(na.rm=TRUE)
+  
+  covid19_temp_sdq$s_covid19_complete <- covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% complete.cases(.)
+  covid19_temp_sdq$s_covid19_complete[covid19_temp_sdq$s_covid19_complete=="FALSE"] <- "0"
+  covid19_temp_sdq$s_covid19_complete[covid19_temp_sdq$s_covid19_complete=="TRUE"] <- "1"
+  
+  covid19_sdq_clinical <- merge.default(clinical_DB_date, covid19_temp_sdq, all=TRUE) %>% arrange(Initials, s_covid19_date) %>%
+    select(Initials, PLUSID, Clinical_Visit_Date, matches("s_covid19_"))
+  
+  covid19_sdq_clinical$s_covid19_TDiff <- as.numeric(difftime(covid19_sdq_clinical$s_covid19_date, covid19_sdq_clinical$Clinical_Visit_Date, tz="", units = "days"))
+  covid19_sdq_clinical <- covid19_sdq_clinical %>% 
+    filter(s_covid19_date >= Clinical_Visit_Date) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(Initials, Clinical_Visit_Date, s_covid19_TDiff) %>% 
+    slice(1) %>%
+    ungroup() %>% 
+    group_by(Initials, s_covid19_date) %>% 
+    arrange(Initials, s_covid19_date, s_covid19_TDiff) %>% 
+    slice(1) %>%
+    ungroup() %>% 
+    filter(s_covid19_TDiff<=60) %>% 
+    select(-s_covid19_TDiff)
   
 #####
 # Daily MFQ - inpatients only 
