@@ -2853,10 +2853,14 @@ covid_expected <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "easur
 covid_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, 
         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_ari1w_tot, s_ari1w_date, matches("s_covid19_")) %>% 
   filter(!is.na(s_covid19_date)) %>%  mutate(Flagged_score = ifelse((s_covid19_date > "2020-03-22" & s_covid19_tot>154), 1, ifelse((s_covid19_date < "2020-03-23" & s_covid19_tot>99), 1, 0))) %>% 
-  mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% select(-s_covid19_complete, -s_covid19_source)
+  mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% mutate(Clinician_assigned = NA) %>% mutate(Clinician_followup = NA) %>% 
+  select(-s_covid19_complete, -s_covid19_source)
 covid_dataset_w_missing <- merge.default(covid_expected, covid_completed, all=TRUE) %>% group_by(Initials) %>% 
   fill(SDAN:IRTA_tracker, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, .direction = "up") %>% fill(SDAN:IRTA_tracker, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, .direction = "down") %>% ungroup()
 covid_dataset_w_missing$Clinical_Visit_Date <- as.Date(covid_dataset_w_missing$Clinical_Visit_Date)
+
+contact_info <- master_IRTA_latest %>% group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Initials, FIRST_NAME, LAST_NAME, Child_Phone_Number, Parent_Contact_Number) %>% 
+  filter(Initials %in% covid_dataset_w_missing$Initials)
 
 # QCing
 not_tracked <- covid_dataset_w_missing %>% filter(is.na(Task_Name)) %>% mutate(QC_note1 = "Missing from IRTA tracker")
@@ -2871,8 +2875,9 @@ covid_dataset_qc$QC_notes <- gsub("; NA", "", covid_dataset_qc$QC_notes, fixed=T
 covid_dataset_qc$QC_notes <- gsub("NA", "", covid_dataset_qc$QC_notes, fixed=TRUE)
 
 # Combining & exporting 
-covid_dataset_final <- left_join(covid_dataset_w_missing, covid_dataset_qc) %>% select(IRTA_tracker, Initials:Participant_Type2, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-    Clinical_Visit_Date:Task_Date, s_mfq1w_tot:s_covid19_21_distress, s_covid19_TDiff, s_covid19_22_other_comments, s_covid19_tot, Flagged_score, QC_notes, Review_status:Clinician_notes)
+covid_dataset_final <- left_join(covid_dataset_w_missing, covid_dataset_qc) %>% merge.default(contact_info) %>% 
+  select(IRTA_tracker, Initials:PLUSID, FIRST_NAME:Parent_Contact_Number, Participant_Type2, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+    Clinical_Visit_Date:Task_Date, s_mfq1w_tot:s_covid19_21_distress, s_covid19_TDiff, s_covid19_22_other_comments, s_covid19_tot, Flagged_score, QC_notes, Review_status:Clinician_followup)
 
 if (file.exists(paste0(database_location, "COVID19/COVID19_subset_", todays_date_formatted, ".xlsx"))){
   print("COVID19 file already exported today")
