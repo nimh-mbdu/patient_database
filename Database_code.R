@@ -398,17 +398,18 @@
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
-    measure_temp_clinical <- measure_temp_clinical %>% 
-      mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
-      group_by(Initials, Clinical_Visit_Date) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    measure_temp_clinical <- measure_temp_clinical %>%
+      filter(date_temp >= Clinical_Visit_Date) %>% 
+      mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>%
+      group_by(Initials, Clinical_Visit_Date) %>%
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>%
       slice(1) %>%
-      ungroup() %>% 
-      group_by(Initials, date_temp) %>% 
-      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
+      ungroup() %>%
+      group_by(Initials, date_temp) %>%
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>%
       slice(1) %>%
-      ungroup() %>% 
-      filter(measurement_TDiff_abs<=60) %>% 
+      ungroup() %>%
+      filter(measurement_TDiff_abs<=60) %>%
       select(-measurement_TDiff_abs)
     
     names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
@@ -2254,9 +2255,8 @@
     arrange(Initials, s_covid19_date, s_covid19_TDiff) %>% 
     slice(1) %>%
     ungroup() %>% 
-    filter(s_covid19_TDiff<=60) %>% 
-    select(-s_covid19_TDiff)
-  
+    filter(s_covid19_TDiff<=60)
+
 #####
 # Daily MFQ - inpatients only 
   
@@ -2852,9 +2852,11 @@ covid_expected <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "easur
   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date)
 covid_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, 
         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_ari1w_tot, s_ari1w_date, matches("s_covid19_")) %>% 
-  filter(!is.na(s_covid19_date)) %>% mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% select(-s_covid19_complete, -s_covid19_source) %>% 
-  mutate(Flagged_score = ifelse((s_covid19_date > "2020-03-22" & s_covid19_tot>154), 1, ifelse((s_covid19_date < "2020-03-23" & s_covid19_tot>99), 1, 0)))
-covid_dataset_w_missing <- merge.default(covid_expected, covid_completed, all=TRUE)
+  filter(!is.na(s_covid19_date)) %>%  mutate(Flagged_score = ifelse((s_covid19_date > "2020-03-22" & s_covid19_tot>154), 1, ifelse((s_covid19_date < "2020-03-23" & s_covid19_tot>99), 1, 0))) %>% 
+  mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% select(-s_covid19_complete, -s_covid19_source)
+covid_dataset_w_missing <- merge.default(covid_expected, covid_completed, all=TRUE) %>% group_by(Initials) %>% 
+  fill(SDAN:IRTA_tracker, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, .direction = "up") %>% fill(SDAN:IRTA_tracker, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, .direction = "down") %>% ungroup()
+covid_dataset_w_missing$Clinical_Visit_Date <- as.Date(covid_dataset_w_missing$Clinical_Visit_Date)
 
 # QCing
 not_tracked <- covid_dataset_w_missing %>% filter(is.na(Task_Name)) %>% mutate(QC_note1 = "Missing from IRTA tracker")
@@ -2869,13 +2871,19 @@ covid_dataset_qc$QC_notes <- gsub("; NA", "", covid_dataset_qc$QC_notes, fixed=T
 covid_dataset_qc$QC_notes <- gsub("NA", "", covid_dataset_qc$QC_notes, fixed=TRUE)
 
 # Combining & exporting 
-covid_dataset_final <- left_join(covid_dataset_w_missing, covid_dataset_qc)
+covid_dataset_final <- left_join(covid_dataset_w_missing, covid_dataset_qc) %>% select(IRTA_tracker, Initials:Participant_Type2, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+    Clinical_Visit_Date:Task_Date, s_mfq1w_tot:s_covid19_21_distress, s_covid19_TDiff, s_covid19_22_other_comments, s_covid19_tot, Flagged_score, QC_notes, Review_status:Clinician_notes)
+
 if (file.exists(paste0(database_location, "COVID19/COVID19_subset_", todays_date_formatted, ".xlsx"))){
   print("COVID19 file already exported today")
 } else {
   print("COVID19 file exported")
   covid_dataset_final %>% write_xlsx(paste0(database_location, "COVID19/COVID19_subset_", todays_date_formatted, ".xlsx"))
 }
+
+# creating T-2 wide & long subsets for Argyris
+
+source(paste0(database_location, "COVID19/COVID19_subset_wide_long.R"))
 
 ### COVID19 sub-dataset with t-1 timepoints 
 
