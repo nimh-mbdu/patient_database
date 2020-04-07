@@ -94,8 +94,8 @@
   # changing column names
 
   sdq_columns <- read_excel(paste0(database_location, "other_data_never_delete/sdq_column_names_and_descriptions.xlsx"))
-  # setnames(SDQ_Data_Download_raw, old=c(sdq_columns$old_name), new=c(sdq_columns$new_name), skip_absent=TRUE)
-  setnames(SDQ_Data_Download_raw, old=c(sdq_columns$old_name), new=c(sdq_columns$new_name))
+  setnames(SDQ_Data_Download_raw, old=c(sdq_columns$old_name), new=c(sdq_columns$new_name), skip_absent=TRUE)
+  # setnames(SDQ_Data_Download_raw, old=c(sdq_columns$old_name), new=c(sdq_columns$new_name))
   
   SDQ_Data_Download <- SDQ_Data_Download_raw %>% select(sdq_columns$new_name) %>% arrange(PLUSID, Overall_date) %>% select(-SID)
 
@@ -106,8 +106,8 @@
   # changing column names
   
   ctdb_columns <- read_excel(paste0(database_location, "other_data_never_delete/ctdb_column_names_and_descriptions.xlsx"))
-  # setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name), skip_absent=TRUE)
-  setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name))
+  setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name), skip_absent=TRUE)
+  # setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name))
   
   CTDB_Data_Download$Overall_date <- as.Date(CTDB_Data_Download$Overall_date, tz="", "%Y-%m-%d")
   
@@ -790,8 +790,8 @@
   diagnosis_subset_sdq <- diagnosis_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
   diagnosis_subset_sdq <- diagnosis_subset_sdq %>% group_by(Initials, c_ksadsdx_date) %>%
-    fill(c_ksadsdx_visit_type:c_ksadsdx_comorbid_dx_old, .direction = "down") %>%
-    fill(c_ksadsdx_visit_type:c_ksadsdx_comorbid_dx_old, .direction = "up") %>%
+    fill(c_ksadsdx_visit_type:c_ksadsdx_lifetime_communication, .direction = "down") %>%
+    fill(c_ksadsdx_visit_type:c_ksadsdx_lifetime_communication, .direction = "up") %>%
     distinct(., .keep_all = TRUE) %>% 
     arrange(Initials, c_ksadsdx_date, source) %>%
     slice(1) %>%
@@ -2225,34 +2225,37 @@
 #####
 # COVID19 questionnaire
   
-  covid19_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches("s_covid19_")) %>% 
+  s_covid19_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches("s_covid19_")) %>% 
     filter(!is.na(Overall_date)) %>% rename(s_covid19_date = "Overall_date") %>% rename(s_covid19_source = "source") %>% 
     distinct(., .keep_all = TRUE)
   
-  covid_recode <- c("s_covid19_3b_fun", "s_covid19_3c_enjoy", "s_covid19_9_hopeful_end", "s_covid19_10_hopeful_vaccine", "s_covid19_14_relationships_family", "s_covid19_15_relationships_friends")
-  covid19_temp_sdq[covid_recode]  <- lapply(covid19_temp_sdq[covid_recode], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
+  covid_recode <- c("s_covid19_3b_fun", "s_covid19_3c_enjoy", "s_covid19_4c_sd_difficult", "s_covid19_9_hopeful_end", "s_covid19_10_hopeful_vaccine", "s_covid19_14_relationships_family", "s_covid19_15_relationships_friends")
+  s_covid19_temp_sdq[covid_recode]  <- lapply(s_covid19_temp_sdq[covid_recode], FUN = function(x) recode(x, `10`=1, `9`=2, `8`=3, `7`=4, `6`=5, `5`=6, `4`=7, `3`=8, `2`=9, `1`=10, .missing = NULL))
+  s_covid19_temp_sdq$s_covid19_18_less_sleep <- recode(s_covid19_temp_sdq$s_covid19_18_sleep, `10`=0, `9`=0, `8`=0, `7`=0, `6`=0, `5`=1, `4`=2, `3`=4, `2`=8, `1`=10)
+  s_covid19_temp_sdq$s_covid19_18_more_sleep <- recode(s_covid19_temp_sdq$s_covid19_18_sleep, `10`=10, `9`=8, `8`=6, `7`=4, `6`=2, `5`=1, `4`=0, `3`=0, `2`=0, `1`=0)
+  s_covid19_temp_sdq <- s_covid19_temp_sdq %>% select(PLUSID:s_covid19_17_mental_health, s_covid19_18_less_sleep, s_covid19_18_more_sleep, s_covid19_19_active:s_covid19_22_other_comments)
+
+  s_covid19_temp_sdq[,5:22] <- sapply(s_covid19_temp_sdq[,5:22], as.numeric)
+  s_covid19_temp_sdq[,24:32] <- sapply(s_covid19_temp_sdq[,24:32], as.numeric)
+  s_covid19_temp_sdq[,23] <- sapply(s_covid19_temp_sdq[,23], na_if, "")
+  s_covid19_temp_sdq[,33] <- sapply(s_covid19_temp_sdq[,33], na_if, "")
   
-  covid19_temp_sdq[,5:22] <- sapply(covid19_temp_sdq[,5:22], as.numeric)
-  covid19_temp_sdq[,24:31] <- sapply(covid19_temp_sdq[,24:31], as.numeric)
-  covid19_temp_sdq[,23] <- sapply(covid19_temp_sdq[,23], na_if, "")
-  covid19_temp_sdq[,32] <- sapply(covid19_temp_sdq[,32], na_if, "")
+  s_covid19_temp_sdq$no_columns <- s_covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% ncol() %>% as.numeric()
+  s_covid19_temp_sdq$NA_count <- s_covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% apply(., 1, count_na)
+  s_covid19_temp_sdq$diff <- c(s_covid19_temp_sdq$no_columns - s_covid19_temp_sdq$NA_count)
+  s_covid19_temp_sdq <- s_covid19_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
-  covid19_temp_sdq$no_columns <- covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% ncol() %>% as.numeric()
-  covid19_temp_sdq$NA_count <- covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% apply(., 1, count_na)
-  covid19_temp_sdq$diff <- c(covid19_temp_sdq$no_columns - covid19_temp_sdq$NA_count)
-  covid19_temp_sdq <- covid19_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  s_covid19_temp_sdq$s_covid19_tot <- s_covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% rowSums(na.rm=TRUE)
   
-  covid19_temp_sdq$s_covid19_tot <- covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% rowSums(na.rm=TRUE)
+  s_covid19_temp_sdq$s_covid19_complete <- s_covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% complete.cases(.)
+  s_covid19_temp_sdq$s_covid19_complete[s_covid19_temp_sdq$s_covid19_complete=="FALSE"] <- "0"
+  s_covid19_temp_sdq$s_covid19_complete[s_covid19_temp_sdq$s_covid19_complete=="TRUE"] <- "1"
   
-  covid19_temp_sdq$s_covid19_complete <- covid19_temp_sdq %>% select(s_covid19_1_worried_self:s_covid19_10_hopeful_vaccine, s_covid19_14_relationships_family:s_covid19_21_distress) %>% complete.cases(.)
-  covid19_temp_sdq$s_covid19_complete[covid19_temp_sdq$s_covid19_complete=="FALSE"] <- "0"
-  covid19_temp_sdq$s_covid19_complete[covid19_temp_sdq$s_covid19_complete=="TRUE"] <- "1"
-  
-  covid19_sdq_clinical <- merge.default(clinical_DB_date, covid19_temp_sdq, all=TRUE) %>% arrange(Initials, s_covid19_date) %>%
+  s_covid19_sdq_clinical <- merge.default(clinical_DB_date, s_covid19_temp_sdq, all=TRUE) %>% arrange(Initials, s_covid19_date) %>%
     select(Initials, PLUSID, Clinical_Visit_Date, matches("s_covid19_"))
   
-  covid19_sdq_clinical$s_covid19_TDiff <- as.numeric(difftime(covid19_sdq_clinical$s_covid19_date, covid19_sdq_clinical$Clinical_Visit_Date, tz="", units = "days"))
-  covid19_sdq_clinical <- covid19_sdq_clinical %>% 
+  s_covid19_sdq_clinical$s_covid19_TDiff <- as.numeric(difftime(s_covid19_sdq_clinical$s_covid19_date, s_covid19_sdq_clinical$Clinical_Visit_Date, tz="", units = "days"))
+  s_covid19_sdq_clinical <- s_covid19_sdq_clinical %>% 
     filter(s_covid19_date >= Clinical_Visit_Date) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(Initials, Clinical_Visit_Date, s_covid19_TDiff) %>% 
@@ -2263,6 +2266,112 @@
     slice(1) %>%
     ungroup() %>% 
     filter(s_covid19_TDiff<=60)
+  
+#####
+# CRISIS questionnaire
+  
+  crisis_measures <- c('s_crisis_base_', 's_crisis_3m_', 's_crisis_fu_', 'p_crisis_fu_', 'p_crisis_base_', 'p_crisis_3m_', 's_scaredshort_', 'p_scaredshort_', 'mmi_recovery_')
+  
+  for(i in seq_along(crisis_measures)) {
+    iter <- as.numeric(i)
+    # iter=1
+    measure_name <- crisis_measures[iter]
+    measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
+      filter(!is.na(Overall_date)) %>% rename(measure_temp_source = "source") %>% distinct(., .keep_all = TRUE) 
+    
+    if (measure_name=="s_crisis_base_" | measure_name=="p_crisis_base_" | measure_name=="s_crisis_fu_" | measure_name=="p_crisis_fu_") {
+      measure_temp_sdq[,5:10] <- lapply(measure_temp_sdq[,5:10], na_if, "")
+      measure_temp_sdq[,11:16] <- lapply(measure_temp_sdq[,11:16], as.numeric)
+      measure_temp_sdq[,17] <- lapply(measure_temp_sdq[,17], na_if, "")
+      measure_temp_sdq[,18:54] <- lapply(measure_temp_sdq[,18:54], as.numeric)
+      measure_temp_sdq[,55:58] <- lapply(measure_temp_sdq[,55:58], na_if, "")
+      measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
+      measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
+    } else if (measure_name=="s_crisis_3m_" | measure_name=="p_crisis_3m_") {
+      measure_temp_sdq[,5:20] <- lapply(measure_temp_sdq[,5:20], as.numeric)
+      measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
+      measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
+    } else if (measure_name=="s_scaredshort_" | measure_name=="p_scaredshort_") {
+      measure_temp_sdq[,5:12] <- lapply(measure_temp_sdq[,5:12], as.numeric)
+      measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
+      measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
+    } else {
+      measure_temp_sdq[,5] <- lapply(measure_temp_sdq[,5], as.numeric)
+      measure_temp_sdq[,6] <- lapply(measure_temp_sdq[,6], na_if, "")
+      measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$mmi_recovery_date)
+      measure_temp_sdq$date_temp <- coalesce(measure_temp_sdq$date_temp, measure_temp_sdq$Overall_date)
+      measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date, -mmi_recovery_date)
+    }
+    
+    if (measure_name=="s_scaredshort_" | measure_name=="p_scaredshort_") {
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
+    } else if (measure_name=="mmi_recovery_") {
+      measure_temp_sdq$temptotal <- c(0)
+    } else {
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches("_28_sleep"):matches("_43_video_games")) %>% rowSums(na.rm=TRUE)
+    }
+    
+    measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
+    measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
+    measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
+    
+    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
+    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+    measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
+    measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+
+    measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_sdq, all=TRUE) %>% 
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
+    
+    measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
+    measure_temp_clinical <- measure_temp_clinical %>% 
+      filter(date_temp >= Clinical_Visit_Date) %>% 
+      mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
+      group_by(Initials, Clinical_Visit_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      filter(measurement_TDiff_abs<=60) %>% 
+      select(-measurement_TDiff_abs)
+
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "temptotal"] <- (paste0(measure_name, "tot"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "date_temp"] <- (paste0(measure_name, "date"))
+    names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0(measure_name, "source"))
+    if (measure_name=="mmi_recovery_") {measure_temp_clinical <- measure_temp_clinical %>% select(-mmi_recovery_tot)}
+    assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
+    
+    measure_temp_task <- merge.default(task_DB_date, measure_temp_sdq, all=TRUE) %>% select(FIRST_NAME, LAST_NAME, Initials, 
+             PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
+    measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
+    measure_temp_task <- measure_temp_task %>% 
+      filter(date_temp >= Task_Date) %>% 
+      mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
+      group_by(Initials, Task_Name, Task_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      group_by(Initials, Task_Name, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      filter(measurement_TDiff_abs<=60) %>% 
+      select(-measurement_TDiff_abs)
+    
+    names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
+    names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
+    names(measure_temp_task)[names(measure_temp_task) == "temptotal"] <- (paste0(measure_name, "tot"))
+    names(measure_temp_task)[names(measure_temp_task) == "date_temp"] <- (paste0(measure_name, "date"))
+    names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0(measure_name, "source"))
+    if (measure_name=="mmi_recovery_") {measure_temp_task <- measure_temp_task %>% select(-mmi_recovery_tot)}
+    assign(paste0(measure_name, "subset_task"), measure_temp_task)
+    
+  }
 
 #####
 # Daily MFQ - inpatients only 
@@ -2854,13 +2963,24 @@ if (file_save_check_combined$date_diff[1]==0) {
 }
 
 #### Measures sub-dataset for IRTAs
+measure_temp_sdq[,5:10] <- lapply(measure_temp_sdq[,5:10], na_if, "")
+measure_temp_sdq[,17] <- lapply(measure_temp_sdq[,17], na_if, "")
+measure_temp_sdq[,55:58] <- lapply(measure_temp_sdq[,55:58], na_if, "")
 
 measures_expected <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "easures")) %>% filter(Task_Date > "2020-03-17") %>% 
   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date) %>% mutate(Review_status = 0)
 measures_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, 
-        c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_ari1w_tot, s_ari1w_date) %>% 
-  filter(s_mfq1w_date  > "2020-03-17" | s_scared_date > "2020-03-17" | s_ari1w_date > "2020-03-17") %>% mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% 
-  mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% mutate(Clinician_assigned = NA) %>% mutate(Clinician_followup = NA)
+        c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+        s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, s_crisis_base_3_symptoms, s_crisis_base_4_family_diagnosis, s_crisis_base_5_family_events, 
+        p_crisis_base_1_exposed, p_crisis_base_2_self_diagnosis, p_crisis_base_3_symptoms, p_crisis_base_4_family_diagnosis, p_crisis_base_5_family_events, 
+        s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq1w_tot, p_mfq1w_date, p_scaredshort_tot, 
+        p_scaredshort_date, s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, 
+        p_crisis_base_date, s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, s_crisis_base_44_support_other, 
+        s_crisis_base_additional_concerns, s_crisis_base_additional_comments, p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, 
+        p_crisis_base_44_support, p_crisis_base_44_support_other, p_crisis_base_additional_concerns, p_crisis_base_additional_comments) %>% 
+  filter(s_mfq1w_date  > "2020-03-17" | s_scaredshort_date > "2020-03-17" | s_crisis_base_date > "2020-03-17" | s_crisis_3m_date > "2020-03-17") %>% 
+  mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% 
+  mutate(Clinician_assigned = NA) %>% mutate(Clinician_followup = NA)
 measures_dataset_w_missing <- merge.default(measures_expected, measures_completed, all=TRUE) %>% group_by(Initials) %>% 
   fill(SDAN:IRTA_tracker, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, .direction = "up") %>% fill(SDAN:IRTA_tracker, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, .direction = "down") %>% ungroup()
 measures_dataset_w_missing$Clinical_Visit_Date <- as.Date(measures_dataset_w_missing$Clinical_Visit_Date)
@@ -2870,7 +2990,8 @@ contact_info <- master_IRTA_latest %>% group_by(Initials) %>% arrange(Clinical_V
 
 # QCing
 not_tracked <- measures_dataset_w_missing %>% filter(is.na(Task_Name)) %>% mutate(QC_note1 = "Missing from IRTA tracker")
-measure_incomplete <- measures_dataset_w_missing %>% filter(is.na(s_mfq1w_tot) | is.na(s_ari1w_tot) | is.na(s_scared_tot)) %>% mutate(QC_note2 = "At least one questionnaire not completed")
+measure_incomplete <- measures_dataset_w_missing %>% filter(is.na(s_mfq1w_tot) | is.na(s_crisis_base_tot) | is.na(s_crisis_3m_tot) | is.na(s_scaredshort_tot)) %>% 
+  mutate(QC_note2 = "At least one questionnaire not completed")
 measures_dataset_qc <- merge.default(not_tracked, measure_incomplete, all=TRUE)
 
 measures_dataset_qc$QC_notes <- paste(measures_dataset_qc$QC_note1, measures_dataset_qc$QC_note2, sep = "; ")
@@ -2888,37 +3009,44 @@ smfq1w_tminus2_long$s_mfq1w_date <- coalesce(smfq1w_tminus2_long$s_mfq1w_date, s
 smfq1w_tminus2_long <- smfq1w_tminus2_long %>% filter(s_mfq1w_date < "2020-03-17") %>% group_by(Initials) %>% 
   arrange(desc(s_mfq1w_date)) %>% slice(1:2) %>% ungroup() %>% select(-s_mfq_date, -s_mfq_tot) %>% distinct(., .keep_all = TRUE)
 
-sari1w_tminus2_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Clinical_Visit_Date, s_ari1w_tot, s_ari6m_tot, s_ari1w_date, s_ari6m_date) %>% 
-  filter(!is.na(s_ari1w_tot) | !is.na(s_ari6m_tot)) 
-sari1w_tminus2_long$s_ari1w_tot <- coalesce(sari1w_tminus2_long$s_ari1w_tot, sari1w_tminus2_long$s_ari6m_tot) %>% round(., digits = 0)
-sari1w_tminus2_long$s_ari1w_date <- coalesce(sari1w_tminus2_long$s_ari1w_date, sari1w_tminus2_long$s_ari6m_date) %>% round(., digits = 0)
-sari1w_tminus2_long <- sari1w_tminus2_long %>% filter(s_ari1w_date < "2020-03-17") %>% group_by(Initials) %>% 
-  arrange(desc(s_ari1w_date)) %>% slice(1:2) %>% ungroup() %>% select(-s_ari6m_date, -s_ari6m_tot) %>% distinct(., .keep_all = TRUE)
+# sari1w_tminus2_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Clinical_Visit_Date, s_ari1w_tot, s_ari6m_tot, s_ari1w_date, s_ari6m_date) %>% 
+#   filter(!is.na(s_ari1w_tot) | !is.na(s_ari6m_tot)) 
+# sari1w_tminus2_long$s_ari1w_tot <- coalesce(sari1w_tminus2_long$s_ari1w_tot, sari1w_tminus2_long$s_ari6m_tot) %>% round(., digits = 0)
+# sari1w_tminus2_long$s_ari1w_date <- coalesce(sari1w_tminus2_long$s_ari1w_date, sari1w_tminus2_long$s_ari6m_date) %>% round(., digits = 0)
+# sari1w_tminus2_long <- sari1w_tminus2_long %>% filter(s_ari1w_date < "2020-03-17") %>% group_by(Initials) %>% 
+#   arrange(desc(s_ari1w_date)) %>% slice(1:2) %>% ungroup() %>% select(-s_ari6m_date, -s_ari6m_tot) %>% distinct(., .keep_all = TRUE)
 
 sscared_tminus2_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Clinical_Visit_Date, s_scared_tot, s_scared_date) %>% 
   filter(!is.na(s_scared_tot)) %>% mutate(s_scared_tot = round(s_scared_tot, digits = 0))
 sscared_tminus2_long <- sscared_tminus2_long %>% filter(s_scared_date < "2020-03-17") %>% group_by(Initials) %>% 
   arrange(desc(s_scared_date)) %>% slice(1:2) %>% ungroup() %>% distinct(., .keep_all = TRUE)
 
-measures_combined_long <- merge.default(smfq1w_tminus2_long, sari1w_tminus2_long, all=TRUE) %>% merge.default(., sscared_tminus2_long, all=TRUE) %>% distinct(., .keep_all = TRUE) %>% 
-  filter(Initials %in% measures_dataset_w_missing$Initials)
+measures_combined_long <- merge.default(smfq1w_tminus2_long, sscared_tminus2_long, all=TRUE) %>% 
+  # merge.default(., sari1w_tminus2_long, all=TRUE) %>% 
+  distinct(., .keep_all = TRUE) %>% filter(Initials %in% measures_dataset_w_missing$Initials)
 
 # Combining & exporting 
-measures_dataset_w_qc <- left_join(measures_dataset_w_missing, measures_dataset_qc) %>% merge.default(contact_info) %>% 
-  select(IRTA_tracker, Initials:PLUSID, FIRST_NAME:Parent_Contact_Number, Participant_Type2, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-    Clinical_Visit_Date:Task_Date, s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_ari1w_tot, s_ari1w_date, QC_notes, Review_status:Clinician_followup)
+measures_dataset_w_qc <- left_join(measures_dataset_w_missing, measures_dataset_qc) %>% merge.default(contact_info) 
 
 measures_dataset_tminus2_long <- merge.default(measures_dataset_w_qc, measures_combined_long, all=TRUE) %>% 
-  select(IRTA_tracker, Initials:PLUSID, FIRST_NAME:Parent_Contact_Number, Participant_Type2, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, Clinical_Visit_Date, Clinical_Visit_Type, 
-         Task_Name, Task_Date, s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_ari1w_tot, s_ari1w_date, QC_notes, Review_status, Review_notes:Clinician_followup) %>% 
+  select(IRTA_tracker, Initials:PLUSID, FIRST_NAME:Parent_Contact_Number, Participant_Type2, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+         Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date, 
+         s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, s_crisis_base_3_symptoms, s_crisis_base_4_family_diagnosis, s_crisis_base_5_family_events, 
+         p_crisis_base_1_exposed, p_crisis_base_2_self_diagnosis, p_crisis_base_3_symptoms, p_crisis_base_4_family_diagnosis, p_crisis_base_5_family_events, 
+         s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq1w_tot, p_mfq1w_date, p_scaredshort_tot, 
+         p_scaredshort_date, s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, 
+         p_crisis_base_date, s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, s_crisis_base_44_support_other, 
+         s_crisis_base_additional_concerns, s_crisis_base_additional_comments, p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, 
+         p_crisis_base_44_support, p_crisis_base_44_support_other, p_crisis_base_additional_concerns, p_crisis_base_additional_comments,
+         QC_notes, Review_status, Review_notes:Clinician_followup) %>% 
   group_by(Initials) %>% fill(IRTA_tracker, FIRST_NAME:c_ksadsdx_dx_detailed, .direction = "up") %>% fill(IRTA_tracker, FIRST_NAME:c_ksadsdx_dx_detailed, .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 
-if (file.exists(paste0(database_location, "COVID19/Measures_subset_", todays_date_formatted, ".xlsx"))){
-  print("Measures file already exported today")
+if (file.exists(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_formatted, ".xlsx"))){
+  print("CRISIS file already exported today")
 } else {
-  print("Measures file exported")
-  measures_dataset_tminus2_long %>% write_xlsx(paste0(database_location, "COVID19/Measures_subset_", todays_date_formatted, ".xlsx"))
+  print("CRISIS file exported")
+  measures_dataset_tminus2_long %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_formatted, ".xlsx"))
 }
 
 # creating T-2 long subset for Argyris
@@ -2990,6 +3118,7 @@ if (file_save_check_combined$date_diff[1]==0) {
 rm(list=ls(pattern="subset"))
 rm(list=ls(pattern="clinical"))
 rm(list=ls(pattern="task"))
+rm(list=ls(pattern="measures"))
 rm(list=ls(pattern="iter"))
 rm(list=ls(pattern="manual"))
 rm(list=ls(pattern="common_identifiers"))
@@ -3005,5 +3134,5 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_fu
    measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, 
    file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent, 
    ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, 
-   covid_completed, covid_expected, covid_dataset_w_missing, covid_dataset_qc, covid19_incomplete, other_incomplete, not_tracked, covid_recode)
+   other_incomplete, not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, s_covid19_temp_sdq, contact_info, measure_incomplete)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)

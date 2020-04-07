@@ -158,15 +158,23 @@ if (exists("Psychometrics_treatment")==FALSE) {
         Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
           Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
-        covid19 <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, s_covid19_date, s_covid19_tot, s_covid19_12a_infected_self, s_covid19_12b_family_infected) %>% 
-          filter(!is.na(s_covid19_tot))
+        crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date,
+                 s_crisis_base_date, s_crisis_fu_date, s_crisis_3m_tot, s_crisis_base_tot, s_crisis_fu_tot, 
+                 p_crisis_base_date, p_crisis_fu_date, p_crisis_3m_tot, p_crisis_base_tot, p_crisis_fu_tot, 
+                 s_mfq1w_tot, p_mfq1w_tot, s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, 
+                 s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% 
+          filter(!is.na(s_crisis_3m_tot) | !is.na(s_crisis_base_tot) |!is.na(s_crisis_fu_tot) |!is.na(s_mfq1w_tot))
         rm(master_database_file, master_database_file_time, master_database_combined)
 } else {
         print("clinical database info already imported")
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
           Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
-        covid19 <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, s_covid19_date, s_covid19_tot, s_covid19_12a_infected_self, s_covid19_12b_family_infected) %>% 
-          filter(!is.na(s_covid19_tot))
+        crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date,
+                 s_crisis_base_date, s_crisis_fu_date, s_crisis_3m_tot, s_crisis_base_tot, s_crisis_fu_tot, 
+                 p_crisis_base_date, p_crisis_fu_date, p_crisis_3m_tot, p_crisis_base_tot, p_crisis_fu_tot, 
+                 s_mfq1w_tot, p_mfq1w_tot, s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, 
+                 s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% 
+          filter(!is.na(s_crisis_3m_tot) | !is.na(s_crisis_base_tot) |!is.na(s_crisis_fu_tot) |!is.na(s_mfq1w_tot))
 }
 
 if (exists("MEG_mprage")==FALSE) {
@@ -964,46 +972,68 @@ family_hist_table2 %>% kable(., col.names = c("Clinical Visit Type", "MDD", "%",
 
 ***
 
-##### COVID19 questionnaire completion:
+##### CRISIS questionnaire completion:
 
 Numbers as of last SDQ+ pull (`r Psychometrics_date`). 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-covid19_latest <- covid19 %>% group_by(Initials) %>% arrange(s_covid19_date) %>% slice(n()) %>% ungroup() %>% filter(s_covid19_date > last_week_date_formatted)
-covid19_latest[,5:6] <- lapply(covid19_latest[,5:6], FUN = function(x) recode(x, `1`= "Yes", `0`= "No", .missing = NULL))
-covid19_latest[,5:6] <- sapply(covid19_latest[,5:6], replace_na, " ")
-  
-covid19_table <- covid19 %>% group_by(Initials, IRTA_tracker) %>% tally()
-covid19_table_IRTA <- covid19 %>% group_by(Initials) %>% arrange(s_covid19_date) %>% slice(n()) %>% ungroup() %>% group_by(IRTA_tracker) %>% tally()
+s_crisis_3m <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_3m_tot) %>% 
+  rename(s_crisis_tot = "s_crisis_3m_tot") %>% mutate(type = "past 3 months") %>% filter(!is.na(s_crisis_tot))
+s_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_base_tot, s_mfq1w_tot, 
+  s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis) %>% mutate(type = "last two weeks (baseline)") %>% filter(!is.na(s_crisis_base_tot)) %>% 
+  rename(s_crisis_tot = "s_crisis_base_tot", s_crisis_1_exposed = "s_crisis_base_1_exposed", s_crisis_2_self_diagnosis = "s_crisis_base_2_self_diagnosis")
+s_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_fu_tot, s_mfq1w_tot, 
+  s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% mutate(type = "last two weeks (follow up)") %>% filter(!is.na(s_crisis_fu_tot)) %>% 
+  rename(s_crisis_tot = "s_crisis_fu_tot", s_crisis_1_exposed = "s_crisis_fu_1_exposed", s_crisis_2_self_diagnosis = "s_crisis_fu_2_self_diagnosis") 
 
-rm(covid19)
+p_crisis_3m <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_3m_tot) %>% 
+  rename(p_crisis_tot = "p_crisis_3m_tot") %>% mutate(type = "past 3 months") %>% filter(!is.na(p_crisis_tot))
+p_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_base_tot, p_mfq1w_tot) %>% 
+  rename(p_crisis_tot = "p_crisis_base_tot") %>% mutate(type = "last two weeks (baseline)") %>% filter(!is.na(p_crisis_tot))
+p_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_fu_tot, p_mfq1w_tot) %>% 
+  rename(p_crisis_tot = "p_crisis_fu_tot") %>% mutate(type = "last two weeks (follow up)") %>% filter(!is.na(p_crisis_tot))
+
+crisis_reformatted <- merge.default(s_crisis_3m, s_crisis_baseline, all=TRUE) %>% merge.default(., s_crisis_followup, all=TRUE) %>% 
+  merge.default(., p_crisis_3m, all=TRUE) %>% merge.default(., p_crisis_baseline, all=TRUE) %>% merge.default(., p_crisis_followup, all=TRUE)
+crisis_reformatted[,5:10] <- lapply(crisis_reformatted[,5:10], replace_na, " ")
+
+# crisis_latest <- covid19 %>% group_by(Initials) %>% arrange(s_crisis_date) %>% slice(n()) %>% ungroup() %>% 
+#   filter(s_crisis_date > last_week_date_formatted)
+# crisis_latest[,5:6] <- lapply(crisis_latest[,5:6], FUN = function(x) recode(x, `1`= "Yes", `0`= "No", .missing = NULL))
+# crisis_latest[,5:6] <- sapply(crisis_latest[,5:6], replace_na, " ")
+
+# crisis_table <- covid19 %>% group_by(Initials, IRTA_tracker) %>% tally()
+# crisis_table_IRTA <- covid19 %>% group_by(Initials) %>% arrange(s_crisis_date) %>% slice(n()) %>% ungroup() %>% group_by(IRTA_tracker) %>% tally()
+
+rm(crisis, s_crisis_3m, s_crisis_baseline, s_crisis_followup, p_crisis_3m, p_crisis_baseline, p_crisis_followup)
 
 ```
 
-Number of participants by IRTA (who have completed at least one COVID19 questionnaire): 
+<!-- Number of participants by IRTA (who have completed at least one COVID19 questionnaire):  -->
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-covid19_table_IRTA %>% kable(., col.names = c("IRTA", "Freq")) %>%
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+# crisis_table_IRTA %>% kable(., col.names = c("IRTA", "Freq")) %>%
+#   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
-Number of questionnaires completed by participant: 
+<!-- Number of questionnaires completed by participant:  -->
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-covid19_table %>% kable(., col.names = c("Initials", "IRTA", "Freq")) %>%
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+# crisis_table %>% kable(., col.names = c("Initials", "IRTA", "Freq")) %>%
+#   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
-Latest scores (where questionnaire max total = 230 from 03-23-2020; measures collected prior to this had a max score of 150):
+Latest scores (where questionnaire max total = 63):
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-covid19_latest %>% kable(., col.names = c("Initials", "IRTA", "Date completed", "Total", "Infected (self)", "Infected (family)")) %>% 
+crisis_reformatted %>% kable(., col.names = c("Initials", "IRTA", "Date", "Type", "CRISIS Total: Parent", "MFQ: Parent", 
+                                              "CRISIS Total: Self", "MFQ: Self", "Exposed", "Infected")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -1136,7 +1166,7 @@ current_inpatients %>% kable(., col.names = c("Initials", "Last Week Recorded", 
 
 rm(screens_table2, screens_current_table, ready_2_review, scheduled, scheduling_table2, protocol_table2, 
    inpatients_table, combined, meg_mmi_table2, meg_mmi_upcoming, bloods_table2, 
-   current_outpatients, current_inpatients, outpatients, outpatients_table, inpatients, family_hist_table2, covid19_table, 
+   current_outpatients, current_inpatients, outpatients, outpatients_table, inpatients, family_hist_table2, crisis_reformatted, 
    supreme_table, meg_mprage_missing, diag_mid_3_table, fu_dates, mid_long)
 rm(list=ls(pattern="denominator_"))
 rm(list=ls(pattern="numerator_"))
