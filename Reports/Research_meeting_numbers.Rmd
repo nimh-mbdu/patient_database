@@ -161,9 +161,10 @@ if (exists("Psychometrics_treatment")==FALSE) {
         crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date,
                  s_crisis_base_date, s_crisis_fu_date, s_crisis_3m_tot, s_crisis_base_tot, s_crisis_fu_tot, 
                  p_crisis_base_date, p_crisis_fu_date, p_crisis_3m_tot, p_crisis_base_tot, p_crisis_fu_tot, 
-                 s_mfq1w_tot, p_mfq1w_tot, s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, 
+                 s_mfq1w_tot, p_mfq1w_tot, s_mfq_tot, p_mfq_tot, s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, 
                  s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% 
-          filter(!is.na(s_crisis_3m_tot) | !is.na(s_crisis_base_tot) |!is.na(s_crisis_fu_tot) |!is.na(s_mfq1w_tot))
+          filter(!is.na(s_crisis_base_tot) | !is.na(s_crisis_fu_tot) | !is.na(s_mfq1w_tot)  | !is.na(s_mfq_tot) | 
+                   !is.na(p_crisis_base_tot) | !is.na(p_crisis_fu_tot) | !is.na(p_mfq1w_tot)  | !is.na(p_mfq_tot))
         rm(master_database_file, master_database_file_time, master_database_combined)
 } else {
         print("clinical database info already imported")
@@ -172,10 +173,11 @@ if (exists("Psychometrics_treatment")==FALSE) {
         crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date,
                  s_crisis_base_date, s_crisis_fu_date, s_crisis_3m_tot, s_crisis_base_tot, s_crisis_fu_tot, 
                  p_crisis_base_date, p_crisis_fu_date, p_crisis_3m_tot, p_crisis_base_tot, p_crisis_fu_tot, 
-                 s_mfq1w_tot, p_mfq1w_tot, s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, 
+                 s_mfq1w_tot, p_mfq1w_tot, s_mfq_tot, p_mfq_tot, s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, 
                  s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% 
-          filter(!is.na(s_crisis_3m_tot) | !is.na(s_crisis_base_tot) |!is.na(s_crisis_fu_tot) |!is.na(s_mfq1w_tot))
-}
+          filter(!is.na(s_crisis_base_tot) | !is.na(s_crisis_fu_tot) | !is.na(s_mfq1w_tot)  | !is.na(s_mfq_tot) | 
+                   !is.na(p_crisis_base_tot) | !is.na(p_crisis_fu_tot) | !is.na(p_mfq1w_tot)  | !is.na(p_mfq_tot))
+        }
 
 if (exists("MEG_mprage")==FALSE) {
         meg_mprage_file <- list.files(path = paste0(IRTA_tracker_location, "QCing/"), pattern = "^MEG_need_mprage", all.files = FALSE,
@@ -187,6 +189,17 @@ if (exists("MEG_mprage")==FALSE) {
         
 } else {
         print("MEG MPRAGE missing info already imported")
+}
+
+if (exists("MMI_recovery_combined2")==FALSE) {
+        mmi_recovery_file <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^MMI_recovery_subset", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        mmi_recovery_file_time <- file.mtime(paste0(database_location, "COVID19/", mmi_recovery_file)) %>% as.Date()
+        mmi_recovery_combined <- tibble(File=c(mmi_recovery_file), Date=c(mmi_recovery_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        MMI_recovery_combined2 <- read_excel(paste0(database_location, "COVID19/", mmi_recovery_combined[1]))
+} else {
+        print("MMI recovery completion info already imported")
 }
 
 ```
@@ -978,20 +991,23 @@ Numbers as of last SDQ+ pull (`r Psychometrics_date`).
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
+crisis$s_mfq_tot <- coalesce(crisis$s_mfq_tot, crisis$s_mfq1w_tot)
+crisis$p_mfq_tot <- coalesce(crisis$p_mfq_tot, crisis$p_mfq1w_tot)
+
 s_crisis_3m <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_3m_tot) %>% 
   rename(s_crisis_tot = "s_crisis_3m_tot") %>% mutate(type = "past 3 months") %>% filter(!is.na(s_crisis_tot))
-s_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_base_tot, s_mfq1w_tot, 
+s_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_base_tot, s_mfq_tot, 
   s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis) %>% mutate(type = "last two weeks (baseline)") %>% filter(!is.na(s_crisis_base_tot)) %>% 
   rename(s_crisis_tot = "s_crisis_base_tot", s_crisis_1_exposed = "s_crisis_base_1_exposed", s_crisis_2_self_diagnosis = "s_crisis_base_2_self_diagnosis")
-s_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_fu_tot, s_mfq1w_tot, 
+s_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_fu_tot, s_mfq_tot, 
   s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% mutate(type = "last two weeks (follow up)") %>% filter(!is.na(s_crisis_fu_tot)) %>% 
   rename(s_crisis_tot = "s_crisis_fu_tot", s_crisis_1_exposed = "s_crisis_fu_1_exposed", s_crisis_2_self_diagnosis = "s_crisis_fu_2_self_diagnosis") 
 
 p_crisis_3m <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_3m_tot) %>% 
   rename(p_crisis_tot = "p_crisis_3m_tot") %>% mutate(type = "past 3 months") %>% filter(!is.na(p_crisis_tot))
-p_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_base_tot, p_mfq1w_tot) %>% 
+p_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_base_tot, p_mfq_tot) %>% 
   rename(p_crisis_tot = "p_crisis_base_tot") %>% mutate(type = "last two weeks (baseline)") %>% filter(!is.na(p_crisis_tot))
-p_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_fu_tot, p_mfq1w_tot) %>% 
+p_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_fu_tot, p_mfq_tot) %>% 
   rename(p_crisis_tot = "p_crisis_fu_tot") %>% mutate(type = "last two weeks (follow up)") %>% filter(!is.na(p_crisis_tot))
 
 crisis_reformatted <- merge.default(s_crisis_3m, s_crisis_baseline, all=TRUE) %>% merge.default(., s_crisis_followup, all=TRUE) %>% 

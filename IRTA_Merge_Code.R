@@ -372,6 +372,23 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
   supreme_tracker_missing <- supreme_file_qc %>% filter(is.na(IRTA_tracker)) %>% mutate(reason22="IRTA tracker: task missing/error - check dates, task number, etc.") 
   supreme_incomplete <- supreme_file_qc %>% filter(Num_files!=42) %>% mutate(reason23="Incorrect numbers of behavioural files: should be 42") 
   
+  # MMI recovery (PsychoPy online task)
+  
+  MMI_recovery_files <- list.files(path = paste0(MMI_recovery_file_location), pattern = "\\.csv$", all.files = FALSE, full.names = FALSE, recursive = FALSE,
+                                   ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+  MMI_recovery_file_times <- file.mtime(paste0(MMI_recovery_file_location, "/", MMI_recovery_files)) %>% as.Date()
+  MMI_recovery_combined <- tibble(File=c(MMI_recovery_files), File_last_modified=c(MMI_recovery_file_times)) %>% filter(!str_detect(File, "00000_2_"))
+  MMI_recovery_split <- colsplit(MMI_recovery_combined$File, "_", names = c("SDAN", "MMI_task", "Task_Completed_Date", "Task_Time"))
+  MMI_recovery_split$Task_Time <- gsub(".csv", "", MMI_recovery_split$Task_Time)
+  MMI_recovery_combined <- cbind(MMI_recovery_combined, MMI_recovery_split) %>% select(SDAN, Task_Completed_Date, Task_Time, File, File_last_modified)
+  MMI_recovery_combined$Task_Completed_Date <- as.Date(MMI_recovery_combined$Task_Completed_Date)
+  MMI_recovery_combined <- master_IRTA_latest %>% select(Initials, SDAN, IRTA_tracker) %>% distinct(., .keep_all = TRUE) %>% merge.default(., MMI_recovery_combined, all = TRUE) %>% 
+    filter(!is.na(File))
+  
+  irta_tracker_check <- task_reshape_master %>% filter(Task_Name=="MMI_recovery") %>% select(Initials, SDAN, IRTA_tracker, Task_Name, Task_Date, Task_Number)
+  MMI_recovery_combined2 <- merge.default(irta_tracker_check, MMI_recovery_combined, all = TRUE) %>% select(-File_last_modified)
+  mmi_recovery_not_tracked <- MMI_recovery_combined2 %>% filter(is.na(Task_Name)) %>% mutate(reason24="MMI_recovery completed but missing from IRTA tracker") 
+  
 # combining the above 
   task_errors_combined <- merge.default(task_name_check, task_duplicate_date, all=TRUE) %>% merge.default(., task_duplicate_v_type, all=TRUE) %>% 
     merge.default(., task_duplicate_number, all=TRUE) %>% merge.default(., task_number_check, all=TRUE) %>% merge.default(., task_scanner_missing, all=TRUE) %>% 
@@ -380,11 +397,12 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
     merge.default(., task_missing_initials, all=TRUE) %>% merge.default(., task_missing_eligible, all=TRUE) %>% merge.default(., task_missing_clinical_date, all=TRUE) %>% 
     merge.default(., task_check_clinical_code, all=TRUE) %>% merge.default(., task_missing_scheduling, all=TRUE) %>% merge.default(., task_missing_dawbaid, all=TRUE) %>% 
     merge.default(., task_missing_protocol, all=TRUE) %>% merge.default(., historical_check, all=TRUE) %>% merge.default(., supreme_file_missing, all=TRUE) %>% 
-    merge.default(., supreme_tracker_missing, all=TRUE) %>% merge.default(., supreme_incomplete, all=TRUE) %>% select(-FIRST_NAME, -LAST_NAME)
+    merge.default(., supreme_tracker_missing, all=TRUE) %>% merge.default(., supreme_incomplete, all=TRUE) %>% 
+    merge.default(., mmi_recovery_not_tracked, all=TRUE) %>% select(-FIRST_NAME, -LAST_NAME)
   
   task_errors_combined$QC_task <- paste(task_errors_combined$reason1, task_errors_combined$reason2, task_errors_combined$reason3, task_errors_combined$reason4, 
                                         task_errors_combined$reason5, task_errors_combined$reason6, task_errors_combined$reason21, task_errors_combined$reason22, 
-                                        task_errors_combined$reason23, sep = "; ")
+                                        task_errors_combined$reason23, task_errors_combined$reason24, sep = "; ")
   task_errors_combined$QC_other <- paste(task_errors_combined$reason7, task_errors_combined$reason8, task_errors_combined$reason9, task_errors_combined$reason10, 
                                          task_errors_combined$reason11, task_errors_combined$reason12, task_errors_combined$reason13, task_errors_combined$reason14, 
                                          task_errors_combined$reason15, task_errors_combined$reason16, task_errors_combined$reason17, task_errors_combined$reason18, 
@@ -749,6 +767,26 @@ if (file_save_check_combined$date_diff[1]==0) {
   master_IRTA_oldest_screens_latest %>% write_xlsx(paste0(IRTA_tracker_location,"OLD_REFERRALS_DATABASE_updated.xlsx"))
 }
 
+######################################################################################
+#######Saving MMI recovery subset
+
+MMI_recovery_combined2 %>% write_xlsx(paste0(database_location, "COVID19/MMI_recovery_subset.xlsx"))
+MMI_recovery_combined2 %>% write_xlsx(paste0(database_location, "COVID19/old/MMI_recovery_subset_", todays_date_formatted, ".xlsx"))
+
+# checking saved properly
+file_save_check <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^MMI_recovery_subset.xlsx", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(database_location, "COVID19/", file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'MMI_recovery_subset'")
+} else {
+  print("Conflict: exporting as 'MMI_recovery_subset_updated'")
+  MMI_recovery_combined2 %>% write_xlsx(paste0(database_location, "COVID19/MMI_recovery_subset_updated.xlsx"))
+}
+
 #####Removing unnecessary variables
 
 rm(list=ls(pattern="_active_data"))
@@ -767,5 +805,5 @@ rm(MID_task_QC, MMI_task_QC, float, task_reshape, task_reshape_master, task_QC, 
    MEG_task_QC, meg_list, MID_check, RS_check, task_check_clinical_code, task_name_check, task_number_check, prev_task_database,
    task_errors_combined, task_names, MID_resting_discrepancy, task_master_file, task_master_file_time, task_master_combined, file_save_check, 
    file_save_check_time, file_save_check_combined, historical_check, supreme_irta_list, supreme_file1, supreme_file2, supreme_file2a, supreme_file_qc, 
-   supreme_file_missing, supreme_tracker_missing, supreme_incomplete)
+   supreme_incomplete, MMI_recovery_files, MMI_recovery_file_times, MMI_recovery_combined, irta_tracker_check, MMI_recovery_split)
 rm(get_last_scan, get_last_visit, has_scan, is_last_v, print_dates, print_notes)

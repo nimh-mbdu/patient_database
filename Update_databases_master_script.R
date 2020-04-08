@@ -14,7 +14,7 @@ if (computer=="pc") {
   string = '/Volumes/string-mbd/'
   sdan1 = '/Volumes/sdan1/'
 } else { # if using a PC and your drives aren't mounted as specified above, enter what letter your drives are mounted under here... 
-  string = 'Z:/'
+  string = 'W:/'
   sdan1 = 'Y:/'
 }
 
@@ -49,6 +49,7 @@ sdq_pull = paste0(database_location, "SDQ_pull/")
 # related to the CBT database
 CBT_location = paste0(database_location, "CBT/") 
 CBT_backup = paste0(CBT_location, "Backup/") 
+
 saving_reports = paste0(CBT_location, "Reports/")
 
 # related to the Inpatient database
@@ -60,6 +61,7 @@ inpatient_summary_location = paste0(inpatient_location, "Reports/")
 MID_tracker_location = paste0(sdan1, "Data/MID1/")
 MMI_tracker_location = paste0(sdan1, "Data/MMI/")
 MEG_tracker_location = paste0(string, "Tasks/MEG/")
+MMI_recovery_file_location = paste0(string, "Tasks/MMI_recovery/")
 supreme_file_location = paste0(string, "Tasks/supreme/data/")
 
 # packages ----------------------------------------------------------------

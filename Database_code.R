@@ -2372,7 +2372,7 @@
     assign(paste0(measure_name, "subset_task"), measure_temp_task)
     
   }
-
+  
 #####
 # Daily MFQ - inpatients only 
   
@@ -2963,22 +2963,19 @@ if (file_save_check_combined$date_diff[1]==0) {
 }
 
 #### Measures sub-dataset for IRTAs
-measure_temp_sdq[,5:10] <- lapply(measure_temp_sdq[,5:10], na_if, "")
-measure_temp_sdq[,17] <- lapply(measure_temp_sdq[,17], na_if, "")
-measure_temp_sdq[,55:58] <- lapply(measure_temp_sdq[,55:58], na_if, "")
-
 measures_expected <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "easures")) %>% filter(Task_Date > "2020-03-17") %>% 
   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date) %>% mutate(Review_status = 0)
 measures_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, 
         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
         s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, s_crisis_base_3_symptoms, s_crisis_base_4_family_diagnosis, s_crisis_base_5_family_events, 
         p_crisis_base_1_exposed, p_crisis_base_2_self_diagnosis, p_crisis_base_3_symptoms, p_crisis_base_4_family_diagnosis, p_crisis_base_5_family_events, 
-        s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq1w_tot, p_mfq1w_date, p_scaredshort_tot, 
-        p_scaredshort_date, s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, 
-        p_crisis_base_date, s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, s_crisis_base_44_support_other, 
-        s_crisis_base_additional_concerns, s_crisis_base_additional_comments, p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, 
+        s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq1w_tot, p_mfq1w_date, 
+        p_mfq_tot, p_mfq_date, p_scaredshort_tot, p_scaredshort_date, s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, p_crisis_3m_tot, 
+        p_crisis_3m_date, p_crisis_base_tot, p_crisis_base_date, s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, 
+        s_crisis_base_44_support_other, s_crisis_base_additional_concerns, s_crisis_base_additional_comments, p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, 
         p_crisis_base_44_support, p_crisis_base_44_support_other, p_crisis_base_additional_concerns, p_crisis_base_additional_comments) %>% 
-  filter(s_mfq1w_date  > "2020-03-17" | s_scaredshort_date > "2020-03-17" | s_crisis_base_date > "2020-03-17" | s_crisis_3m_date > "2020-03-17") %>% 
+  filter(s_mfq1w_date  > "2020-03-17" | s_scaredshort_date > "2020-03-17" | s_crisis_base_date > "2020-03-17" | s_crisis_3m_date > "2020-03-17" |
+           s_mfq_date  > "2020-03-17" | p_mfq_date  > "2020-03-17" | p_mfq1w_date  > "2020-03-17") %>% 
   mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% 
   mutate(Clinician_assigned = NA) %>% mutate(Clinician_followup = NA)
 measures_dataset_w_missing <- merge.default(measures_expected, measures_completed, all=TRUE) %>% group_by(Initials) %>% 
@@ -2990,7 +2987,7 @@ contact_info <- master_IRTA_latest %>% group_by(Initials) %>% arrange(Clinical_V
 
 # QCing
 not_tracked <- measures_dataset_w_missing %>% filter(is.na(Task_Name)) %>% mutate(QC_note1 = "Missing from IRTA tracker")
-measure_incomplete <- measures_dataset_w_missing %>% filter(is.na(s_mfq1w_tot) | is.na(s_crisis_base_tot) | is.na(s_crisis_3m_tot) | is.na(s_scaredshort_tot)) %>% 
+measure_incomplete <- measures_dataset_w_missing %>% filter(is.na(s_mfq1w_tot) | is.na(s_mfq_tot) | is.na(s_crisis_base_tot) | is.na(s_crisis_3m_tot) | is.na(s_scaredshort_tot)) %>% 
   mutate(QC_note2 = "At least one questionnaire not completed")
 measures_dataset_qc <- merge.default(not_tracked, measure_incomplete, all=TRUE)
 
@@ -3028,12 +3025,18 @@ measures_combined_long <- merge.default(smfq1w_tminus2_long, sscared_tminus2_lon
 # Combining & exporting 
 measures_dataset_w_qc <- left_join(measures_dataset_w_missing, measures_dataset_qc) %>% merge.default(contact_info) 
 
-measures_dataset_tminus2_long <- merge.default(measures_dataset_w_qc, measures_combined_long, all=TRUE) %>% 
+measures_dataset_tminus2_long <- merge.default(measures_dataset_w_qc, measures_combined_long, all=TRUE)
+measures_dataset_tminus2_long$s_mfq_tot <- coalesce(measures_dataset_tminus2_long$s_mfq_tot, measures_dataset_tminus2_long$s_mfq1w_tot)
+measures_dataset_tminus2_long$s_mfq_date <- coalesce(measures_dataset_tminus2_long$s_mfq_date, measures_dataset_tminus2_long$s_mfq1w_date)
+measures_dataset_tminus2_long$p_mfq_tot <- coalesce(measures_dataset_tminus2_long$p_mfq_tot, measures_dataset_tminus2_long$p_mfq1w_tot)
+measures_dataset_tminus2_long$p_mfq_date <- coalesce(measures_dataset_tminus2_long$p_mfq_date, measures_dataset_tminus2_long$p_mfq1w_date)
+
+measures_dataset_tminus2_long <- measures_dataset_tminus2_long %>% 
   select(IRTA_tracker, Initials:PLUSID, FIRST_NAME:Parent_Contact_Number, Participant_Type2, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
          Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date, 
          s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, s_crisis_base_3_symptoms, s_crisis_base_4_family_diagnosis, s_crisis_base_5_family_events, 
          p_crisis_base_1_exposed, p_crisis_base_2_self_diagnosis, p_crisis_base_3_symptoms, p_crisis_base_4_family_diagnosis, p_crisis_base_5_family_events, 
-         s_mfq1w_tot, s_mfq1w_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq1w_tot, p_mfq1w_date, p_scaredshort_tot, 
+         s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq_tot, p_mfq_date, p_scaredshort_tot, 
          p_scaredshort_date, s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, 
          p_crisis_base_date, s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, s_crisis_base_44_support_other, 
          s_crisis_base_additional_concerns, s_crisis_base_additional_comments, p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, 
@@ -3117,7 +3120,6 @@ if (file_save_check_combined$date_diff[1]==0) {
 
 rm(list=ls(pattern="subset"))
 rm(list=ls(pattern="clinical"))
-rm(list=ls(pattern="task"))
 rm(list=ls(pattern="measures"))
 rm(list=ls(pattern="iter"))
 rm(list=ls(pattern="manual"))
@@ -3129,10 +3131,10 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_fu
    fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report,
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, 
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, sdq_w_names, sdq_dates, 
-   s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, 
+   s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, task_DB, task_DB_date, 
    how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, 
-   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, 
+   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, task_sets,
    file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent, 
    ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, 
-   other_incomplete, not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, s_covid19_temp_sdq, contact_info, measure_incomplete)
+   not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, s_covid19_temp_sdq, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)
