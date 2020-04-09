@@ -2962,7 +2962,7 @@ if (file_save_check_combined$date_diff[1]==0) {
   s_mfq1d_final %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_daily_MFQ_updated.xlsx"))
 }
 
-#### Measures sub-dataset for IRTAs
+#### CRISIS sub-dataset for IRTAs
 measures_expected <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "easures")) %>% filter(Task_Date > "2020-03-17") %>% 
   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date) %>% mutate(Review_status = 0)
 measures_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, 
@@ -3052,8 +3052,30 @@ if (file.exists(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_
   measures_dataset_tminus2_long %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_formatted, ".xlsx"))
 }
 
-# creating T-2 long subset for Argyris
-measures_dataset_tminus2_long %>% write_csv(paste0(database_location, "COVID19/Measures_subset.csv"))
+#### CRISIS sub-dataset for Argyris
+
+crisis_completed <- Psychometrics_treatment %>% 
+  select(Initials, SDAN, PLUSID, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+         s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, s_scared_tot, s_scared_date, 
+         s_scaredshort_tot, s_scaredshort_date, p_scaredshort_tot, p_scaredshort_date, matches("s_crisis_"), matches("p_crisis_")) %>% 
+  filter(s_mfq1w_date  > "2020-03-17" | s_scaredshort_date > "2020-03-17" | s_crisis_base_date > "2020-03-17" | s_crisis_3m_date > "2020-03-17" |
+           s_mfq_date  > "2020-03-17" | p_mfq_date  > "2020-03-17" | p_mfq1w_date  > "2020-03-17") %>% 
+  select(-matches("_complete"), -matches("_source"), -matches("_TDiff"))
+
+crisis_dataset_tminus2_long <- merge.default(crisis_completed, measures_combined_long, all=TRUE)
+crisis_dataset_tminus2_long$s_mfq_tot <- coalesce(crisis_dataset_tminus2_long$s_mfq_tot, crisis_dataset_tminus2_long$s_mfq1w_tot)
+crisis_dataset_tminus2_long$s_mfq_date <- coalesce(crisis_dataset_tminus2_long$s_mfq_date, crisis_dataset_tminus2_long$s_mfq1w_date)
+crisis_dataset_tminus2_long$p_mfq_tot <- coalesce(crisis_dataset_tminus2_long$p_mfq_tot, crisis_dataset_tminus2_long$p_mfq1w_tot)
+crisis_dataset_tminus2_long$p_mfq_date <- coalesce(crisis_dataset_tminus2_long$p_mfq_date, crisis_dataset_tminus2_long$p_mfq1w_date)
+
+crisis_dataset_tminus2_long <- crisis_dataset_tminus2_long %>% 
+  select(Initials, SDAN, PLUSID, IRTA_tracker, Clinical_Visit_Date, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+         s_mfq_tot, s_mfq_date, p_mfq_tot, p_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_scaredshort_tot, 
+         p_scaredshort_date, matches("s_crisis_"), matches("p_crisis_")) %>% 
+  group_by(Initials) %>% fill(IRTA_tracker, SDAN:c_ksadsdx_dx_detailed, .direction = "up") %>% fill(IRTA_tracker, SDAN:c_ksadsdx_dx_detailed, .direction = "down") %>% 
+  ungroup() %>% distinct(., .keep_all = TRUE)
+
+crisis_dataset_tminus2_long %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_tminus2_long.csv"))
 # source(paste0(database_location, "COVID19/COVID19_subset_wide_long.R"))
 
 # Creating tasks database & exporting ------------------------------------

@@ -158,7 +158,7 @@ if (exists("Psychometrics_treatment")==FALSE) {
         Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
           Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
-        crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date,
+        crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed,
                  s_crisis_base_date, s_crisis_fu_date, s_crisis_3m_tot, s_crisis_base_tot, s_crisis_fu_tot, 
                  p_crisis_base_date, p_crisis_fu_date, p_crisis_3m_tot, p_crisis_base_tot, p_crisis_fu_tot, 
                  s_mfq1w_tot, p_mfq1w_tot, s_mfq_tot, p_mfq_tot, s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, 
@@ -170,7 +170,7 @@ if (exists("Psychometrics_treatment")==FALSE) {
         print("clinical database info already imported")
         family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
           Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
-        crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date,
+        crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed,
                  s_crisis_base_date, s_crisis_fu_date, s_crisis_3m_tot, s_crisis_base_tot, s_crisis_fu_tot, 
                  p_crisis_base_date, p_crisis_fu_date, p_crisis_3m_tot, p_crisis_base_tot, p_crisis_fu_tot, 
                  s_mfq1w_tot, p_mfq1w_tot, s_mfq_tot, p_mfq_tot, s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, 
@@ -230,6 +230,8 @@ if (exists("MMI_recovery_combined2")==FALSE) {
     + MEG
     + Bloods 
     + Family History Interview
+    + CRISIS questionnaire numbers
+    + MMI_recovery numbers (PsychoPy task online)
 3. Treatment
     + Outpatients
     + Inpatients 
@@ -591,9 +593,13 @@ baseline <- baseline %>% mutate(measurement_TDiff_abs=abs(c_ksadsdx_TDiff)) %>%
   group_by(Initials, c_ksadsdx_visit_type) %>% arrange(Initials, c_ksadsdx_visit_type, measurement_TDiff_abs) %>% 
   slice(1) %>% ungroup() %>% select(-measurement_TDiff_abs) %>% arrange(Initials, Clinical_Visit_Date)
 
+#### excluding removed participants
 latest_eligibility <- Psychometrics_treatment %>% select(Initials, Eligible, IRTA_tracker, Clinical_Visit_Type, Clinical_Visit_Date, Protocol) %>% 
   group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% slice(n()) %>% ungroup() %>% mutate(Eligible = as.numeric(Eligible))
-baseline <- latest_eligibility %>% select(Initials, Eligible) %>% merge.default(baseline, ., all=TRUE)
+# missing_diag <- merge.default(baseline, latest_eligibility, all = TRUE) %>% group_by(Initials) %>% fill(IRTA_tracker:Eligible, .direction = "up") %>% 
+#   fill(IRTA_tracker:Eligible, .direction = "down") %>% slice(1) %>% ungroup() %>% filter(is.na(c_ksadsdx_date))
+# missing_diag %>% write_xlsx(paste0(IRTA_tracker_location, "QCing/Missing_diagnosis.xlsx"))
+baseline <- latest_eligibility %>% select(Initials, Eligible) %>% left_join(baseline, .)
 latest_eligibility <- latest_eligibility %>% mutate(remove1 = ifelse((Eligible > 3 & Eligible < 11), 1, 0))
 latest_eligibility <- latest_eligibility %>% mutate(remove2 = ifelse((IRTA_tracker == "REMOVED"), 1, 0))
 latest_eligibility <- latest_eligibility %>% mutate(remove3 = ifelse((!str_detect(Protocol, "0037") | str_detect(Protocol, "SCREENING")), 1, 0))
@@ -601,6 +607,10 @@ latest_eligibility[,7:9] <- lapply(latest_eligibility[7:9], replace_na, 0)
 latest_eligibility <- latest_eligibility %>% mutate(remove=(remove1 + remove2 + remove3)) %>% filter(remove>0)
 removed_initials <- latest_eligibility$Initials
 baseline$exclude <- (baseline$Initials %in% removed_initials) %>% as.character()
+
+#### incorporating scanner information 
+scanner <- master_IRTA_latest %>% filter(!is.na(Scanner)) %>% group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% slice(n()) %>% ungroup() %>% select(Initials, Scanner)
+baseline <- left_join(baseline, scanner)
 
 #### completed annual FU visit 
 FU_completed <- baseline %>% group_by(Initials) %>% filter(n()>1) %>% ungroup() %>% 
@@ -654,8 +664,15 @@ overdue <- baseline_keep %>% filter(status==1) %>% select(Initials, IRTA_tracker
 overdue$Eligible <- recode(overdue$Eligible, "0"="Include: fully eligible", "1"="Include: can’t scan (braces, etc.)", 
   "2"="On hold: contact again after specified amount of time", "3"="On hold: low priority", "11"="Completed treatment", .missing = NULL)
 
+temp1a_scanner <- ctable(baseline_keep$status, baseline_keep$Scanner, useNA = "no",
+                           prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
+  rename(Freq = "cross_table.Freq") %>% rename(Scanner = "cross_table.baseline_keep.Scanner") %>%
+  rename(Status = "cross_table.baseline_keep.status") %>% select(-proportions.Total)
+six_months_3TA <- temp1a_scanner %>% filter(Status == "2" | Status == "3" | Status == "4") %>% filter(Scanner=="3TA") %>% select(Freq) %>% colSums() %>% as.numeric()
+six_months_3TC <- temp1a_scanner %>% filter(Status == "2" | Status == "3" | Status == "4") %>% filter(Scanner=="3TC") %>% select(Freq) %>% colSums() %>% as.numeric()
+
 rm(baseline, baseline_removed, removed_initials, FU_completed, baseline_keep, temp1, temp2, rest_temp, date_temp, descrip_table, 
-   MDD_one_year, MDD_two_year, HV_one_year, HV_two_year)
+   MDD_one_year, MDD_two_year, HV_one_year, HV_two_year, temp1a_scanner)
 
 ```
 
@@ -681,6 +698,8 @@ Summary:
 
 * MDDs due in next 6 months: `r MDD_6_months`
 * HVs due in next 6 months: `r HV_6_months`
+* Due on 3TA in next 6 months: `r six_months_3TA`
+* Due on 3TC in next 6 months: `r six_months_3TC`
 
 Participants long overdue for clinical follow up
 
@@ -1013,7 +1032,8 @@ p_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Da
 crisis_reformatted <- merge.default(s_crisis_3m, s_crisis_baseline, all=TRUE) %>% merge.default(., s_crisis_followup, all=TRUE) %>% 
   merge.default(., p_crisis_3m, all=TRUE) %>% merge.default(., p_crisis_baseline, all=TRUE) %>% merge.default(., p_crisis_followup, all=TRUE)
 crisis_reformatted[,5:10] <- lapply(crisis_reformatted[,5:10], replace_na, " ")
-
+crisis_reformatted <- crisis_reformatted %>% arrange(Initials, desc(type))
+  
 # crisis_latest <- covid19 %>% group_by(Initials) %>% arrange(s_crisis_date) %>% slice(n()) %>% ungroup() %>% 
 #   filter(s_crisis_date > last_week_date_formatted)
 # crisis_latest[,5:6] <- lapply(crisis_latest[,5:6], FUN = function(x) recode(x, `1`= "Yes", `0`= "No", .missing = NULL))
@@ -1050,6 +1070,48 @@ Latest scores (where questionnaire max total = 63):
 
 crisis_reformatted %>% kable(., col.names = c("Initials", "IRTA", "Date", "Type", "CRISIS Total: Parent", "MFQ: Parent", 
                                               "CRISIS Total: Self", "MFQ: Self", "Exposed", "Infected")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+##### MMI_recovery task completion (PsychoPy task):
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+diagnosis <- crisis %>% select(Initials, IRTA_tracker, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed) %>% 
+  group_by(Initials) %>% slice(1) %>% ungroup() 
+MMI_recovery_completed <- MMI_recovery_combined2 %>% filter(!is.na(Task_Completed_Date)) %>% left_join(., diagnosis)
+
+MMI_recovery_table_Dx <- MMI_recovery_completed %>% group_by(Initials) %>% arrange(Task_Completed_Date) %>% 
+  slice(n()) %>% ungroup() %>% group_by(c_ksadsdx_primary_dx) %>% tally() %>% rename(Diagnosis = "c_ksadsdx_primary_dx")
+MMI_recovery_total <- MMI_recovery_table_Dx %>% select(n) %>% colSums() %>% as.numeric() %>% 
+  as.data.frame() %>% rename(n = ".") %>% mutate(Diagnosis = "Total") %>% select(Diagnosis, n)
+MMI_recovery_table_Dx <- rbind(MMI_recovery_table_Dx, MMI_recovery_total)
+
+MMI_recovery_latest <- MMI_recovery_completed %>% group_by(Initials) %>% arrange(Task_Completed_Date) %>% slice(n()) %>% ungroup() %>% 
+  filter(Task_Completed_Date > last_week_date_formatted) %>% group_by(c_ksadsdx_primary_dx) %>% tally() %>% rename(Diagnosis = "c_ksadsdx_primary_dx")
+MMI_recovery_latest_total <- MMI_recovery_latest %>% select(n) %>% colSums() %>% as.numeric() %>% 
+  as.data.frame() %>% rename(n = ".") %>% mutate(Diagnosis = "Total") %>% select(Diagnosis, n)
+MMI_recovery_latest <- rbind(MMI_recovery_latest, MMI_recovery_latest_total)
+
+rm(MMI_recovery_completed, diagnosis, MMI_recovery_total, MMI_recovery_latest_total)
+
+```
+
+Overall:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+MMI_recovery_table_Dx %>% kable(., col.names = c("Diagnosis", "Freq")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+In the past week: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+MMI_recovery_latest %>% kable(., col.names = c("Diagnosis", "Freq")) %>%
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -1180,10 +1242,10 @@ current_inpatients %>% kable(., col.names = c("Initials", "Last Week Recorded", 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-rm(screens_table2, screens_current_table, ready_2_review, scheduled, scheduling_table2, protocol_table2, 
-   inpatients_table, combined, meg_mmi_table2, meg_mmi_upcoming, bloods_table2, 
+rm(screens_table2, screens_current_table, ready_2_review, scheduled, scheduling_table2, protocol_table2, MMI_recovery_table_IRTA, MMI_recovery_table_participant, 
+   inpatients_table, combined, meg_mmi_table2, meg_mmi_upcoming, bloods_table2, MDD_6_months, HV_6_months, 
    current_outpatients, current_inpatients, outpatients, outpatients_table, inpatients, family_hist_table2, crisis_reformatted, 
-   supreme_table, meg_mprage_missing, diag_mid_3_table, fu_dates, mid_long)
+   supreme_table, meg_mprage_missing, diag_mid_3_table, fu_dates, mid_long, six_months_3TA, six_months_3TC)
 rm(list=ls(pattern="denominator_"))
 rm(list=ls(pattern="numerator_"))
 
