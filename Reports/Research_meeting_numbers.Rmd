@@ -156,8 +156,9 @@ if (exists("Psychometrics_treatment")==FALSE) {
         master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
           arrange(desc(Date)) %>% slice(1)
         Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
-        family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
-          Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
+        family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, c_ksadsdx_primary_dx, c_family_interview_date, 
+                         c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer)) %>% group_by(Initials) %>% 
+          arrange(Initials, c_family_interview_date) %>% slice(n()) %>% ungroup()
         crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed,
                  s_crisis_base_date, s_crisis_fu_date, s_crisis_3m_tot, s_crisis_base_tot, s_crisis_fu_tot, 
                  p_crisis_base_date, p_crisis_fu_date, p_crisis_3m_tot, p_crisis_base_tot, p_crisis_fu_tot, 
@@ -168,8 +169,9 @@ if (exists("Psychometrics_treatment")==FALSE) {
         rm(master_database_file, master_database_file_time, master_database_combined)
 } else {
         print("clinical database info already imported")
-        family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Participant_Type2, Clinical_Visit_Date, 
-          Clinical_Visit_Type, c_family_interview_date, c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer))
+        family_hist <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, c_ksadsdx_primary_dx, c_family_interview_date, 
+                         c_family_interview_interviewer) %>% filter(!is.na(c_family_interview_interviewer)) %>% group_by(Initials) %>% 
+          arrange(Initials, c_family_interview_date) %>% slice(n()) %>% ungroup()
         crisis <- Psychometrics_treatment %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed,
                  s_crisis_base_date, s_crisis_fu_date, s_crisis_3m_tot, s_crisis_base_tot, s_crisis_fu_tot, 
                  p_crisis_base_date, p_crisis_fu_date, p_crisis_3m_tot, p_crisis_base_tot, p_crisis_fu_tot, 
@@ -977,25 +979,38 @@ Numbers as of last SDQ+ pull (`r Psychometrics_date`).
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-family_hist <- family_hist %>% select(-Clinical_Visit_Date) %>% group_by(Initials) %>% 
-  arrange(c_family_interview_date) %>% slice(n()) %>% ungroup()
+eligible <- master_IRTA_latest %>% select(Initials, Clinical_Visit_Date, Participant_Type, IRTA_tracker, Eligible, Protocol) %>% 
+  group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% fill(Participant_Type:Protocol, .direction = "down") %>% 
+  slice(n()) %>% ungroup() %>% filter(str_detect(Protocol, "0037")) %>% filter(!str_detect(Protocol, "SCREENING")) %>% 
+  filter(IRTA_tracker != "REMOVED") %>% filter(Eligible != "4" & Eligible !="7" & Eligible !="3") %>% 
+  filter(!str_detect(Participant_Type, "Fox")) %>% select(Initials, IRTA_tracker)
+eligible <- Psychometrics_treatment %>% select(Initials, c_ksadsdx_primary_dx, c_ksadsdx_date) %>% group_by(Initials) %>% 
+  arrange(Initials, c_ksadsdx_date) %>% slice(n()) %>% ungroup() %>% select(-c_ksadsdx_date) %>% left_join(eligible, ., all = TRUE)
 
-family_hist_table <- ctable(family_hist$IRTA_tracker, family_hist$Participant_Type2, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.family_hist.Participant_Type2") %>% 
-  rename(IRTA_tracker = "cross_table.family_hist.IRTA_tracker") %>% select(-proportions.Total)
+family_hist <- merge.default(family_hist, eligible, all = TRUE)
+family_hist$c_ksadsdx_primary_dx <- gsub("Anxious", "Other", family_hist$c_ksadsdx_primary_dx)
+family_hist$c_ksadsdx_primary_dx <- gsub("EXCLUDED", "Other", family_hist$c_ksadsdx_primary_dx)
+family_hist$c_ksadsdx_primary_dx <- replace_na(family_hist$c_ksadsdx_primary_dx, "Other")
+family_hist$complete <- is.na(family_hist$c_family_interview_interviewer) %>% as.character()
+family_hist$complete <- gsub("FALSE", "Complete", family_hist$complete)
+family_hist$complete <- gsub("TRUE", "Incomplete", family_hist$complete)
 
-family_hist_table2 <- reshape(family_hist_table, idvar = "IRTA_tracker", timevar = "Participant_Type2", direction = "wide") %>% 
-  mutate(HV_Percent = (proportions.HV.HV * 100)) %>% mutate(HV_Percent = round(HV_Percent, 2)) %>% 
-  mutate(MDD_Percent = (proportions.MDD.MDD * 100)) %>% mutate(MDD_Percent = round(MDD_Percent, 2)) %>% 
-  select(IRTA_tracker, Freq.MDD, MDD_Percent, Freq.HV, HV_Percent, Freq.Total)
+family_hist_table <- ctable(family_hist$c_ksadsdx_primary_dx, family_hist$complete, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(c_ksadsdx_primary_dx = "cross_table.family_hist.c_ksadsdx_primary_dx") %>% 
+  rename(complete = "cross_table.family_hist.complete") %>% select(-proportions.Total)
 
-rm(family_hist, family_hist_table)
+family_hist_table2 <- reshape(family_hist_table, idvar = "c_ksadsdx_primary_dx", timevar = "complete", direction = "wide") %>% 
+  mutate(Complete_Percent = (proportions.Complete.Complete * 100)) %>% mutate(Complete_Percent = round(Complete_Percent, 2)) %>% 
+  mutate(Incomplete_Percent = (proportions.Incomplete.Incomplete * 100)) %>% mutate(Incomplete_Percent = round(Incomplete_Percent, 2)) %>% 
+  select(c_ksadsdx_primary_dx, Freq.Complete, Complete_Percent, Freq.Incomplete, Incomplete_Percent, Freq.Total)
+
+rm(family_hist, family_hist_table, eligible)
 
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-family_hist_table2 %>% kable(., col.names = c("Clinical Visit Type", "MDD", "%", "HV", "%", "Total")) %>% 
+family_hist_table2 %>% kable(., col.names = c("Diagnosis", "Complete", "%", "Incomplete", "%", "Total")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```

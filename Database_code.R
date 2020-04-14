@@ -2412,7 +2412,7 @@
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
-    # iter=24
+    # iter=23
     measure_name <- variables_no_scoring[iter]
     print(paste("************************LOOP = ", measure_name))
 
@@ -2531,11 +2531,14 @@
       
     }
     
-    # if (measure_name=="c_family_interview_") {
-    #   dummy1 <- measure_temp %>% select(-Initials) %>% rename(Initials="Sibling_Init") %>% filter(!is.na(Initials))
-    #   measure_temp <- measure_temp %>% select(-Sibling_Init) %>% merge.default(., dummy1, all=TRUE)
-    #   rm(dummy1) 
-    # }
+    if (measure_name=="c_family_interview_") {
+      sibling <- measure_temp %>% filter(!is.na(Sibling_Init)) %>% 
+        select(Sibling_Init, date_temp, source, matches(measure_name), tempcomplete) %>% rename(Initials = "Sibling_Init")
+      sibling <- master_IRTA_latest %>% select(Initials, PLUSID) %>% distinct(., .keep_all = TRUE) %>% 
+        filter(Initials %in% sibling$Initials) %>% merge.default(sibling, ., all = TRUE)
+      measure_temp <- merge.default(measure_temp, sibling, all=TRUE) %>% 
+        select(PLUSID, Initials, date_temp, source, matches(measure_name), tempcomplete)
+    }
     
     if (measure_name=="p_demo_eval_"){
       fill_names <- measure_temp %>% select(-Initials) %>% colnames()
@@ -2966,7 +2969,7 @@ if (file_save_check_combined$date_diff[1]==0) {
 measures_expected <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "easures")) %>% filter(Task_Date > "2020-03-17") %>% 
   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date) %>% mutate(Review_status = 0)
 measures_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, 
-        c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+        c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_covid19_tot,	s_covid19_date,	s_covid19_22_other_comments,
         s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, s_crisis_base_3_symptoms, s_crisis_base_4_family_diagnosis, s_crisis_base_5_family_events, 
         p_crisis_base_1_exposed, p_crisis_base_2_self_diagnosis, p_crisis_base_3_symptoms, p_crisis_base_4_family_diagnosis, p_crisis_base_5_family_events, 
         s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq1w_tot, p_mfq1w_date, 
@@ -2975,7 +2978,8 @@ measures_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID,
         s_crisis_base_44_support_other, s_crisis_base_additional_concerns, s_crisis_base_additional_comments, p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, 
         p_crisis_base_44_support, p_crisis_base_44_support_other, p_crisis_base_additional_concerns, p_crisis_base_additional_comments) %>% 
   filter(s_mfq1w_date  > "2020-03-17" | s_scaredshort_date > "2020-03-17" | s_crisis_base_date > "2020-03-17" | s_crisis_3m_date > "2020-03-17" |
-           s_mfq_date  > "2020-03-17" | p_mfq_date  > "2020-03-17" | p_mfq1w_date  > "2020-03-17") %>% 
+         s_mfq_date  > "2020-03-17" | p_mfq_date  > "2020-03-17" | p_mfq1w_date  > "2020-03-17" | p_crisis_base_date > "2020-03-17" | 
+         p_crisis_3m_date > "2020-03-17") %>% 
   mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% 
   mutate(Clinician_assigned = NA) %>% mutate(Clinician_followup = NA)
 measures_dataset_w_missing <- merge.default(measures_expected, measures_completed, all=TRUE) %>% group_by(Initials) %>% 
@@ -3006,13 +3010,6 @@ smfq1w_tminus2_long$s_mfq1w_date <- coalesce(smfq1w_tminus2_long$s_mfq1w_date, s
 smfq1w_tminus2_long <- smfq1w_tminus2_long %>% filter(s_mfq1w_date < "2020-03-17") %>% group_by(Initials) %>% 
   arrange(desc(s_mfq1w_date)) %>% slice(1:2) %>% ungroup() %>% select(-s_mfq_date, -s_mfq_tot) %>% distinct(., .keep_all = TRUE)
 
-# sari1w_tminus2_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Clinical_Visit_Date, s_ari1w_tot, s_ari6m_tot, s_ari1w_date, s_ari6m_date) %>% 
-#   filter(!is.na(s_ari1w_tot) | !is.na(s_ari6m_tot)) 
-# sari1w_tminus2_long$s_ari1w_tot <- coalesce(sari1w_tminus2_long$s_ari1w_tot, sari1w_tminus2_long$s_ari6m_tot) %>% round(., digits = 0)
-# sari1w_tminus2_long$s_ari1w_date <- coalesce(sari1w_tminus2_long$s_ari1w_date, sari1w_tminus2_long$s_ari6m_date) %>% round(., digits = 0)
-# sari1w_tminus2_long <- sari1w_tminus2_long %>% filter(s_ari1w_date < "2020-03-17") %>% group_by(Initials) %>% 
-#   arrange(desc(s_ari1w_date)) %>% slice(1:2) %>% ungroup() %>% select(-s_ari6m_date, -s_ari6m_tot) %>% distinct(., .keep_all = TRUE)
-
 sscared_tminus2_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Clinical_Visit_Date, s_scared_tot, s_scared_date) %>% 
   filter(!is.na(s_scared_tot)) %>% mutate(s_scared_tot = round(s_scared_tot, digits = 0))
 sscared_tminus2_long <- sscared_tminus2_long %>% filter(s_scared_date < "2020-03-17") %>% group_by(Initials) %>% 
@@ -3032,8 +3029,8 @@ measures_dataset_tminus2_long$p_mfq_tot <- coalesce(measures_dataset_tminus2_lon
 measures_dataset_tminus2_long$p_mfq_date <- coalesce(measures_dataset_tminus2_long$p_mfq_date, measures_dataset_tminus2_long$p_mfq1w_date)
 
 measures_dataset_tminus2_long <- measures_dataset_tminus2_long %>% 
-  select(IRTA_tracker, Initials:PLUSID, FIRST_NAME:Parent_Contact_Number, Participant_Type2, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-         Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date, 
+  select(IRTA_tracker, Initials:PLUSID, FIRST_NAME:Parent_Contact_Number, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+         Clinical_Visit_Date, Task_Name, Task_Date, s_covid19_tot,	s_covid19_date,	s_covid19_22_other_comments,
          s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, s_crisis_base_3_symptoms, s_crisis_base_4_family_diagnosis, s_crisis_base_5_family_events, 
          p_crisis_base_1_exposed, p_crisis_base_2_self_diagnosis, p_crisis_base_3_symptoms, p_crisis_base_4_family_diagnosis, p_crisis_base_5_family_events, 
          s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq_tot, p_mfq_date, p_scaredshort_tot, 
@@ -3053,30 +3050,26 @@ if (file.exists(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_
 }
 
 #### CRISIS sub-dataset for Argyris
+suppressPackageStartupMessages(library(kableExtra))
+render(paste0(scripts, 'Reports/crisis_dataset_description.Rmd'),
+       output_format = "html_document", output_file = 'CRISIS_subset_w_baseline_descrip', output_dir = paste0(database_location, 'COVID19/'))
+detach(package:kableExtra)
 
-crisis_completed <- Psychometrics_treatment %>% 
-  select(Initials, SDAN, PLUSID, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-         s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, s_scared_tot, s_scared_date, 
-         s_scaredshort_tot, s_scaredshort_date, p_scaredshort_tot, p_scaredshort_date, matches("s_crisis_"), matches("p_crisis_")) %>% 
-  filter(s_mfq1w_date  > "2020-03-17" | s_scaredshort_date > "2020-03-17" | s_crisis_base_date > "2020-03-17" | s_crisis_3m_date > "2020-03-17" |
-           s_mfq_date  > "2020-03-17" | p_mfq_date  > "2020-03-17" | p_mfq1w_date  > "2020-03-17") %>% 
-  select(-matches("_complete"), -matches("_source"), -matches("_TDiff"))
+crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.csv"))
 
-crisis_dataset_tminus2_long <- merge.default(crisis_completed, measures_combined_long, all=TRUE)
-crisis_dataset_tminus2_long$s_mfq_tot <- coalesce(crisis_dataset_tminus2_long$s_mfq_tot, crisis_dataset_tminus2_long$s_mfq1w_tot)
-crisis_dataset_tminus2_long$s_mfq_date <- coalesce(crisis_dataset_tminus2_long$s_mfq_date, crisis_dataset_tminus2_long$s_mfq1w_date)
-crisis_dataset_tminus2_long$p_mfq_tot <- coalesce(crisis_dataset_tminus2_long$p_mfq_tot, crisis_dataset_tminus2_long$p_mfq1w_tot)
-crisis_dataset_tminus2_long$p_mfq_date <- coalesce(crisis_dataset_tminus2_long$p_mfq_date, crisis_dataset_tminus2_long$p_mfq1w_date)
-
-crisis_dataset_tminus2_long <- crisis_dataset_tminus2_long %>% 
-  select(Initials, SDAN, PLUSID, IRTA_tracker, Clinical_Visit_Date, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-         s_mfq_tot, s_mfq_date, p_mfq_tot, p_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_scaredshort_tot, 
-         p_scaredshort_date, matches("s_crisis_"), matches("p_crisis_")) %>% 
-  group_by(Initials) %>% fill(IRTA_tracker, SDAN:c_ksadsdx_dx_detailed, .direction = "up") %>% fill(IRTA_tracker, SDAN:c_ksadsdx_dx_detailed, .direction = "down") %>% 
-  ungroup() %>% distinct(., .keep_all = TRUE)
-
-crisis_dataset_tminus2_long %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_tminus2_long.csv"))
-# source(paste0(database_location, "COVID19/COVID19_subset_wide_long.R"))
+# checking saved properly
+file_save_check <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^CRISIS_subset_w_baseline.xlsx", all.files = FALSE,
+                                            full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(database_location, "COVID19/", file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+                              
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'CRISIS_subset_w_baseline'")
+  } else {
+    print("Conflict: exporting as 'CRISIS_subset_w_baseline_updated'")
+    crisis_final %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_w_baseline_updated.xlsx"))
+  }
 
 # Creating tasks database & exporting ------------------------------------
 

@@ -1,0 +1,201 @@
+---
+title: "CRISIS dataset"
+output:
+  html_document:
+    df_print: paged
+  word_document:
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 8
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{longtable}
+- \usepackage{array}
+- \usepackage{multirow}
+- \usepackage{wrapfig}
+- \usepackage{float}
+- \usepackage{colortbl}
+- \usepackage{pdflscape}
+- \usepackage{tabu}
+- \usepackage{threeparttable}
+- \usepackage{threeparttablex}
+- \usepackage[normalem]{ulem}
+- \usepackage{makecell}
+- \usepackage{xcolor}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# !diagnostics off
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+# Loading data ------------------------------------------------------------
+
+todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
+
+if (exists("Psychometrics_treatment")==FALSE) {
+        master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_CLINICAL", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
+        master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
+        rm(master_database_file, master_database_file_time, master_database_combined)
+} else {
+        print("clinical database info already imported")
+}
+
+if (exists("Psychometrics_behav")==FALSE) {
+        master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_BEHAVIOURAL", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
+        master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        Psychometrics_behav <- read_excel(paste0(database_location, master_database_combined[1]))
+        rm(master_database_file, master_database_file_time, master_database_combined)
+} else {
+        print("tasks database info already imported")
+        }
+
+if (exists("MMI_recovery_combined2")==FALSE) {
+        mmi_recovery_file <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^MMI_recovery_subset", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        mmi_recovery_file_time <- file.mtime(paste0(database_location, "COVID19/", mmi_recovery_file)) %>% as.Date()
+        mmi_recovery_combined <- tibble(File=c(mmi_recovery_file), Date=c(mmi_recovery_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        MMI_recovery_combined2 <- read_excel(paste0(database_location, "COVID19/", mmi_recovery_combined[1]))
+} else {
+        print("MMI recovery completion info already imported")
+}
+
+```
+
+![](`r paste0(CBT_location, "images/NIH_logo.png")`)
+
+***
+
+#### CRISIS data flow
+
+***
+
+##### DATE: `r todays_date`
+
+***
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+measures_completed <- Psychometrics_behav %>% filter(str_detect(Task_Name, "easures")) %>% filter(Task_Date >= "2020-04-06") %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Task_Name, Task_Date, SEX, Age_at_visit,
+         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, 
+         s_scaredshort_tot, s_scaredshort_date, matches("s_crisis_"), p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, p_scared_tot, 
+         p_scared_date, p_scaredshort_tot, p_scaredshort_date, matches("p_crisis_")) %>% rename(Age = "Age_at_visit") %>%
+  group_by(Initials) %>% mutate(id = row_number()) %>% ungroup() %>% mutate(id = (id + 2)) %>% mutate(Age = round(Age, digits = 0))
+measures_completed$s_mfq_tot <- coalesce(measures_completed$s_mfq_tot, measures_completed$s_mfq1w_tot) %>% round(., digits = 0)
+measures_completed$p_mfq_tot <- coalesce(measures_completed$p_mfq_tot, measures_completed$p_mfq1w_tot) %>% round(., digits = 0)
+measures_completed$s_mfq_date <- coalesce(measures_completed$s_mfq_date, measures_completed$s_mfq1w_date) %>% round(., digits = 0)
+measures_completed$p_mfq_date <- coalesce(measures_completed$p_mfq_date, measures_completed$p_mfq1w_date) %>% round(., digits = 0)
+measures_completed <- measures_completed %>% select(-s_mfq1w_tot, -p_mfq1w_tot, -s_mfq1w_date, -p_mfq1w_date)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+# total contacted 
+contacted <- 166
+# total agreed to participate 
+crisis_pool <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% nrow() %>% as.numeric()
+# all baseline measures completed 
+parent_completed_all_base <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% 
+  select(p_mfq_tot, p_scaredshort_tot, p_crisis_base_tot) %>% filter(!is.na(p_mfq_tot) & !is.na(p_scaredshort_tot) & !is.na(p_crisis_base_tot)) %>% 
+  nrow() %>% as.numeric()
+child_completed_all_base <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% 
+  select(s_mfq_tot, s_scaredshort_tot, s_crisis_base_tot) %>% filter(!is.na(s_mfq_tot) & !is.na(s_scaredshort_tot) & !is.na(s_crisis_base_tot)) %>% 
+  nrow() %>% as.numeric() 
+# crisis baseline completed 
+parent_completed_crisis_base <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% 
+  select(p_crisis_base_tot) %>% filter(!is.na(p_crisis_base_tot)) %>% nrow() %>% as.numeric()
+child_completed_crisis_base <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% 
+  select(s_crisis_base_tot) %>% filter(!is.na(s_crisis_base_tot)) %>% nrow() %>% as.numeric() 
+
+# combine these
+table <- tibble(Respondant=c("Parent", "Child"), CRISIS_Completed=c(parent_completed_crisis_base, child_completed_crisis_base), 
+                Completed_all=c(parent_completed_all_base, child_completed_all_base), Denominator=c(123, 148), Tot_contacted=c(166, 166)) %>% 
+  mutate(CRISIS_percent = (CRISIS_Completed/Denominator)*100) %>% mutate(All_percent = (Completed_all/Denominator)*100) %>% 
+  mutate(Agreed_percent = (Denominator/Tot_contacted)*100) %>% 
+  select(Respondant, Tot_contacted, Denominator, Agreed_percent, Completed_all, All_percent, CRISIS_Completed, CRISIS_percent)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%", "Completed all Psych", "%", "Completed CRISIS", "%")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+measures_completed <- measures_completed %>% filter(!is.na(s_mfq_tot) | !is.na(s_scaredshort_tot) | !is.na(s_crisis_base_tot) | !is.na(s_crisis_fu_tot) |
+                        !is.na(p_mfq_tot) | !is.na(p_scaredshort_tot) | !is.na(p_crisis_base_tot) | !is.na(p_crisis_fu_tot))
+
+smfq_tminus2_long <- Psychometrics_treatment %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
+         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq_tot, s_mfq1w_date, s_mfq_date) %>% rename(Age = "Age_at_visit") %>% 
+  filter(!is.na(s_mfq1w_tot) | !is.na(s_mfq_tot)) %>% mutate(Age = round(Age, digits = 0))
+smfq_tminus2_long$s_mfq_tot <- coalesce(smfq_tminus2_long$s_mfq_tot, smfq_tminus2_long$s_mfq1w_tot) %>% round(., digits = 0)
+smfq_tminus2_long$s_mfq_date <- coalesce(smfq_tminus2_long$s_mfq_date, smfq_tminus2_long$s_mfq1w_date) %>% round(., digits = 0)
+smfq_tminus2_long <- smfq_tminus2_long %>% filter(s_mfq_date <= "2020-03-11") %>% group_by(Initials) %>% 
+  arrange(s_mfq_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% select(-s_mfq1w_date, -s_mfq1w_tot) %>% 
+  mutate(id = row_number()) %>% ungroup() %>% filter(Initials %in% measures_completed$Initials)
+
+sscared_tminus2_long <- Psychometrics_treatment %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
+         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_scared_tot, s_scared_date) %>% rename(Age = "Age_at_visit") %>% 
+  filter(!is.na(s_scared_tot)) %>% mutate(s_scared_tot = round(s_scared_tot, digits = 0)) %>% mutate(Age = round(Age, digits = 0))
+sscared_tminus2_long <- sscared_tminus2_long %>% filter(s_scared_date <= "2020-03-11") %>% group_by(Initials) %>% 
+  arrange(s_scared_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% 
+  ungroup() %>% filter(Initials %in% measures_completed$Initials)
+
+pmfq_tminus2_long <- Psychometrics_treatment %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
+         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_mfq1w_tot, p_mfq_tot, p_mfq1w_date, p_mfq_date) %>% rename(Age = "Age_at_visit") %>% 
+  filter(!is.na(p_mfq1w_tot) | !is.na(p_mfq_tot)) %>% mutate(Age = round(Age, digits = 0))
+pmfq_tminus2_long$p_mfq_tot <- coalesce(pmfq_tminus2_long$p_mfq_tot, pmfq_tminus2_long$p_mfq1w_tot) %>% round(., digits = 0)
+pmfq_tminus2_long$p_mfq_date <- coalesce(pmfq_tminus2_long$p_mfq_date, pmfq_tminus2_long$p_mfq1w_date) %>% round(., digits = 0)
+pmfq_tminus2_long <- pmfq_tminus2_long %>% filter(p_mfq_date <= "2020-03-11") %>% group_by(Initials) %>% 
+  arrange(p_mfq_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% ungroup() %>% 
+  select(-p_mfq1w_date, -p_mfq1w_tot) %>% filter(Initials %in% measures_completed$Initials)
+
+pscared_tminus2_long <- Psychometrics_treatment %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
+         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_scared_tot, p_scared_date) %>% 
+  filter(!is.na(p_scared_tot)) %>% mutate(p_scared_tot = round(p_scared_tot, digits = 0)) %>% rename(Age = "Age_at_visit") %>% 
+  mutate(Age = round(Age, digits = 0))
+pscared_tminus2_long <- pscared_tminus2_long %>% filter(p_scared_date <= "2020-03-11") %>% group_by(Initials) %>% 
+  arrange(p_scared_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% 
+  ungroup() %>% filter(Initials %in% measures_completed$Initials)
+
+measures_combined_long <- merge.default(smfq_tminus2_long, sscared_tminus2_long, all=TRUE) %>% 
+  merge.default(., pmfq_tminus2_long, all=TRUE) %>% merge.default(., pscared_tminus2_long, all=TRUE) %>%
+  distinct(., .keep_all = TRUE)
+
+crisis_final <- merge.default(measures_completed, measures_combined_long, all=TRUE) %>% rename(Sex = "SEX")
+crisis_final$row_label <- recode(crisis_final$id, `1`="baseline", `2`="pre-covid", 
+                          `3`="crisis_t1", `4`="crisis_t2", `5`="crisis_t3")
+crisis_final <- crisis_final %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Sex, Age, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+                                        id, row_label, matches("_mfq"), matches("scared"), matches("s_crisis_"), matches("p_crisis"))
+
+```
+
+***
+
+\pagebreak
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+rm(contacted, crisis_pool, parent_completed_all_base, child_completed_all_base, parent_completed_crisis_base, child_completed_crisis_base,
+   measures_combined_long, pscared_tminus2_long, sscared_tminus2_long, pmfq_tminus2_long, smfq_tminus2_long)
+
+```
