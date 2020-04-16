@@ -132,7 +132,7 @@ if (exists("master_IRTA_oldest_screens_latest")==FALSE) {
         master_IRTA_oldest_screens_latest[date_variabes] <- lapply(master_IRTA_oldest_screens_latest[date_variabes], as.Date) 
         rm(date_variabes, irta_old_screens_file, irta_old_screens_file_time, irta_old_screens_combined)
 } else {
-    print("master IRTA tracker + QC info already imported")
+    print("IRTA tracker screens OLD already imported")
 }
 
 if (exists("master_IRTA_screens_latest")==FALSE) {
@@ -146,7 +146,7 @@ if (exists("master_IRTA_screens_latest")==FALSE) {
         master_IRTA_screens_latest[date_variabes] <- lapply(master_IRTA_screens_latest[date_variabes], as.Date) 
         rm(date_variabes, irta_ongoing_screens_file, irta_ongoing_screens_file_time, irta_ongoing_screens_combined)
 } else {
-    print("master IRTA tracker + QC info already imported")
+    print("IRTA tracker screens current already imported")
 }
 
 if (exists("Psychometrics_treatment")==FALSE) {
@@ -179,6 +179,20 @@ if (exists("Psychometrics_treatment")==FALSE) {
                  s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% 
           filter(!is.na(s_crisis_base_tot) | !is.na(s_crisis_fu_tot) | !is.na(s_mfq1w_tot)  | !is.na(s_mfq_tot) | 
                    !is.na(p_crisis_base_tot) | !is.na(p_crisis_fu_tot) | !is.na(p_mfq1w_tot)  | !is.na(p_mfq_tot))
+}
+
+if (exists("Psychometrics_behav")==FALSE) {
+        master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_BEHAVIOURAL", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+        master_database_file_time <- file.mtime(paste0(database_location, "/", master_database_file)) %>% as.Date()
+        master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
+          arrange(desc(Date)) %>% slice(1)
+        Psychometrics_behav <- read_excel(paste0(database_location, master_database_combined[1]))
+        date_variables <- Psychometrics_behav %>% select(matches("_date"), matches("_Date")) %>% colnames()
+        Psychometrics_behav[date_variables] <- lapply(Psychometrics_behav[date_variables], as.Date)
+        rm(master_database_file, master_database_file_time, master_database_combined)
+} else {
+        print("tasks database info already imported")
         }
 
 if (exists("MEG_mprage")==FALSE) {
@@ -1015,39 +1029,35 @@ family_hist_table2 %>% kable(., col.names = c("Diagnosis", "Complete", "%", "Inc
 
 ```
 
-*Note: rows are scheduling IRTA, not IRTA who completed the interview. 
-
 ***
 
-##### CRISIS questionnaire completion:
-
-Numbers as of last SDQ+ pull (`r Psychometrics_date`). 
+<!-- ##### CRISIS questionnaire completion: -->
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-crisis$s_mfq_tot <- coalesce(crisis$s_mfq_tot, crisis$s_mfq1w_tot)
-crisis$p_mfq_tot <- coalesce(crisis$p_mfq_tot, crisis$p_mfq1w_tot)
+# crisis$s_mfq_tot <- coalesce(crisis$s_mfq_tot, crisis$s_mfq1w_tot)
+# crisis$p_mfq_tot <- coalesce(crisis$p_mfq_tot, crisis$p_mfq1w_tot)
 
-s_crisis_3m <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_3m_tot) %>% 
-  rename(s_crisis_tot = "s_crisis_3m_tot") %>% mutate(type = "past 3 months") %>% filter(!is.na(s_crisis_tot))
-s_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_base_tot, s_mfq_tot, 
-  s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis) %>% mutate(type = "last two weeks (baseline)") %>% filter(!is.na(s_crisis_base_tot)) %>% 
-  rename(s_crisis_tot = "s_crisis_base_tot", s_crisis_1_exposed = "s_crisis_base_1_exposed", s_crisis_2_self_diagnosis = "s_crisis_base_2_self_diagnosis")
-s_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_fu_tot, s_mfq_tot, 
-  s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% mutate(type = "last two weeks (follow up)") %>% filter(!is.na(s_crisis_fu_tot)) %>% 
-  rename(s_crisis_tot = "s_crisis_fu_tot", s_crisis_1_exposed = "s_crisis_fu_1_exposed", s_crisis_2_self_diagnosis = "s_crisis_fu_2_self_diagnosis") 
-
-p_crisis_3m <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_3m_tot) %>% 
-  rename(p_crisis_tot = "p_crisis_3m_tot") %>% mutate(type = "past 3 months") %>% filter(!is.na(p_crisis_tot))
-p_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_base_tot, p_mfq_tot) %>% 
-  rename(p_crisis_tot = "p_crisis_base_tot") %>% mutate(type = "last two weeks (baseline)") %>% filter(!is.na(p_crisis_tot))
-p_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_fu_tot, p_mfq_tot) %>% 
-  rename(p_crisis_tot = "p_crisis_fu_tot") %>% mutate(type = "last two weeks (follow up)") %>% filter(!is.na(p_crisis_tot))
-
-crisis_reformatted <- merge.default(s_crisis_3m, s_crisis_baseline, all=TRUE) %>% merge.default(., s_crisis_followup, all=TRUE) %>% 
-  merge.default(., p_crisis_3m, all=TRUE) %>% merge.default(., p_crisis_baseline, all=TRUE) %>% merge.default(., p_crisis_followup, all=TRUE)
-crisis_reformatted[,5:10] <- lapply(crisis_reformatted[,5:10], replace_na, " ")
-crisis_reformatted <- crisis_reformatted %>% arrange(Initials, desc(type))
+# s_crisis_3m <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_3m_tot) %>% 
+#   rename(s_crisis_tot = "s_crisis_3m_tot") %>% mutate(type = "past 3 months") %>% filter(!is.na(s_crisis_tot))
+# s_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_base_tot, s_mfq_tot, 
+#   s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis) %>% mutate(type = "last two weeks (baseline)") %>% filter(!is.na(s_crisis_base_tot)) %>% 
+#   rename(s_crisis_tot = "s_crisis_base_tot", s_crisis_1_exposed = "s_crisis_base_1_exposed", s_crisis_2_self_diagnosis = "s_crisis_base_2_self_diagnosis")
+# s_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, s_crisis_fu_tot, s_mfq_tot, 
+#   s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis) %>% mutate(type = "last two weeks (follow up)") %>% filter(!is.na(s_crisis_fu_tot)) %>% 
+#   rename(s_crisis_tot = "s_crisis_fu_tot", s_crisis_1_exposed = "s_crisis_fu_1_exposed", s_crisis_2_self_diagnosis = "s_crisis_fu_2_self_diagnosis") 
+# 
+# p_crisis_3m <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_3m_tot) %>% 
+#   rename(p_crisis_tot = "p_crisis_3m_tot") %>% mutate(type = "past 3 months") %>% filter(!is.na(p_crisis_tot))
+# p_crisis_baseline <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_base_tot, p_mfq_tot) %>% 
+#   rename(p_crisis_tot = "p_crisis_base_tot") %>% mutate(type = "last two weeks (baseline)") %>% filter(!is.na(p_crisis_tot))
+# p_crisis_followup <- crisis %>% select(Initials, IRTA_tracker, Clinical_Visit_Date, p_crisis_fu_tot, p_mfq_tot) %>% 
+#   rename(p_crisis_tot = "p_crisis_fu_tot") %>% mutate(type = "last two weeks (follow up)") %>% filter(!is.na(p_crisis_tot))
+# 
+# crisis_reformatted <- merge.default(s_crisis_3m, s_crisis_baseline, all=TRUE) %>% merge.default(., s_crisis_followup, all=TRUE) %>% 
+#   merge.default(., p_crisis_3m, all=TRUE) %>% merge.default(., p_crisis_baseline, all=TRUE) %>% merge.default(., p_crisis_followup, all=TRUE)
+# crisis_reformatted[,5:10] <- lapply(crisis_reformatted[,5:10], replace_na, " ")
+# crisis_reformatted <- crisis_reformatted %>% arrange(Initials, desc(type))
   
 # crisis_latest <- covid19 %>% group_by(Initials) %>% arrange(s_crisis_date) %>% slice(n()) %>% ungroup() %>% 
 #   filter(s_crisis_date > last_week_date_formatted)
@@ -1057,35 +1067,65 @@ crisis_reformatted <- crisis_reformatted %>% arrange(Initials, desc(type))
 # crisis_table <- covid19 %>% group_by(Initials, IRTA_tracker) %>% tally()
 # crisis_table_IRTA <- covid19 %>% group_by(Initials) %>% arrange(s_crisis_date) %>% slice(n()) %>% ungroup() %>% group_by(IRTA_tracker) %>% tally()
 
-rm(crisis, s_crisis_3m, s_crisis_baseline, s_crisis_followup, p_crisis_3m, p_crisis_baseline, p_crisis_followup)
+# rm(s_crisis_3m, s_crisis_baseline, s_crisis_followup, p_crisis_3m, p_crisis_baseline, p_crisis_followup)
 
 ```
 
-<!-- Number of participants by IRTA (who have completed at least one COVID19 questionnaire):  -->
+<!-- Latest scores (where questionnaire max total = 63): -->
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-# crisis_table_IRTA %>% kable(., col.names = c("IRTA", "Freq")) %>%
+# crisis_reformatted %>% kable(., col.names = c("Initials", "IRTA", "Date", "Type", "CRISIS Total: Parent", "MFQ: Parent", 
+#                                               "CRISIS Total: Self", "MFQ: Self", "Exposed", "Infected")) %>% 
 #   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
-<!-- Number of questionnaires completed by participant:  -->
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-# crisis_table %>% kable(., col.names = c("Initials", "IRTA", "Freq")) %>%
-#   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+# measures_completed <- Psychometrics_behav %>% filter(str_detect(Task_Name, "easures")) %>% filter(Task_Date >= "2020-04-06") %>% 
+#   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Task_Name, Task_Date, SEX, Age_at_visit,
+#          c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, 
+#          s_scaredshort_tot, s_scaredshort_date, matches("s_crisis_"), p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, p_scared_tot, 
+#          p_scared_date, p_scaredshort_tot, p_scaredshort_date, matches("p_crisis_")) %>% rename(Age = "Age_at_visit") %>%
+#   group_by(Initials) %>% mutate(id = row_number()) %>% ungroup() %>% mutate(id = (id + 2)) %>% mutate(Age = round(Age, digits = 0))
+# measures_completed$s_mfq_tot <- coalesce(measures_completed$s_mfq_tot, measures_completed$s_mfq1w_tot) %>% round(., digits = 0)
+# measures_completed$p_mfq_tot <- coalesce(measures_completed$p_mfq_tot, measures_completed$p_mfq1w_tot) %>% round(., digits = 0)
+# measures_completed$s_mfq_date <- coalesce(measures_completed$s_mfq_date, measures_completed$s_mfq1w_date) %>% round(., digits = 0)
+# measures_completed$p_mfq_date <- coalesce(measures_completed$p_mfq_date, measures_completed$p_mfq1w_date) %>% round(., digits = 0)
+# measures_completed <- measures_completed %>% select(-s_mfq1w_tot, -p_mfq1w_tot, -s_mfq1w_date, -p_mfq1w_date)
+# 
+# # total contacted 
+# contacted <- 166
+# # total agreed to participate 
+# crisis_pool <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% nrow() %>% as.numeric()
+# # all baseline measures completed 
+# parent_completed_all_base <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% 
+#   select(p_mfq_tot, p_scaredshort_tot, p_crisis_base_tot) %>% filter(!is.na(p_mfq_tot) & !is.na(p_scaredshort_tot) & !is.na(p_crisis_base_tot)) %>% 
+#   nrow() %>% as.numeric()
+# child_completed_all_base <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% 
+#   select(s_mfq_tot, s_scaredshort_tot, s_crisis_base_tot) %>% filter(!is.na(s_mfq_tot) & !is.na(s_scaredshort_tot) & !is.na(s_crisis_base_tot)) %>% 
+#   nrow() %>% as.numeric() 
+# # crisis baseline completed 
+# parent_completed_crisis_base <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% 
+#   select(p_crisis_base_tot) %>% filter(!is.na(p_crisis_base_tot)) %>% nrow() %>% as.numeric()
+# child_completed_crisis_base <- measures_completed %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% slice(1) %>% ungroup() %>% 
+#   select(s_crisis_base_tot) %>% filter(!is.na(s_crisis_base_tot)) %>% nrow() %>% as.numeric() 
+# 
+# # combine these
+# crisis_table <- tibble(Respondant=c("Parent", "Child"), CRISIS_Completed=c(parent_completed_crisis_base, child_completed_crisis_base), 
+#                 Completed_all=c(parent_completed_all_base, child_completed_all_base), Denominator=c(123, 148), Tot_contacted=c(166, 166)) %>% 
+#   mutate(CRISIS_percent = (CRISIS_Completed/Denominator)*100) %>% mutate(All_percent = (Completed_all/Denominator)*100) %>% 
+#   mutate(Agreed_percent = (Denominator/Tot_contacted)*100) %>% 
+#   select(Respondant, Tot_contacted, Denominator, Agreed_percent, Completed_all, All_percent, CRISIS_Completed, CRISIS_percent)
 
 ```
 
-Latest scores (where questionnaire max total = 63):
-
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-crisis_reformatted %>% kable(., col.names = c("Initials", "IRTA", "Date", "Type", "CRISIS Total: Parent", "MFQ: Parent", 
-                                              "CRISIS Total: Self", "MFQ: Self", "Exposed", "Infected")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+# crisis_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%", "Completed all Psych", "%", "Completed CRISIS", "%")) %>% 
+#   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 

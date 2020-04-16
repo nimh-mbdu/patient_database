@@ -2274,7 +2274,7 @@
   
   for(i in seq_along(crisis_measures)) {
     iter <- as.numeric(i)
-    # iter=1
+    # iter=2
     measure_name <- crisis_measures[iter]
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% rename(measure_temp_source = "source") %>% distinct(., .keep_all = TRUE) 
@@ -2285,10 +2285,12 @@
       measure_temp_sdq[,17] <- lapply(measure_temp_sdq[,17], na_if, "")
       measure_temp_sdq[,18:54] <- lapply(measure_temp_sdq[,18:54], as.numeric)
       measure_temp_sdq[,55:58] <- lapply(measure_temp_sdq[,55:58], na_if, "")
+      measure_temp_sdq[,43:44] <- lapply(measure_temp_sdq[,43:44], FUN = function(x) recode(x, `4`=0, `3`=1, `2`=2, `1`=3, `0`=4, .missing = NULL))
       measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     } else if (measure_name=="s_crisis_3m_" | measure_name=="p_crisis_3m_") {
       measure_temp_sdq[,5:20] <- lapply(measure_temp_sdq[,5:20], as.numeric)
+      measure_temp_sdq[,9:10] <- lapply(measure_temp_sdq[,9:10], FUN = function(x) recode(x, `4`=0, `3`=1, `2`=2, `1`=3, `0`=4, .missing = NULL))
       measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     } else if (measure_name=="s_scaredshort_" | measure_name=="p_scaredshort_") {
@@ -2308,7 +2310,7 @@
     } else if (measure_name=="mmi_recovery_") {
       measure_temp_sdq$temptotal <- c(0)
     } else {
-      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches("_28_sleep"):matches("_43_video_games")) %>% rowSums(na.rm=TRUE)
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches("_31_gen_worry"):matches("_40_rumination")) %>% rowSums(na.rm=TRUE)
     }
     
     measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
@@ -3049,28 +3051,6 @@ if (file.exists(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_
   measures_dataset_tminus2_long %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_formatted, ".xlsx"))
 }
 
-#### CRISIS sub-dataset for Argyris
-suppressPackageStartupMessages(library(kableExtra))
-render(paste0(scripts, 'Reports/crisis_dataset_description.Rmd'),
-       output_format = "html_document", output_file = 'CRISIS_subset_w_baseline_descrip', output_dir = paste0(database_location, 'COVID19/'))
-detach(package:kableExtra)
-
-crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.csv"))
-
-# checking saved properly
-file_save_check <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^CRISIS_subset_w_baseline.xlsx", all.files = FALSE,
-                                            full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-file_save_check_time <- file.mtime(paste0(database_location, "COVID19/", file_save_check)) %>% as.Date()
-file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
-file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
-                              
-if (file_save_check_combined$date_diff[1]==0) {
-  print("Exported as 'CRISIS_subset_w_baseline'")
-  } else {
-    print("Conflict: exporting as 'CRISIS_subset_w_baseline_updated'")
-    crisis_final %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_w_baseline_updated.xlsx"))
-  }
-
 # Creating tasks database & exporting ------------------------------------
 
 rm(max_tasks, measure_temp_task)
@@ -3116,6 +3096,29 @@ if (file_save_check_combined$date_diff[1]==0) {
   Psychometrics_behav %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_BEHAVIOURAL_updated.xlsx"))
 }
 
+#### CRISIS sub-dataset for Argyris
+suppressPackageStartupMessages(library(kableExtra))
+render(paste0(scripts, 'Reports/crisis_dataset_description.Rmd'),
+       output_format = "html_document", output_file = 'CRISIS_subset_w_baseline_descrip', output_dir = paste0(database_location, 'COVID19/'))
+detach(package:kableExtra)
+
+crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.csv"))
+crisis_final %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.xlsx"))
+
+# checking saved properly
+file_save_check <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^CRISIS_subset_w_baseline.csv", all.files = FALSE,
+                              full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+file_save_check_time <- file.mtime(paste0(database_location, "COVID19/", file_save_check)) %>% as.Date()
+file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
+file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
+
+if (file_save_check_combined$date_diff[1]==0) {
+  print("Exported as 'CRISIS_subset_w_baseline'")
+} else {
+  print("Conflict: exporting as 'CRISIS_subset_w_baseline_updated'")
+  crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.csv"))
+}
+
 # Identifying missing cases -----------------------------------------------
 
 # check <- Psychometrics_behav %>% 
@@ -3147,9 +3150,9 @@ rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_fu
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, 
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, sdq_w_names, sdq_dates, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, task_DB, task_DB_date, 
-   how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, 
+   how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, sibling,
    measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, task_sets,
-   file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent, 
+   file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent,
    ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, 
    not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, s_covid19_temp_sdq, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)

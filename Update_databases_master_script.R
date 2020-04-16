@@ -5,7 +5,7 @@ rm(list = ls()) # command to clear all variables from R environment
 # directories -------------------------------------------------------------
 
 # what device are you running this script on? 
-computer = 'pc' # set this to either 'mac' or 'pc' or 'other'
+computer = 'mac' # set this to either 'mac' or 'pc' or 'other'
 
 if (computer=="pc") {
   string = 'W:/'

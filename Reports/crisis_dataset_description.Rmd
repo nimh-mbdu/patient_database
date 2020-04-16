@@ -47,6 +47,9 @@ if (exists("Psychometrics_treatment")==FALSE) {
         print("clinical database info already imported")
 }
 
+date_variables <- Psychometrics_treatment %>% select(matches("_date"), matches("_Date")) %>% colnames()
+Psychometrics_treatment[date_variables] <- lapply(Psychometrics_treatment[date_variables], as.Date)
+
 if (exists("Psychometrics_behav")==FALSE) {
         master_database_file <- list.files(path = paste0(database_location), pattern = "^MASTER_DATABASE_BEHAVIOURAL", all.files = FALSE,
                                  full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
@@ -57,7 +60,10 @@ if (exists("Psychometrics_behav")==FALSE) {
         rm(master_database_file, master_database_file_time, master_database_combined)
 } else {
         print("tasks database info already imported")
-        }
+}
+
+date_variables <- Psychometrics_behav %>% select(matches("_date"), matches("_Date")) %>% colnames()
+Psychometrics_behav[date_variables] <- lapply(Psychometrics_behav[date_variables], as.Date)
 
 if (exists("MMI_recovery_combined2")==FALSE) {
         mmi_recovery_file <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^MMI_recovery_subset", all.files = FALSE,
@@ -196,6 +202,6 @@ crisis_final <- crisis_final %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Se
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
 rm(contacted, crisis_pool, parent_completed_all_base, child_completed_all_base, parent_completed_crisis_base, child_completed_crisis_base,
-   measures_combined_long, pscared_tminus2_long, sscared_tminus2_long, pmfq_tminus2_long, smfq_tminus2_long)
+   measures_combined_long, pscared_tminus2_long, pmfq_tminus2_long, smfq_tminus2_long, table)
 
 ```
