@@ -2274,7 +2274,7 @@
   
   for(i in seq_along(crisis_measures)) {
     iter <- as.numeric(i)
-    # iter=2
+    # iter=1
     measure_name <- crisis_measures[iter]
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% rename(measure_temp_source = "source") %>% distinct(., .keep_all = TRUE) 
@@ -2305,6 +2305,127 @@
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date, -mmi_recovery_date)
     }
     
+    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
+    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+    measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
+    measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+    
+    if (measure_name=="s_crisis_base_" | measure_name=="p_crisis_base_" | measure_name=="s_crisis_fu_" | measure_name=="p_crisis_fu_") {
+      
+      fill_in <- measure_temp_sdq %>% select(matches("_3_symptoms"), matches("_5_family_events"), matches("_44_support")) %>% colnames()
+      measure_temp_sdq[fill_in] <- lapply(measure_temp_sdq[fill_in], replace_na, 0)
+
+      temp_1_exposed <- as.character(paste0(measure_name, "1_exposed"))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_1_exposed_pos_test = ifelse(str_detect((!!sym(temp_1_exposed)), "pos_test"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_1_exposed_diagnosis = ifelse(str_detect((!!sym(temp_1_exposed)), "diagnosis"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_1_exposed_symptoms = ifelse(str_detect((!!sym(temp_1_exposed)), "symptoms"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_1_exposed_no = ifelse(str_detect((!!sym(temp_1_exposed)), "no"), 1, 0))
+      measure_temp_sdq$temp_1_exposed_tot <- measure_temp_sdq %>% 
+        select(temp_1_exposed_pos_test, temp_1_exposed_diagnosis, temp_1_exposed_symptoms) %>% rowSums(na.rm=TRUE)
+      
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_pos_test"] <- (paste0(measure_name, "1_exposed_pos_test"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_diagnosis"] <- (paste0(measure_name, "1_exposed_diagnosis"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_symptoms"] <- (paste0(measure_name, "1_exposed_symptoms"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_no"] <- (paste0(measure_name, "1_exposed_no"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_tot"] <- (paste0(measure_name, "1_exposed_tot"))
+      
+      temp_2_self_diagnosis <- as.character(paste0(measure_name, "2_self_diagnosis"))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_2_self_diagnosis_pos_test = ifelse(str_detect((!!sym(temp_2_self_diagnosis)), "pos_test"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_2_self_diagnosis_diagnosis = ifelse(str_detect((!!sym(temp_2_self_diagnosis)), "diagnosis"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_2_self_diagnosis_symptoms = ifelse(str_detect((!!sym(temp_2_self_diagnosis)), "symptoms"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_2_self_diagnosis_no = ifelse(str_detect((!!sym(temp_2_self_diagnosis)), "no"), 1, 0))
+      measure_temp_sdq$temp_2_self_diagnosis_tot <- measure_temp_sdq %>% 
+        select(temp_2_self_diagnosis_pos_test, temp_2_self_diagnosis_diagnosis, temp_2_self_diagnosis_symptoms) %>% rowSums(na.rm=TRUE)
+      
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_pos_test"] <- (paste0(measure_name, "2_self_diagnosis_pos_test"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_diagnosis"] <- (paste0(measure_name, "2_self_diagnosis_diagnosis"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_symptoms"] <- (paste0(measure_name, "2_self_diagnosis_symptoms"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_no"] <- (paste0(measure_name, "2_self_diagnosis_no"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_tot"] <- (paste0(measure_name, "2_self_diagnosis_tot"))
+      
+      temp_3_symptoms <- as.character(paste0(measure_name, "3_symptoms"))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_3_symptoms_fever = ifelse(str_detect((!!sym(temp_3_symptoms)), "fever"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_3_symptoms_cough = ifelse(str_detect((!!sym(temp_3_symptoms)), "cough"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_3_symptoms_short_breath = ifelse(str_detect((!!sym(temp_3_symptoms)), "short_breath"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_3_symptoms_sore_throat = ifelse(str_detect((!!sym(temp_3_symptoms)), "sore_throat"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_3_symptoms_fatigue = ifelse(str_detect((!!sym(temp_3_symptoms)), "fatigue"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_3_symptoms_taste = ifelse(str_detect((!!sym(temp_3_symptoms)), "taste"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_3_symptoms_other = ifelse(str_detect((!!sym(temp_3_symptoms)), "other"), 1, 0))
+      measure_temp_sdq$temp_3_symptoms_tot <- measure_temp_sdq %>% select(matches("3_symptoms_")) %>% rowSums(na.rm=TRUE)
+      
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_fever"] <- (paste0(measure_name, "3_symptoms_fever"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_cough"] <- (paste0(measure_name, "3_symptoms_cough"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_short_breath"] <- (paste0(measure_name, "3_symptoms_short_breath"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_sore_throat"] <- (paste0(measure_name, "3_symptoms_sore_throat"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_fatigue"] <- (paste0(measure_name, "3_symptoms_fatigue"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_taste"] <- (paste0(measure_name, "3_symptoms_taste"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_other"] <- (paste0(measure_name, "3_symptoms_other"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_tot"] <- (paste0(measure_name, "3_symptoms_tot"))
+      
+      temp_4_family_diagnosis <- as.character(paste0(measure_name, "4_family_diagnosis"))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_4_family_diagnosis_yes_household = ifelse(str_detect((!!sym(temp_4_family_diagnosis)), "yes_household"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_4_family_diagnosis_yes_non_household = ifelse(str_detect((!!sym(temp_4_family_diagnosis)), "yes_non_household"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_4_family_diagnosis_no = ifelse(str_detect((!!sym(temp_4_family_diagnosis)), "no"), 1, 0))
+      measure_temp_sdq$temp_4_family_diagnosis_tot <- measure_temp_sdq %>%
+        select(temp_4_family_diagnosis_yes_household, temp_4_family_diagnosis_yes_non_household) %>% rowSums(na.rm=TRUE)
+      
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_yes_household"] <- (paste0(measure_name, "4_family_diagnosis_yes_household"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_yes_non_household"] <- (paste0(measure_name, "4_family_diagnosis_yes_non_household"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_no"] <- (paste0(measure_name, "4_family_diagnosis_no"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_tot"] <- (paste0(measure_name, "4_family_diagnosis_tot"))
+      
+      temp_5_family_events <- as.character(paste0(measure_name, "5_family_events"))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_ill = ifelse(str_detect((!!sym(temp_5_family_events)), "ill"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_hospitalized = ifelse(str_detect((!!sym(temp_5_family_events)), "hospitalized"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_quarantine_w_sympt = ifelse(str_detect((!!sym(temp_5_family_events)), "quarantine_w_sympt"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_quarantine_no_sympt = ifelse(str_detect((!!sym(temp_5_family_events)), "quarantine_no_sympt"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_lost_job = ifelse(str_detect((!!sym(temp_5_family_events)), "lost_job"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_loss_earnings = ifelse(str_detect((!!sym(temp_5_family_events)), "loss_earnings"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_died = ifelse(str_detect((!!sym(temp_5_family_events)), "died"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_no = ifelse(str_detect((!!sym(temp_5_family_events)), "no"), 1, 0))
+      measure_temp_sdq$temp_5_family_events_tot <- measure_temp_sdq %>%
+        select(temp_5_family_events_ill, temp_5_family_events_hospitalized, temp_5_family_events_quarantine_w_sympt, 
+               temp_5_family_events_quarantine_no_sympt, temp_5_family_events_died) %>% rowSums(na.rm=TRUE)
+      
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_ill"] <- (paste0(measure_name, "5_family_events_ill"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_hospitalized"] <- (paste0(measure_name, "5_family_events_hospitalized"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_quarantine_w_sympt"] <- (paste0(measure_name, "5_family_events_quarantine_w_sympt"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_quarantine_no_sympt"] <- (paste0(measure_name, "5_family_events_quarantine_no_sympt"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_lost_job"] <- (paste0(measure_name, "5_family_events_lost_job"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_loss_earnings"] <- (paste0(measure_name, "5_family_events_loss_earnings"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_died"] <- (paste0(measure_name, "5_family_events_died"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_no"] <- (paste0(measure_name, "5_family_events_no"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_tot"] <- (paste0(measure_name, "5_family_events_tot"))
+      
+      temp_44_support <- as.character(paste0(measure_name, "44_support"))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_resource = ifelse(str_detect((!!sym(temp_44_support)), "resource"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_tutoring = ifelse(str_detect((!!sym(temp_44_support)), "tutoring"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_mentoring = ifelse(str_detect((!!sym(temp_44_support)), "mentoring"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_activity = ifelse(str_detect((!!sym(temp_44_support)), "activity"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_volunteer = ifelse(str_detect((!!sym(temp_44_support)), "volunteer"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_psychotherapy = ifelse(str_detect((!!sym(temp_44_support)), "psychotherapy"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_psychiatrist = ifelse(str_detect((!!sym(temp_44_support)), "psychiatrist"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_occup_therapy = ifelse(str_detect((!!sym(temp_44_support)), "occup_therapy"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_speech = ifelse(str_detect((!!sym(temp_44_support)), "speech"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_sports = ifelse(str_detect((!!sym(temp_44_support)), "sports"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_medical = ifelse(str_detect((!!sym(temp_44_support)), "medical"), 1, 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_other = ifelse(str_detect((!!sym(temp_44_support)), "other"), 1, 0))
+      
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_resource"] <- (paste0(measure_name, "44_support_resource"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_tutoring"] <- (paste0(measure_name, "44_support_tutoring"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_mentoring"] <- (paste0(measure_name, "44_support_mentoring"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_activity"] <- (paste0(measure_name, "44_support_activity"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_volunteer"] <- (paste0(measure_name, "44_support_volunteer"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_psychotherapy"] <- (paste0(measure_name, "44_support_psychotherapy"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_psychiatrist"] <- (paste0(measure_name, "44_support_psychiatrist"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_occup_therapy"] <- (paste0(measure_name, "44_support_occup_therapy"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_speech"] <- (paste0(measure_name, "44_support_speech"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_sports"] <- (paste0(measure_name, "44_support_sports"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_medical"] <- (paste0(measure_name, "44_support_medical"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_other"] <- (paste0(measure_name, "44_support_other"))
+
+    }
+    
     if (measure_name=="s_scaredshort_" | measure_name=="p_scaredshort_") {
       measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
     } else if (measure_name=="mmi_recovery_") {
@@ -2316,11 +2437,6 @@
     measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
     measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
     measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
-    
-    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
-    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(matches(measure_name)) %>% apply(., 1, count_na)
-    measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
-    measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
 
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_sdq, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
