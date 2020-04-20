@@ -156,6 +156,13 @@
     select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
   manual_ksadsdx <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "KSADS Dx checklist", skip=2) %>% 
     select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
+  manual_ksads <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "KSADS_Depression", skip=2) %>% 
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
+  manual_bdd <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "Eval BDD screen", skip=2) %>% 
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
+  manual_medication <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "Clinician medication forms", skip=2) %>% 
+    select(-starts_with("x"), -Entry_date, -matches("c_medsclin1yr_")) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
+  
   manual_ethnicity <- read_excel(paste0(database_location, "other_data_never_delete/ethnicity_list_KCs_CR_tracker.xlsx")) %>% mutate_all(as.character)
   
   manual_sets <- ls(pattern="manual_")
@@ -168,9 +175,10 @@
     fill(., names(fill_names), .direction = "up") %>%
     ungroup() %>% 
     distinct(., .keep_all = TRUE)
+  
+  date_variables <- manual_combined %>% select(matches("_date")) %>% select(-Overall_date) %>% colnames()
   manual_combined$Overall_date <- as.Date(manual_combined$Overall_date)
-  manual_combined$c_ksadsdx_date <- as.Date(manual_combined$c_ksadsdx_date, "%d-%m-%Y")
-  manual_combined$c_ksadsdx_epset_baseline_visit_date <- as.Date(manual_combined$c_ksadsdx_epset_baseline_visit_date, "%d-%m-%Y")
+  manual_combined[date_variables] <- lapply(manual_combined[date_variables], as.Date, "%d-%m-%Y")
   
   manual_daily_mfq <- read_excel(paste0(database_location, "other_data_never_delete/inpatient_daily_mfq_manual_entry_2020-03-03.xlsx")) %>% 
     mutate_all(as.character) %>% mutate(source = "MANUAL") 
@@ -1087,8 +1095,7 @@
   
   c_medsclin_sdq <- sdq_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, Overall_date, source, c_medsclin_date, 
                                               c_medsclin_clinician_name, c_medsclin_person_completing:c_medsclin_othernotes) %>% 
-    filter(!is.na(Overall_date)) %>% 
-    distinct(., .keep_all = TRUE)
+    filter(!is.na(Overall_date)) %>% distinct(., .keep_all = TRUE) 
   
   c_medsclin_sdq$c_medsclin_date <- as.Date(c_medsclin_sdq$c_medsclin_date)
   c_medsclin_sdq$c_medsclin_date <- coalesce(c_medsclin_sdq$c_medsclin_date, c_medsclin_sdq$Overall_date) 
@@ -1103,12 +1110,16 @@
   c_medsclin_sdq$diff <- c(c_medsclin_sdq$no_columns - c_medsclin_sdq$NA_count)
   c_medsclin_sdq <- c_medsclin_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
+  c_medsclin_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, c_medsclin_date, 
+                                                    c_medsclin_clinician_name, c_medsclin_person_completing:c_medsclin_othernotes) %>% 
+    filter(!is.na(c_medsclin_date))
+  c_medsclin_combined <- merge.default(c_medsclin_sdq, c_medsclin_manual, all = TRUE)
+  
   ###
 
   c_medsclin1yr_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, c_medsclin1yr_date, c_medsclin1yr_baseline_date,
                                            c_medsclin1yr_clinician_name, c_medsclin1yr_02_med1name:c_medsclin1yr_othernotes) %>% 
-    filter(!is.na(Overall_date)) %>% 
-    distinct(., .keep_all = TRUE)
+    filter(!is.na(Overall_date)) %>% distinct(., .keep_all = TRUE) 
   
   c_medsclin1yr_sdq$c_medsclin1yr_date <- as.Date(c_medsclin1yr_sdq$c_medsclin1yr_date)
   c_medsclin1yr_sdq$c_medsclin1yr_date <- coalesce(c_medsclin1yr_sdq$c_medsclin1yr_date, c_medsclin1yr_sdq$Overall_date) 
@@ -1123,10 +1134,10 @@
   c_medsclin1yr_sdq$NA_count <- c_medsclin1yr_sdq %>% select(matches("med1name")) %>% apply(., 1, count_na)
   c_medsclin1yr_sdq$diff <- c(c_medsclin1yr_sdq$no_columns - c_medsclin1yr_sdq$NA_count)
   c_medsclin1yr_sdq <- c_medsclin1yr_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
-
+  
   ###
   
-  c_medsclin_sdq_task <- merge.default(task_DB_date, c_medsclin_sdq, all=TRUE) %>% 
+  c_medsclin_sdq_task <- merge.default(task_DB_date, c_medsclin_combined, all=TRUE) %>% 
     rename(c_medsclin_sdq_source = source) %>% 
     group_by(Initials, c_medsclin_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin_date) %>%
@@ -1147,7 +1158,7 @@
     filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
   
-  c_medsclin_sdq_clinical <- merge.default(clinical_DB_date, c_medsclin_sdq, all=TRUE) %>% 
+  c_medsclin_sdq_clinical <- merge.default(clinical_DB_date, c_medsclin_combined, all=TRUE) %>% 
     rename(c_medsclin_sdq_source = source) %>% 
     group_by(Initials, c_medsclin_date) %>% 
     arrange(FIRST_NAME, LAST_NAME, Initials, c_medsclin_date) %>%
@@ -2327,7 +2338,6 @@
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_diagnosis"] <- (paste0(measure_name, "1_exposed_diagnosis"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_symptoms"] <- (paste0(measure_name, "1_exposed_symptoms"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_no"] <- (paste0(measure_name, "1_exposed_no"))
-      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_tot"] <- (paste0(measure_name, "1_exposed_tot"))
       
       temp_2_self_diagnosis <- as.character(paste0(measure_name, "2_self_diagnosis"))
       measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_2_self_diagnosis_pos_test = ifelse(str_detect((!!sym(temp_2_self_diagnosis)), "pos_test"), 1, 0))
@@ -2341,7 +2351,6 @@
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_diagnosis"] <- (paste0(measure_name, "2_self_diagnosis_diagnosis"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_symptoms"] <- (paste0(measure_name, "2_self_diagnosis_symptoms"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_no"] <- (paste0(measure_name, "2_self_diagnosis_no"))
-      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_tot"] <- (paste0(measure_name, "2_self_diagnosis_tot"))
       
       temp_3_symptoms <- as.character(paste0(measure_name, "3_symptoms"))
       measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_3_symptoms_fever = ifelse(str_detect((!!sym(temp_3_symptoms)), "fever"), 1, 0))
@@ -2360,7 +2369,6 @@
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_fatigue"] <- (paste0(measure_name, "3_symptoms_fatigue"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_taste"] <- (paste0(measure_name, "3_symptoms_taste"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_other"] <- (paste0(measure_name, "3_symptoms_other"))
-      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_tot"] <- (paste0(measure_name, "3_symptoms_tot"))
       
       temp_4_family_diagnosis <- as.character(paste0(measure_name, "4_family_diagnosis"))
       measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_4_family_diagnosis_yes_household = ifelse(str_detect((!!sym(temp_4_family_diagnosis)), "yes_household"), 1, 0))
@@ -2372,7 +2380,6 @@
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_yes_household"] <- (paste0(measure_name, "4_family_diagnosis_yes_household"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_yes_non_household"] <- (paste0(measure_name, "4_family_diagnosis_yes_non_household"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_no"] <- (paste0(measure_name, "4_family_diagnosis_no"))
-      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_tot"] <- (paste0(measure_name, "4_family_diagnosis_tot"))
       
       temp_5_family_events <- as.character(paste0(measure_name, "5_family_events"))
       measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_5_family_events_ill = ifelse(str_detect((!!sym(temp_5_family_events)), "ill"), 1, 0))
@@ -2395,7 +2402,6 @@
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_loss_earnings"] <- (paste0(measure_name, "5_family_events_loss_earnings"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_died"] <- (paste0(measure_name, "5_family_events_died"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_no"] <- (paste0(measure_name, "5_family_events_no"))
-      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_tot"] <- (paste0(measure_name, "5_family_events_tot"))
       
       temp_44_support <- as.character(paste0(measure_name, "44_support"))
       measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_44_support_resource = ifelse(str_detect((!!sym(temp_44_support)), "resource"), 1, 0))
@@ -2424,6 +2430,16 @@
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_medical"] <- (paste0(measure_name, "44_support_medical"))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_44_support_other"] <- (paste0(measure_name, "44_support_other"))
 
+      measure_temp_sdq$temp_all_exposure_tot <- measure_temp_sdq %>%
+        select(temp_1_exposed_tot, temp_2_self_diagnosis_tot, temp_3_symptoms_tot, temp_4_family_diagnosis_tot, temp_5_family_events_tot) %>% rowSums(na.rm=TRUE)
+      
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_1_exposed_tot"] <- (paste0(measure_name, "1_exposed_tot"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_2_self_diagnosis_tot"] <- (paste0(measure_name, "2_self_diagnosis_tot"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_3_symptoms_tot"] <- (paste0(measure_name, "3_symptoms_tot"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_4_family_diagnosis_tot"] <- (paste0(measure_name, "4_family_diagnosis_tot"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_5_family_events_tot"] <- (paste0(measure_name, "5_family_events_tot"))
+      names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_all_exposure_tot"] <- (paste0(measure_name, "all_exposure_tot"))
+      
     }
     
     if (measure_name=="s_scaredshort_" | measure_name=="p_scaredshort_") {
@@ -2530,7 +2546,7 @@
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
-    # iter=23
+    # iter=19
     measure_name <- variables_no_scoring[iter]
     print(paste("************************LOOP = ", measure_name))
 
@@ -2624,6 +2640,14 @@
       measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
     } else if (measure_name=="s_suicide_"){
       measure_temp <- merge.default(measure_temp, manual_suicide_w_names, all=TRUE) %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+    } else if (measure_name=='p_dawba_bdd_' | measure_name=='s_dawba_bdd_') {
+      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, matches(measure_name)) %>% 
+        rename(date_temp = (paste0(measure_name, "date"))) %>% filter(!is.na(date_temp))
+      measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE) %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+    } else if (measure_name=='ksads_') {
+      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, matches(measure_name)) %>% 
+        rename(date_temp = "c_ksads_date") %>% filter(!is.na(date_temp))
+      measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE) %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
     }
       
     if (measure_name=="s_medsctdb_") {
