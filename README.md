@@ -5,25 +5,37 @@
 ### Location of repository on the server: Database/Database_Scripts_Github/
 ---
 ## Description of scripts: 
-1. Master code needed to set up environmental variables & directories + to run other scripts from: 
+1. Master script needed to set up environmental variables & directories + to run other scripts from: 
 	Update_databases_master_script.R
-2. Codes to merge IRTA trackers to make a master patient list: 
+2. Scripts to merge patient trackers into a master patient list: 
 	IRTA_Merge_Code.R
 	Schedule_script_functions.R 
-3. Code to create clinical, behavioural and treatment databases using information from the master IRTA tracker, CTDB and SDQ: 
+3. Script to create clinical, behavioural and treatment databases using information from the master patient tracker, CTDB and SDQ: 
 	Database_code.R
-4. Code to create DAWBA database & generate lists for deleting old data from server: 
+4. Script to create DAWBA database & generate lists for deleting old data from server: 
 	DAWBA_database_and_deletions.R
-5. Code to generate weekly numbers for Wednesday joint fellows meeting: 
+5. Scripts to generate weekly numbers for clinical meeting: 
 	Research_meeting_numbers.Rmd
-6. Code to generate eval and screening summaries for Thursday clinical meeting: 
+	Referrals_summary.R
+6. Script to generate eval and screening summaries for clinical meeting: 
 	Clinician_sheet.Rmd
-7. Codes to generate CBT reports: 
+7. Scripts to generate CBT reports: 
 	Produce_CBT_final_report.Rmd
 	Produce_CBT_final_report_provider.Rmd
 	Produce_CBT_progress_report.Rmd
-8. Code to generate inpatient summary: 
+8. Scripts to generate inpatient summary: 
 	Inpatient_summary.Rmd
+	Inpatient_end_of_treatment_graphs.R
+9. Script to generate clinician supervision summary: 
+	All_treatment_summary.Rmd
+10. NEW: COVID19 related research database generation: 
+	crisis_dataset_description.Rmd
+
+---
+## Manual: 
+
+All procedures for running these scripts are described in the latest version of the 'database_and_report_scripts_manual' contained in the  repository on the server. This has not been uploaded to GitHub as it contains account login information for our online data collection platforms. 
+
 ---
 ### Created in RStudio: "R version 3.6.1 (2019-07-05)"
 ---
@@ -45,5 +57,8 @@ rlang
 purrr
 tidyverse
 knitr
+flextable
 shiny
 kableExtra
+chron
+ggpubr
