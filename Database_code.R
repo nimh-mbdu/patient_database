@@ -1101,9 +1101,9 @@
   c_medsclin_sdq$c_medsclin_date <- coalesce(c_medsclin_sdq$c_medsclin_date, c_medsclin_sdq$Overall_date) 
   c_medsclin_sdq <- c_medsclin_sdq %>% select(-Overall_date)
 
-  c_medsclin_sdq[,5:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,5:ncol(c_medsclin_sdq)], as.character)
-  c_medsclin_sdq[,5:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,5:ncol(c_medsclin_sdq)], na_if, 999)
-  c_medsclin_sdq[,5:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,5:ncol(c_medsclin_sdq)], na_if, "") 
+  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], as.character)
+  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], na_if, 999)
+  c_medsclin_sdq[,7:ncol(c_medsclin_sdq)] <- sapply(c_medsclin_sdq[,7:ncol(c_medsclin_sdq)], na_if, "") 
 
   c_medsclin_sdq$no_columns <- c_medsclin_sdq %>% select(c_medsclin_treatment_changes, matches("med1name")) %>% ncol() %>% as.numeric()
   c_medsclin_sdq$NA_count <- c_medsclin_sdq %>% select(c_medsclin_treatment_changes, matches("med1name")) %>% apply(., 1, count_na)
@@ -1113,6 +1113,7 @@
   c_medsclin_manual <- manual_db_w_names %>% select(PLUSID, FIRST_NAME, LAST_NAME, Initials, source, c_medsclin_date, 
                                                     c_medsclin_clinician_name, c_medsclin_person_completing:c_medsclin_othernotes) %>% 
     filter(!is.na(c_medsclin_date))
+  c_medsclin_manual$c_medsclin_date <- as.Date(c_medsclin_manual$c_medsclin_date, "%Y-%m-%d")
   c_medsclin_combined <- merge.default(c_medsclin_sdq, c_medsclin_manual, all = TRUE)
   
   ###
@@ -3114,14 +3115,23 @@ measures_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID,
         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_covid19_tot,	s_covid19_date,	s_covid19_22_other_comments,
         s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, s_crisis_base_3_symptoms, s_crisis_base_4_family_diagnosis, s_crisis_base_5_family_events, 
         p_crisis_base_1_exposed, p_crisis_base_2_self_diagnosis, p_crisis_base_3_symptoms, p_crisis_base_4_family_diagnosis, p_crisis_base_5_family_events, 
-        s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq1w_tot, p_mfq1w_date, 
-        p_mfq_tot, p_mfq_date, p_scaredshort_tot, p_scaredshort_date, s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, p_crisis_3m_tot, 
-        p_crisis_3m_date, p_crisis_base_tot, p_crisis_base_date, s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, 
-        s_crisis_base_44_support_other, s_crisis_base_additional_concerns, s_crisis_base_additional_comments, p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, 
-        p_crisis_base_44_support, p_crisis_base_44_support_other, p_crisis_base_additional_concerns, p_crisis_base_additional_comments) %>% 
+        s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis, s_crisis_fu_3_symptoms, s_crisis_fu_4_family_diagnosis, s_crisis_fu_5_family_events, 
+        p_crisis_fu_1_exposed, p_crisis_fu_2_self_diagnosis, p_crisis_fu_3_symptoms, p_crisis_fu_4_family_diagnosis, p_crisis_fu_5_family_events, 
+        s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, 
+        p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, p_scaredshort_tot, p_scaredshort_date, 
+        s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, s_crisis_fu_tot, s_crisis_fu_date,
+        p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, p_crisis_base_date, p_crisis_fu_tot, p_crisis_fu_date,
+        s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, s_crisis_base_44_support_other, 
+        s_crisis_base_additional_concerns, s_crisis_base_additional_comments, 
+        p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, p_crisis_base_44_support, p_crisis_base_44_support_other, 
+        p_crisis_base_additional_concerns, p_crisis_base_additional_comments,
+        s_crisis_fu_3b_symptoms_describe, s_crisis_fu_12_positive_describe, s_crisis_fu_44_support, s_crisis_fu_44_support_other, 
+        s_crisis_fu_additional_concerns, s_crisis_fu_additional_comments, 
+        p_crisis_fu_3b_symptoms_describe, p_crisis_fu_12_positive_describe, 
+        p_crisis_fu_44_support, p_crisis_fu_44_support_other, p_crisis_fu_additional_concerns, p_crisis_fu_additional_comments) %>% 
   filter(s_mfq1w_date  > "2020-03-17" | s_scaredshort_date > "2020-03-17" | s_crisis_base_date > "2020-03-17" | s_crisis_3m_date > "2020-03-17" |
          s_mfq_date  > "2020-03-17" | p_mfq_date  > "2020-03-17" | p_mfq1w_date  > "2020-03-17" | p_crisis_base_date > "2020-03-17" | 
-         p_crisis_3m_date > "2020-03-17") %>% 
+         p_crisis_3m_date > "2020-03-17" | s_crisis_fu_date > "2020-03-17" | p_crisis_fu_date > "2020-03-17") %>% 
   mutate(Review_status = 0) %>% mutate(Review_notes = NA) %>% mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% 
   mutate(Clinician_assigned = NA) %>% mutate(Clinician_followup = NA)
 measures_dataset_w_missing <- merge.default(measures_expected, measures_completed, all=TRUE) %>% group_by(Initials) %>% 
@@ -3172,14 +3182,23 @@ measures_dataset_tminus2_long$p_mfq_date <- coalesce(measures_dataset_tminus2_lo
 
 measures_dataset_tminus2_long <- measures_dataset_tminus2_long %>% 
   select(IRTA_tracker, Initials:PLUSID, FIRST_NAME:Parent_Contact_Number, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-         Clinical_Visit_Date, Task_Name, Task_Date, s_covid19_tot,	s_covid19_date,	s_covid19_22_other_comments,
+         Clinical_Visit_Date, Task_Name, Task_Date, s_covid19_tot,s_covid19_date,	s_covid19_22_other_comments,
          s_crisis_base_1_exposed, s_crisis_base_2_self_diagnosis, s_crisis_base_3_symptoms, s_crisis_base_4_family_diagnosis, s_crisis_base_5_family_events, 
          p_crisis_base_1_exposed, p_crisis_base_2_self_diagnosis, p_crisis_base_3_symptoms, p_crisis_base_4_family_diagnosis, p_crisis_base_5_family_events, 
-         s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, p_mfq_tot, p_mfq_date, p_scaredshort_tot, 
-         p_scaredshort_date, s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, 
-         p_crisis_base_date, s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, s_crisis_base_44_support_other, 
-         s_crisis_base_additional_concerns, s_crisis_base_additional_comments, p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, 
-         p_crisis_base_44_support, p_crisis_base_44_support_other, p_crisis_base_additional_concerns, p_crisis_base_additional_comments,
+         s_crisis_fu_1_exposed, s_crisis_fu_2_self_diagnosis, s_crisis_fu_3_symptoms, s_crisis_fu_4_family_diagnosis, s_crisis_fu_5_family_events, 
+         p_crisis_fu_1_exposed, p_crisis_fu_2_self_diagnosis, p_crisis_fu_3_symptoms, p_crisis_fu_4_family_diagnosis, p_crisis_fu_5_family_events, 
+         s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, 
+         p_mfq_tot, p_mfq_date, p_scaredshort_tot, p_scaredshort_date, 
+         s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, s_crisis_fu_tot, s_crisis_fu_date,
+         p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, p_crisis_base_date, p_crisis_fu_tot, p_crisis_fu_date,
+         s_crisis_base_3b_symptoms_describe, s_crisis_base_12_positive_describe, s_crisis_base_44_support, s_crisis_base_44_support_other, 
+         s_crisis_base_additional_concerns, s_crisis_base_additional_comments, 
+         p_crisis_base_3b_symptoms_describe, p_crisis_base_12_positive_describe, p_crisis_base_44_support, p_crisis_base_44_support_other, 
+         p_crisis_base_additional_concerns, p_crisis_base_additional_comments,
+         s_crisis_fu_3b_symptoms_describe, s_crisis_fu_12_positive_describe, s_crisis_fu_44_support, s_crisis_fu_44_support_other, 
+         s_crisis_fu_additional_concerns, s_crisis_fu_additional_comments, 
+         p_crisis_fu_3b_symptoms_describe, p_crisis_fu_12_positive_describe, 
+         p_crisis_fu_44_support, p_crisis_fu_44_support_other, p_crisis_fu_additional_concerns, p_crisis_fu_additional_comments,
          QC_notes, Review_status, Review_notes:Clinician_followup) %>% 
   group_by(Initials) %>% fill(IRTA_tracker, FIRST_NAME:c_ksadsdx_dx_detailed, .direction = "up") %>% fill(IRTA_tracker, FIRST_NAME:c_ksadsdx_dx_detailed, .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
