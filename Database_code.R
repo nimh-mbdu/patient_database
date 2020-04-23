@@ -410,8 +410,9 @@
     measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
+    # measure_temp_clinical$Clinical_Visit_Date_temp <- (measure_temp_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
     measure_temp_clinical <- measure_temp_clinical %>%
-      filter(date_temp >= Clinical_Visit_Date) %>% 
+      # filter(date_temp >= Clinical_Visit_Date_temp) %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>%
       group_by(Initials, Clinical_Visit_Date) %>%
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>%
@@ -423,6 +424,7 @@
       ungroup() %>%
       filter(measurement_TDiff_abs<=60) %>%
       select(-measurement_TDiff_abs)
+      # select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
     
     names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "temptotal"] <- (paste0(measure_name, "tot"))
@@ -434,8 +436,9 @@
     measure_temp_task <- merge.default(task_DB_date, measure_temp_combined, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
+    # measure_temp_task$Task_Date_temp <- (measure_temp_task$Task_Date - as.difftime(3, unit="days"))
     measure_temp_task <- measure_temp_task %>% 
-      filter(date_temp >= Task_Date) %>% 
+      # filter(date_temp >= Task_Date_temp) %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
@@ -447,6 +450,7 @@
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
+      # select(-measurement_TDiff_abs, -Task_Date_temp)
     
     names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_task)[names(measure_temp_task) == "temptotal"] <- (paste0(measure_name, "tot"))
@@ -555,8 +559,9 @@
              panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
              measure_temp_source, tempcomplete)
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
-    measure_temp_clinical <- measure_temp_clinical %>% 
-      filter(date_temp >= Clinical_Visit_Date) %>% 
+    # measure_temp_clinical$Clinical_Visit_Date_temp <- (measure_temp_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
+    measure_temp_clinical <- measure_temp_clinical %>%
+      # filter(date_temp >= Clinical_Visit_Date_temp) %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
@@ -568,6 +573,7 @@
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
+      # select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
   
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
@@ -586,8 +592,9 @@
              panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
              measure_temp_source, tempcomplete)
     measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
-    measure_temp_task <- measure_temp_task %>% 
-      filter(date_temp >= Task_Date) %>% 
+    # measure_temp_task$Task_Date_temp <- (measure_temp_task$Task_Date - as.difftime(3, unit="days"))
+    measure_temp_task <- measure_temp_task %>%
+      # filter(date_temp >= Task_Date_temp) %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
@@ -599,7 +606,8 @@
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
-  
+      # select(-measurement_TDiff_abs, -Task_Date_temp)
+      
     names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_task)[names(measure_temp_task) == "temptotal"] <- (paste0(measure_name, "tot"))
@@ -884,6 +892,9 @@
     group_by(Initials, c_ksadsdx_date) %>% slice(1) %>% ungroup()
   diagnosis_subset_sdq <- merge.default(diagnosis_subset_sdq, comorbid, all=TRUE) %>% group_by(PLUSID, c_ksadsdx_date) %>% slice(1) %>% ungroup()
 
+  na_names_dx <- diagnosis_subset_sdq %>% select(matches("c_ksadsdx_")) %>% select(-matches("_date")) %>% colnames()
+  diagnosis_subset_sdq[na_names_dx] <- lapply(diagnosis_subset_sdq[na_names_dx], replace_na, "999")
+  
   diagnosis_subset_task <- merge.default(task_DB_date, diagnosis_subset_sdq, all=TRUE) %>% 
     rename(c_ksadsdx_source = source) %>% 
     group_by(Initials, c_ksadsdx_date) %>% 
@@ -953,6 +964,9 @@
     slice(1) %>% 
     ungroup()
   
+  na_names_iq <- c_wasi_subset %>% select(matches("c_wasi_")) %>% select(-matches("_date")) %>% colnames()
+  c_wasi_subset[na_names_iq] <- lapply(c_wasi_subset[na_names_iq], replace_na, "999")
+  
   c_wasi_subset_clinical <- merge.default(clinical_DB_date, c_wasi_subset, all=TRUE) %>% 
     select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, c_wasi_source, c_wasi_date, matches('c_wasi_'))
   
@@ -984,6 +998,9 @@
     arrange(Initials, s_tanner_date, desc(s_tanner_source)) %>%
     slice(1) %>% 
     ungroup()
+  
+  na_names_tanner <- s_tanner_subset %>% select(matches("s_tanner_")) %>% select(-matches("_date")) %>% colnames()
+  s_tanner_subset[na_names_tanner] <- lapply(s_tanner_subset[na_names_tanner], replace_na, "999")
   
   s_tanner_subset_clinical <- merge.default(clinical_DB_date, s_tanner_subset, all=TRUE) %>% 
     select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_tanner_source, s_tanner_date, matches('s_tanner_'))
@@ -1079,6 +1096,9 @@
     slice(1) %>%
     ungroup()
   s_handedness_subset$s_handedness_ehi_tot <- as.numeric(s_handedness_subset$s_handedness_ehi_tot)
+  
+  na_names_handedness <- s_handedness_subset %>% select(matches("s_handedness_")) %>% select(-matches("_date")) %>% colnames()
+  s_handedness_subset[na_names_handedness] <- lapply(s_handedness_subset[na_names_handedness], replace_na, "999")
   
   s_handedness_subset <- s_handedness_subset %>% 
     mutate(s_handedness_ehi = ifelse(s_handedness_ehi_tot < -40, "LEFT", ifelse(s_handedness_ehi_tot >= 40, "RIGHT", "AMBIDEXTROUS")))
@@ -2267,8 +2287,9 @@
     select(Initials, PLUSID, Clinical_Visit_Date, matches("s_covid19_"))
   
   s_covid19_sdq_clinical$s_covid19_TDiff <- as.numeric(difftime(s_covid19_sdq_clinical$s_covid19_date, s_covid19_sdq_clinical$Clinical_Visit_Date, tz="", units = "days"))
-  s_covid19_sdq_clinical <- s_covid19_sdq_clinical %>% 
-    filter(s_covid19_date >= Clinical_Visit_Date) %>% 
+  # s_covid19_sdq_clinical$Clinical_Visit_Date_temp <- (s_covid19_sdq_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
+  s_covid19_sdq_clinical <- s_covid19_sdq_clinical %>%
+    # filter(s_covid19_date >= Clinical_Visit_Date_temp) %>% 
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(Initials, Clinical_Visit_Date, s_covid19_TDiff) %>% 
     slice(1) %>%
@@ -2278,6 +2299,7 @@
     slice(1) %>%
     ungroup() %>% 
     filter(s_covid19_TDiff<=60)
+    # select(-Clinical_Visit_Date_temp)
   
 #####
 # CRISIS questionnaire
@@ -2459,8 +2481,9 @@
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
-    measure_temp_clinical <- measure_temp_clinical %>% 
-      filter(date_temp >= Clinical_Visit_Date) %>% 
+    # measure_temp_clinical$Clinical_Visit_Date_temp <- (measure_temp_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
+    measure_temp_clinical <- measure_temp_clinical %>%
+      # filter(date_temp >= Clinical_Visit_Date_temp) %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
@@ -2472,7 +2495,8 @@
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
-
+      # select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
+    
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "temptotal"] <- (paste0(measure_name, "tot"))
@@ -2484,8 +2508,9 @@
     measure_temp_task <- merge.default(task_DB_date, measure_temp_sdq, all=TRUE) %>% select(FIRST_NAME, LAST_NAME, Initials, 
              PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
-    measure_temp_task <- measure_temp_task %>% 
-      filter(date_temp >= Task_Date) %>% 
+    # measure_temp_task$Task_Date_temp <- (measure_temp_task$Task_Date - as.difftime(3, unit="days"))
+    measure_temp_task <- measure_temp_task %>%
+      # filter(date_temp >= Task_Date_temp) %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
@@ -2497,6 +2522,7 @@
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
+      # select(-measurement_TDiff_abs, -Task_Date_temp)
     
     names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
@@ -2688,6 +2714,16 @@
       measure_temp <- measure_temp %>% group_by(Initials) %>% arrange(Initials, desc(source)) %>%
         fill(., names(fill_names), .direction = "down") %>% fill(., names(fill_names), .direction = "up") %>% slice(1) %>% ungroup()
     }
+    
+    if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_interview_" | measure_name=="ksads_") {
+      
+      measure_name2 <- gsub("_", "", measure_name, fixed=TRUE)
+      na_names_temp <- measure_temp %>% select(matches(measure_name)) %>% select(-matches("_date")) %>% colnames()
+      measure_temp[na_names_temp] <- lapply(measure_temp[na_names_temp], replace_na, "999")
+      assign(paste0("na_names_", measure_name2), na_names_temp)
+      rm(measure_name2)
+      
+    }
 
     if (measure_name=="s_after_ba_" | measure_name=="s_before_ba_" | measure_name=="s_srsors_" | 
         measure_name=="c_inpatient_" | measure_name=="c_cgi_" | measure_name=="s_fua_" | measure_name=="p_fua_" |
@@ -2726,7 +2762,7 @@
       assign(paste0(measure_name, "subset_task"), measure_temp_task)
       
     } else if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
-               measure_name=="c_ksadsdx_" | measure_name=="ksads_") {
+               measure_name=="ksads_") {
       
       print("creating tasks subset")
       
@@ -2828,7 +2864,7 @@
       assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
       
     } else if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
-      measure_name=="c_ksadsdx_" | measure_name=="ksads_" | measure_name=="c_family_interview_") {
+      measure_name=="ksads_" | measure_name=="c_family_interview_") {
       
       print("creating clinical subset")
       
@@ -2914,13 +2950,15 @@ Psychometrics_treatment <- Psychometrics_treatment %>%
   fill(., names(fill_names), .direction = "down") %>%
   fill(., names(fill_names), .direction = "up") %>%
   ungroup() %>%
-  group_by(Initials) %>%
+  group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
   fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
        matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
-  fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
-       matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "up") %>%
   ungroup() %>% 
   distinct(., .keep_all = TRUE)
+
+na_names_combined <- c(na_names_dx, na_names_iq, na_names_tanner, na_names_handedness, na_names_cfamilyinterview,
+                       na_names_pdemoeval, na_names_pdemoscreen, na_names_ksads)
+Psychometrics_treatment[na_names_combined] <- lapply(Psychometrics_treatment[na_names_combined], na_if, "999")
 
 ############# CBT subset
 
@@ -3228,13 +3266,15 @@ Psychometrics_behav <- Psychometrics_behav %>%
   fill(., names(fill_names), .direction = c("down")) %>%
   fill(., names(fill_names), .direction = c("up")) %>%
   ungroup() %>%
-  group_by(Initials) %>%
+  group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
   fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
        matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
-  fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
-       matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "up") %>%
   ungroup() %>%
   distinct(., .keep_all = TRUE)
+
+na_names_combined <- c(na_names_dx, na_names_iq, na_names_tanner, na_names_handedness,
+                       na_names_pdemoeval, na_names_pdemoscreen, na_names_ksads)
+Psychometrics_behav[na_names_combined] <- lapply(Psychometrics_behav[na_names_combined], na_if, "999")
 
 # exporting
 
@@ -3302,6 +3342,7 @@ rm(list=ls(pattern="iter"))
 rm(list=ls(pattern="manual"))
 rm(list=ls(pattern="common_identifiers"))
 rm(list=ls(pattern="data_"))
+rm(list=ls(pattern="na_names_"))
 rm(list=ls(pattern="parent_"))
 rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, 
    measure_name, panic_subscale, sep_subscale, social_subscale, gad_subscale, school_subscale, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d,
