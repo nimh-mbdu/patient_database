@@ -323,6 +323,11 @@
     select(FIRST_NAME, LAST_NAME, PLUSID, Initials, Task_Name, Task_Date)
   task_DB$Task_Number <- lapply(task_DB$Task_Number, na_if, '-9')
   task_DB$Task_Number <- as.character(task_DB$Task_Number)
+  
+  clinical_DB_date_before_covid <- clinical_DB_date %>% filter(Clinical_Visit_Date < "2020-03-16")
+  clinical_DB_date_since_covid <- clinical_DB_date %>% filter(Clinical_Visit_Date >= "2020-03-16")
+  task_DB_date_before_covid <- task_DB_date %>% filter(Task_Date < "2020-03-16")
+  task_DB_date_since_covid <- task_DB_date %>% filter(Task_Date >= "2020-03-16")
 
 # Scoring SDQ+ and merging with CTDB --------------------------------------
   
@@ -338,7 +343,7 @@
   
   for(i in seq_along(tot_sum)) {
     iter <- as.numeric(i)
-    # iter=2
+    # iter=1
     measure_name <- tot_sum[iter]
     
       measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
@@ -406,13 +411,14 @@
       arrange(Initials, date_temp, desc(temptotal), desc(measure_temp_source)) %>%
       slice(1) %>%
       ungroup()
-
-    measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
+    
+    measure_temp_before_covid <- measure_temp_combined %>% filter(date_temp < "2020-03-16")
+    measure_temp_since_covid <- measure_temp_combined %>% filter(date_temp >= "2020-03-16")
+    
+    measure_temp_clinical1 <- merge.default(clinical_DB_date_before_covid, measure_temp_before_covid, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
-    measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
-    # measure_temp_clinical$Clinical_Visit_Date_temp <- (measure_temp_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
-    measure_temp_clinical <- measure_temp_clinical %>%
-      # filter(date_temp >= Clinical_Visit_Date_temp) %>% 
+    measure_temp_clinical1$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical1$Clinical_Visit_Date, measure_temp_clinical1$date_temp, tz="", units = "days"))
+    measure_temp_clinical1 <- measure_temp_clinical1 %>%
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>%
       group_by(Initials, Clinical_Visit_Date) %>%
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>%
@@ -424,8 +430,26 @@
       ungroup() %>%
       filter(measurement_TDiff_abs<=60) %>%
       select(-measurement_TDiff_abs)
-      # select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
     
+    measure_temp_clinical2 <- merge.default(clinical_DB_date_since_covid, measure_temp_since_covid, all=TRUE) %>% 
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
+    measure_temp_clinical2$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical2$Clinical_Visit_Date, measure_temp_clinical2$date_temp, tz="", units = "days"))
+    measure_temp_clinical2$Clinical_Visit_Date_temp <- (measure_temp_clinical2$Clinical_Visit_Date - as.difftime(3, unit="days"))
+    measure_temp_clinical2 <- measure_temp_clinical2 %>%
+      filter(date_temp >= Clinical_Visit_Date_temp) %>%
+      mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>%
+      group_by(Initials, Clinical_Visit_Date) %>%
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>%
+      slice(1) %>%
+      ungroup() %>%
+      group_by(Initials, date_temp) %>%
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>%
+      slice(1) %>%
+      ungroup() %>%
+      filter(measurement_TDiff_abs<=60) %>%
+      select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
+    
+    measure_temp_clinical <- merge.default(measure_temp_clinical1, measure_temp_clinical2, all = TRUE)
     names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "temptotal"] <- (paste0(measure_name, "tot"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
@@ -433,12 +457,10 @@
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0(measure_name, "source"))
     assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
     
-    measure_temp_task <- merge.default(task_DB_date, measure_temp_combined, all=TRUE) %>% 
+    measure_temp_task1 <- merge.default(task_DB_date_before_covid, measure_temp_before_covid, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
-    measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
-    # measure_temp_task$Task_Date_temp <- (measure_temp_task$Task_Date - as.difftime(3, unit="days"))
-    measure_temp_task <- measure_temp_task %>% 
-      # filter(date_temp >= Task_Date_temp) %>% 
+    measure_temp_task1$measurement_TDiff <- as.numeric(difftime(measure_temp_task1$Task_Date, measure_temp_task1$date_temp, tz="", units = "days"))
+    measure_temp_task1 <- measure_temp_task1 %>% 
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
@@ -450,8 +472,26 @@
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
-      # select(-measurement_TDiff_abs, -Task_Date_temp)
+
+    measure_temp_task2 <- merge.default(task_DB_date_since_covid, measure_temp_since_covid, all=TRUE) %>% 
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
+    measure_temp_task2$measurement_TDiff <- as.numeric(difftime(measure_temp_task2$Task_Date, measure_temp_task2$date_temp, tz="", units = "days"))
+    measure_temp_task2$Task_Date_temp <- (measure_temp_task2$Task_Date - as.difftime(3, unit="days"))
+    measure_temp_task2 <- measure_temp_task2 %>% 
+      filter(date_temp >= Task_Date_temp) %>%
+      mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
+      group_by(Initials, Task_Name, Task_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      group_by(Initials, Task_Name, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      filter(measurement_TDiff_abs<=60) %>% 
+      select(-measurement_TDiff_abs, -Task_Date_temp)
     
+    measure_temp_task <- merge.default(measure_temp_task1, measure_temp_task2, all = TRUE)
     names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_task)[names(measure_temp_task) == "temptotal"] <- (paste0(measure_name, "tot"))
     names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
@@ -554,14 +594,15 @@
       slice(1) %>% 
       ungroup()
     
-    measure_temp_clinical <- merge.default(clinical_DB_date, measure_temp_combined, all=TRUE) %>% 
+    measure_temp_before_covid <- measure_temp_combined %>% filter(date_temp < "2020-03-16")
+    measure_temp_since_covid <- measure_temp_combined %>% filter(date_temp >= "2020-03-16")
+    
+    measure_temp_clinical1 <- merge.default(clinical_DB_date_before_covid, measure_temp_before_covid, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal,
              panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
              measure_temp_source, tempcomplete)
-    measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
-    # measure_temp_clinical$Clinical_Visit_Date_temp <- (measure_temp_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
-    measure_temp_clinical <- measure_temp_clinical %>%
-      # filter(date_temp >= Clinical_Visit_Date_temp) %>% 
+    measure_temp_clinical1$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical1$Clinical_Visit_Date, measure_temp_clinical1$date_temp, tz="", units = "days"))
+    measure_temp_clinical1 <- measure_temp_clinical1 %>%
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
@@ -573,8 +614,28 @@
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
-      # select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
+
+    measure_temp_clinical2 <- merge.default(clinical_DB_date_since_covid, measure_temp_since_covid, all=TRUE) %>% 
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal,
+             panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
+             measure_temp_source, tempcomplete)
+    measure_temp_clinical2$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical2$Clinical_Visit_Date, measure_temp_clinical2$date_temp, tz="", units = "days"))
+    measure_temp_clinical2$Clinical_Visit_Date_temp <- (measure_temp_clinical2$Clinical_Visit_Date - as.difftime(3, unit="days"))
+    measure_temp_clinical2 <- measure_temp_clinical2 %>%
+      filter(date_temp >= Clinical_Visit_Date_temp) %>%
+      mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
+      group_by(Initials, Clinical_Visit_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      group_by(Initials, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, date_temp, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      filter(measurement_TDiff_abs<=60) %>% 
+      select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
   
+    measure_temp_clinical <- merge.default(measure_temp_clinical1, measure_temp_clinical2, all = TRUE)
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "temptotal"] <- (paste0(measure_name, "tot"))
@@ -587,14 +648,12 @@
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0(measure_name, "source"))
     assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
     
-    measure_temp_task <- merge.default(task_DB_date, measure_temp_combined, all=TRUE) %>% 
+    measure_temp_task1 <- merge.default(task_DB_date_before_covid, measure_temp_before_covid, all=TRUE) %>% 
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, 
              panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
              measure_temp_source, tempcomplete)
-    measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
-    # measure_temp_task$Task_Date_temp <- (measure_temp_task$Task_Date - as.difftime(3, unit="days"))
-    measure_temp_task <- measure_temp_task %>%
-      # filter(date_temp >= Task_Date_temp) %>% 
+    measure_temp_task1$measurement_TDiff <- as.numeric(difftime(measure_temp_task1$Task_Date, measure_temp_task1$date_temp, tz="", units = "days"))
+    measure_temp_task1 <- measure_temp_task1 %>%
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
@@ -606,8 +665,28 @@
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
       select(-measurement_TDiff_abs)
-      # select(-measurement_TDiff_abs, -Task_Date_temp)
+
+    measure_temp_task2 <- merge.default(task_DB_date_since_covid, measure_temp_since_covid, all=TRUE) %>% 
+      select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, 
+             panic_subscale_temp, sep_subscale_temp, social_subscale_temp, school_subscale_temp, gad_subscale_temp,
+             measure_temp_source, tempcomplete)
+    measure_temp_task2$measurement_TDiff <- as.numeric(difftime(measure_temp_task2$Task_Date, measure_temp_task2$date_temp, tz="", units = "days"))
+    measure_temp_task2$Task_Date_temp <- (measure_temp_task2$Task_Date - as.difftime(3, unit="days"))
+    measure_temp_task2 <- measure_temp_task2 %>%
+      filter(date_temp >= Task_Date_temp) %>%
+      mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
+      group_by(Initials, Task_Name, Task_Date) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      group_by(Initials, Task_Name, date_temp) %>% 
+      arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
+      slice(1) %>%
+      ungroup() %>% 
+      filter(measurement_TDiff_abs<=60) %>% 
+      select(-measurement_TDiff_abs, -Task_Date_temp)
       
+    measure_temp_task <- merge.default(measure_temp_task1, measure_temp_task2, all = TRUE)
     names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
     names(measure_temp_task)[names(measure_temp_task) == "temptotal"] <- (paste0(measure_name, "tot"))
@@ -2287,9 +2366,9 @@
     select(Initials, PLUSID, Clinical_Visit_Date, matches("s_covid19_"))
   
   s_covid19_sdq_clinical$s_covid19_TDiff <- as.numeric(difftime(s_covid19_sdq_clinical$s_covid19_date, s_covid19_sdq_clinical$Clinical_Visit_Date, tz="", units = "days"))
-  # s_covid19_sdq_clinical$Clinical_Visit_Date_temp <- (s_covid19_sdq_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
+  s_covid19_sdq_clinical$Clinical_Visit_Date_temp <- (s_covid19_sdq_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
   s_covid19_sdq_clinical <- s_covid19_sdq_clinical %>%
-    # filter(s_covid19_date >= Clinical_Visit_Date_temp) %>% 
+    filter(s_covid19_date >= Clinical_Visit_Date_temp) %>%
     group_by(Initials, Clinical_Visit_Date) %>% 
     arrange(Initials, Clinical_Visit_Date, s_covid19_TDiff) %>% 
     slice(1) %>%
@@ -2298,8 +2377,8 @@
     arrange(Initials, s_covid19_date, s_covid19_TDiff) %>% 
     slice(1) %>%
     ungroup() %>% 
-    filter(s_covid19_TDiff<=60)
-    # select(-Clinical_Visit_Date_temp)
+    filter(s_covid19_TDiff<=60) %>% 
+    select(-Clinical_Visit_Date_temp)
   
 #####
 # CRISIS questionnaire
@@ -2481,9 +2560,9 @@
       select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     
     measure_temp_clinical$measurement_TDiff <- as.numeric(difftime(measure_temp_clinical$Clinical_Visit_Date, measure_temp_clinical$date_temp, tz="", units = "days"))
-    # measure_temp_clinical$Clinical_Visit_Date_temp <- (measure_temp_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
+    measure_temp_clinical$Clinical_Visit_Date_temp <- (measure_temp_clinical$Clinical_Visit_Date - as.difftime(3, unit="days"))
     measure_temp_clinical <- measure_temp_clinical %>%
-      # filter(date_temp >= Clinical_Visit_Date_temp) %>% 
+      filter(date_temp >= Clinical_Visit_Date_temp) %>%
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Clinical_Visit_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
@@ -2494,8 +2573,7 @@
       slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
-      select(-measurement_TDiff_abs)
-      # select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
+      select(-measurement_TDiff_abs, -Clinical_Visit_Date_temp)
     
     names(measure_temp_clinical)[names(measure_temp_clinical) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_clinical)[names(measure_temp_clinical) == "tempcomplete"] <- (paste0(measure_name, "complete"))
@@ -2508,9 +2586,9 @@
     measure_temp_task <- merge.default(task_DB_date, measure_temp_sdq, all=TRUE) %>% select(FIRST_NAME, LAST_NAME, Initials, 
              PLUSID, Task_Name, Task_Date, matches(measure_name), date_temp, temptotal, measure_temp_source, tempcomplete)
     measure_temp_task$measurement_TDiff <- as.numeric(difftime(measure_temp_task$Task_Date, measure_temp_task$date_temp, tz="", units = "days"))
-    # measure_temp_task$Task_Date_temp <- (measure_temp_task$Task_Date - as.difftime(3, unit="days"))
+    measure_temp_task$Task_Date_temp <- (measure_temp_task$Task_Date - as.difftime(3, unit="days"))
     measure_temp_task <- measure_temp_task %>%
-      # filter(date_temp >= Task_Date_temp) %>% 
+      filter(date_temp >= Task_Date_temp) %>%
       mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% 
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
@@ -2521,8 +2599,7 @@
       slice(1) %>%
       ungroup() %>% 
       filter(measurement_TDiff_abs<=60) %>% 
-      select(-measurement_TDiff_abs)
-      # select(-measurement_TDiff_abs, -Task_Date_temp)
+      select(-measurement_TDiff_abs, -Task_Date_temp)
     
     names(measure_temp_task)[names(measure_temp_task) == "measurement_TDiff"] <- (paste0(measure_name, "TDiff"))
     names(measure_temp_task)[names(measure_temp_task) == "tempcomplete"] <- (paste0(measure_name, "complete"))
@@ -2934,7 +3011,7 @@
 
 # Creating clical and CBT databases & exporting --------------------------
 
-rm(measure_temp_clinical)
+rm(measure_temp_clinical, measure_temp_clinical1, measure_temp_clinical2)
 clinic_sets <- ls(pattern="_clinical")
 clinic_sets <- c("clinical_DB", clinic_sets)
 clinic_sets <- mget(clinic_sets)
@@ -3250,7 +3327,7 @@ if (file.exists(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_
 
 # Creating tasks database & exporting ------------------------------------
 
-rm(max_tasks, measure_temp_task)
+rm(max_tasks, measure_temp_task, measure_temp_task1, measure_temp_task2)
 task_sets <- ls(pattern="_task")
 task_sets <- c("task_DB", task_sets)
 task_sets <- mget(task_sets)
