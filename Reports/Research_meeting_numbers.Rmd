@@ -1004,6 +1004,8 @@ eligible <- Psychometrics_treatment %>% select(Initials, c_ksadsdx_primary_dx, c
 family_hist <- merge.default(family_hist, eligible, all = TRUE)
 family_hist$c_ksadsdx_primary_dx <- gsub("Anxious", "Other", family_hist$c_ksadsdx_primary_dx)
 family_hist$c_ksadsdx_primary_dx <- gsub("EXCLUDED", "Other", family_hist$c_ksadsdx_primary_dx)
+family_hist <- family_hist %>% group_by(Initials) %>% fill(c_ksadsdx_primary_dx, c_family_interview_date, c_family_interview_interviewer, .direction="up") %>% 
+  fill(c_ksadsdx_primary_dx, c_family_interview_date, c_family_interview_interviewer, .direction="down") %>% ungroup() %>% distinct(., .keep_all = TRUE)
 family_hist$c_ksadsdx_primary_dx <- replace_na(family_hist$c_ksadsdx_primary_dx, "Other")
 family_hist$complete <- is.na(family_hist$c_family_interview_interviewer) %>% as.character()
 family_hist$complete <- gsub("FALSE", "Complete", family_hist$complete)

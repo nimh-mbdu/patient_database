@@ -3375,7 +3375,7 @@ if (file_save_check_combined$date_diff[1]==0) {
 #### CRISIS sub-dataset for Argyris
 suppressPackageStartupMessages(library(kableExtra))
 render(paste0(scripts, 'Reports/crisis_dataset_description.Rmd'),
-       output_format = "html_document", output_file = 'CRISIS_subset_w_baseline_descrip', output_dir = paste0(database_location, 'COVID19/'))
+       output_format = "html_document", output_file = 'CRISIS_completion_numbers', output_dir = paste0(database_location, 'COVID19/'))
 detach(package:kableExtra)
 
 crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.csv"))
