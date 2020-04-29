@@ -285,6 +285,23 @@ crisis_final <- crisis_final %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Se
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
+############ CRISIS
+crisis_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_3m_tot, s_crisis_3m_date) %>% 
+  filter(!is.na(s_crisis_3m_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_3m_tot") %>% rename(s_crisis_date="s_crisis_3m_date") %>% 
+  mutate(row_label="pre-covid") %>% mutate(id="1")
+crisis_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_base_tot, s_crisis_base_date) %>% 
+  filter(!is.na(s_crisis_base_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_base_tot") %>% rename(s_crisis_date="s_crisis_base_date") %>% 
+  mutate(row_label="baseline") %>% mutate(id="2")
+crisis_subset3 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
+  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>%
+  mutate(row_label="followup") %>% mutate(id="3")
+crisis_subset <- merge.default(crisis_subset1, crisis_subset2, all = TRUE) %>% merge.default(., crisis_subset3, all = TRUE) 
+crisis_subset <- crisis_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% filter(id!=4 & id!=5)
+
+crisis_group_means <- crisis_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>%
+  summarise(s_crisis_mean=mean(s_crisis_tot), s_crisis_sd=sd(s_crisis_tot), s_crisis_N=n()) %>%
+  mutate(s_crisis_mean=round(s_crisis_mean, digit=2), s_crisis_sd=round(s_crisis_sd, digit=2)) %>% ungroup()
+
 ############ MFQ
 mfq_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_mfq_tot, s_mfq_date) %>% filter(!is.na(s_mfq_tot)) %>% 
   arrange(Initials, desc(s_mfq_date)) %>% filter(!str_detect(row_label, "crisis")) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
@@ -296,10 +313,11 @@ mfq_subset$row_label <- gsub("crisis_t1", "baseline", mfq_subset$row_label, fix=
 mfq_subset$row_label <- gsub("crisis_t2", "followup", mfq_subset$row_label, fix=TRUE)
 mfq_subset$id <- gsub("3", "2", mfq_subset$id, fix=TRUE)
 mfq_subset$id <- gsub("4", "3", mfq_subset$id, fix=TRUE)
-mfq_subset <- mfq_subset %>% mutate(id=as.numeric(id)) %>% filter(id<4)
+mfq_subset <- mfq_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% filter(id!=4 & id!=5)
 
-mfq_group_means <- mfq_subset %>% group_by(c_ksadsdx_primary_dx, id) %>% summarise(s_mfq_tot=mean(s_mfq_tot)) %>% 
-  mutate(s_mfq_tot=round(s_mfq_tot, digit=2)) %>% ungroup()
+mfq_group_means <- mfq_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>% 
+  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
+  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
 
 ############ SCARED
 scaredshort_subset <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_scaredshort_tot, s_scaredshort_date) %>%
@@ -308,26 +326,11 @@ scaredshort_subset$row_label <- gsub("crisis_t1", "baseline", scaredshort_subset
 scaredshort_subset$row_label <- gsub("crisis_t2", "followup", scaredshort_subset$row_label, fix=TRUE)
 scaredshort_subset$id <- gsub("3", "2", scaredshort_subset$id, fix=TRUE)
 scaredshort_subset$id <- gsub("4", "3", scaredshort_subset$id, fix=TRUE)
-scaredshort_subset <- scaredshort_subset %>% mutate(id=as.numeric(id)) %>% filter(id<4)
+scaredshort_subset <- scaredshort_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% filter(id!=4 & id!=5)
 
-scaredshort_group_means <- scaredshort_subset %>% group_by(c_ksadsdx_primary_dx, id) %>% summarise(s_scaredshort_tot=mean(s_scaredshort_tot)) %>% 
-  mutate(s_scaredshort_tot=round(s_scaredshort_tot, digit=2)) %>% ungroup()
-
-############ CRISIS
-crisis_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_3m_tot, s_crisis_3m_date) %>% 
-  filter(!is.na(s_crisis_3m_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_3m_tot") %>% rename(s_crisis_date="s_crisis_3m_date") %>% 
-  mutate(row_label="pre-covid") %>% mutate(id=1)
-crisis_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_base_tot, s_crisis_base_date) %>% 
-  filter(!is.na(s_crisis_base_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_base_tot") %>% rename(s_crisis_date="s_crisis_base_date") %>% 
-  mutate(row_label="baseline") %>% mutate(id=2)
-crisis_subset3 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>%
-  mutate(row_label="followup") %>% mutate(id=3)
-crisis_subset <- merge.default(crisis_subset1, crisis_subset2, all = TRUE) %>% merge.default(., crisis_subset3, all = TRUE) 
-# crisis_subset$id2 <- factor(crisis_subset$id2, levels = c(1, 2, 3), labels=c("pre-covid", "baseline", "followup"))
-
-crisis_group_means <- crisis_subset %>% group_by(c_ksadsdx_primary_dx, id) %>% summarise(s_crisis_tot=mean(s_crisis_tot)) %>% 
-  mutate(s_crisis_tot=round(s_crisis_tot, digit=2)) %>% ungroup()
+scaredshort_group_means <- scaredshort_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>% 
+  summarise(s_scaredshort_mean=mean(s_scaredshort_tot), s_scaredshort_sd=sd(s_scaredshort_tot), s_scaredshort_N=n()) %>%
+  mutate(s_scaredshort_mean=round(s_scaredshort_mean, digit=2), s_scaredshort_sd=round(s_scaredshort_sd, digit=2)) %>% ungroup()
 
 ```
 
@@ -338,28 +341,30 @@ crisis_group_means <- crisis_subset %>% group_by(c_ksadsdx_primary_dx, id) %>% s
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-crisis_group_means_t <- crisis_group_means %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% 
-  pivot_wider(., id_cols = "id", names_from = "c_ksadsdx_primary_dx", values_from = "s_crisis_tot")
-crisis_group_means_t$id <- recode(crisis_group_means_t$id, `1`="pre-covid", `2`="baseline", `3`="followup")
+crisis_group_means$s_crisis_combined <- paste(crisis_group_means$s_crisis_mean, " (", crisis_group_means$s_crisis_sd, ")", sep="")
+crisis_group_means_t <- crisis_group_means %>% 
+  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_crisis_combined", "s_crisis_N")) %>% 
+  select(id, row_label, s_crisis_combined_Healthy, s_crisis_N_Healthy, s_crisis_combined_MDD, s_crisis_N_MDD, `s_crisis_combined_Sub-MDD`, `s_crisis_N_Sub-MDD`)
 
-crisis_group_means_t %>% kable(., col.names = c("Time point", "Healthy", "MDD", "Sub-MDD")) %>% 
+crisis_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Sub-MDD: M (SD)", "N")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
 ***
 
-##### CRISIS graph: individual lines
+##### CRISIS graph: individual lines + group mean by Dx
 ###
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-ggplot(crisis_subset, aes(x=id, y=s_crisis_tot, color=c_ksadsdx_primary_dx), na.rm = TRUE) +
-  geom_line(aes(group=Initials), alpha=0.25) +
-  geom_line(data = crisis_group_means, size=2) + 
+ggplot() +
+  geom_line(data = crisis_group_means, aes(x=row_label, y=s_crisis_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=2) + 
+  geom_line(data = crisis_subset, aes(x=row_label, y=s_crisis_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
   labs(x="\nTime point", y="CRISIS total\n") +
-  # labs(title="Responses to CRISIS questionnaire\n", x="\nTime point", y="CRISIS total\n") +
+  # labs(title="Depression symptoms\n", x="\nTime point", y="CRISIS total\n") +
   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
+  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
@@ -386,28 +391,41 @@ ggplot(crisis_subset, aes(x=id, y=s_crisis_tot, color=c_ksadsdx_primary_dx), na.
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-mfq_group_means_t <- mfq_group_means %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% 
-  pivot_wider(., id_cols = "id", names_from = "c_ksadsdx_primary_dx", values_from = "s_mfq_tot")
-mfq_group_means_t$id <- recode(mfq_group_means_t$id, `1`="pre-covid", `2`="baseline", `3`="followup")
+mfq_group_means$s_mfq_combined <- paste(mfq_group_means$s_mfq_mean, " (", mfq_group_means$s_mfq_sd, ")", sep="")
+mfq_group_means_t <- mfq_group_means %>% 
+  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_mfq_combined", "s_mfq_N")) %>% 
+  select(id, row_label, s_mfq_combined_Healthy, s_mfq_N_Healthy, s_mfq_combined_MDD, s_mfq_N_MDD, `s_mfq_combined_Sub-MDD`, `s_mfq_N_Sub-MDD`)
 
-mfq_group_means_t %>% kable(., col.names = c("Time point", "Healthy", "MDD", "Sub-MDD")) %>% 
+mfq_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Sub-MDD: M (SD)", "N")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
 ***
 
-##### MFQ graph: individual lines
+##### MFQ graph: individual lines + group mean by Dx
 ###
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-ggplot(mfq_subset, aes(x=id, y=s_mfq_tot, color=c_ksadsdx_primary_dx), na.rm = TRUE) +
-  geom_line(aes(group=Initials), alpha=0.25) +
-  geom_line(data = mfq_group_means, size=2) + 
+# ggplot(mfq_subset, aes(x=row_label, y=s_mfq_tot, color=c_ksadsdx_primary_dx), na.rm = TRUE) +
+#   geom_line(aes(group=Initials), alpha=0.25) +
+#   geom_line(data = mfq_group_means, size=2) + 
+#   labs(x="\nTime point", y="MFQ total\n") +
+#   # labs(title="Depression symptoms\n", x="\nTime point", y="MFQ total\n") +
+#   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
+#   scale_x_discrete(limit = c("pre-covid", "baseline", "followup")) + 
+#   scale_x_discrete(expand = c(0,0)) +
+#   theme_minimal() +
+#   guides(color=guide_legend("Diagnosis:"))
+
+ggplot() +
+  geom_line(data=mfq_group_means, aes(x=row_label, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=2) + 
+  geom_line(data = mfq_subset, aes(x=row_label, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
   labs(x="\nTime point", y="MFQ total\n") +
   # labs(title="Depression symptoms\n", x="\nTime point", y="MFQ total\n") +
   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
+  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
@@ -420,28 +438,31 @@ ggplot(mfq_subset, aes(x=id, y=s_mfq_tot, color=c_ksadsdx_primary_dx), na.rm = T
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-scaredshort_group_means_t <- scaredshort_group_means %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% 
-  pivot_wider(., id_cols = "id", names_from = "c_ksadsdx_primary_dx", values_from = "s_scaredshort_tot")
-scaredshort_group_means_t$id <- recode(scaredshort_group_means_t$id, `1`="pre-covid", `2`="baseline", `3`="followup")
+scaredshort_group_means$s_scaredshort_combined <- paste(scaredshort_group_means$s_scaredshort_mean, " (", scaredshort_group_means$s_scaredshort_sd, ")", sep="")
+scaredshort_group_means_t <- scaredshort_group_means %>% 
+  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_scaredshort_combined", "s_scaredshort_N")) %>% 
+  select(id, row_label, s_scaredshort_combined_Healthy, s_scaredshort_N_Healthy, s_scaredshort_combined_MDD, 
+         s_scaredshort_N_MDD, `s_scaredshort_combined_Sub-MDD`, `s_scaredshort_N_Sub-MDD`)
 
-scaredshort_group_means_t %>% kable(., col.names = c("Time point", "Healthy", "MDD", "Sub-MDD")) %>% 
+scaredshort_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Sub-MDD: M (SD)", "N")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
 ***
 
-##### SCARED graph: individual lines
+##### SCARED graph: individual lines + group mean by Dx
 ###
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-ggplot(scaredshort_subset, aes(x=id, y=s_scaredshort_tot, color=c_ksadsdx_primary_dx), na.rm = TRUE) +
-  geom_line(aes(group=Initials), alpha=0.25) +
-  geom_line(data = scaredshort_group_means, size=2) + 
+ggplot() +
+  geom_line(data=scaredshort_group_means, aes(x=row_label, y=s_scaredshort_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=2) + 
+  geom_line(data = scaredshort_subset, aes(x=row_label, y=s_scaredshort_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
   labs(x="\nTime point", y="SCARED (short) total\n") +
-  # labs(title="Anxiety symptoms\n", x="\nTime point", y="SCARED (short) total\n") +
+  # labs(title="Depression symptoms\n", x="\nTime point", y="SCARED (short) total\n") +
   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
+  scale_x_discrete(expand = c(0,0), limit = c("baseline", "followup")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
