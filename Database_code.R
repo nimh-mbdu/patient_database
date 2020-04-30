@@ -3354,7 +3354,6 @@ na_names_combined <- c(na_names_dx, na_names_iq, na_names_tanner, na_names_hande
 Psychometrics_behav[na_names_combined] <- lapply(Psychometrics_behav[na_names_combined], na_if, "999")
 
 # exporting
-
 Psychometrics_behav %>% write_xlsx(paste0(database_location, "MASTER_DATABASE_BEHAVIOURAL.xlsx"))
 Psychometrics_behav %>% write_xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_", todays_date_formatted, ".xlsx"))
 
@@ -3372,7 +3371,103 @@ if (file_save_check_combined$date_diff[1]==0) {
   Psychometrics_behav %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_BEHAVIOURAL_updated.xlsx"))
 }
 
-#### CRISIS sub-dataset for Argyris
+# historical database checks ----------------------------------------------
+
+# importing previous version for comparison 
+prev_db_file <- list.files(path = paste0(database_location, "Backup/"), pattern = "^MASTER_DATABASE_BEHAVIOURAL", all.files = FALSE,
+                               full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+prev_db_file_time <- file.mtime(paste0(database_location, "Backup/", prev_db_file)) %>% as.Date()
+prev_db_combined <- tibble(File=c(prev_db_file), Date=c(prev_db_file_time))
+prev_db_combined$date_diff <- as.numeric(difftime(last_week_date_formatted, prev_db_combined$Date, tz="", units = "days"))
+prev_db_combined$day_of_week <- weekdays(as.Date(prev_db_combined$Date))
+prev_db_combined <- prev_db_combined %>% filter(day_of_week=="Wednesday") %>% arrange(date_diff) %>% filter(date_diff>=0) %>% slice(1)
+prev_behav_database <- read_excel(paste0(database_location, "Backup/", prev_db_combined[1])) %>%
+  select(Initials, Task_Name, Task_Date, matches("_mfq_tot"), matches("_mfq_date"), matches("_ari1w_tot"), matches("_ari1w_date"), 
+         matches("_scared_tot"), matches("_scared_date"), matches("s_lsas_tot"), matches("s_lsas_date"),
+         matches("s_shaps_tot"), matches("s_shaps_date"), s_medsscan_date, s_medsscan_med1name, s_medsscan_med1dose) %>% mutate(source2="OLD")
+date_variabes <- prev_behav_database %>% select(matches("_Date"), matches("_date")) %>% colnames()
+prev_behav_database[date_variabes] <- lapply(prev_behav_database[date_variabes], as.Date)
+
+# checking the 5 core measures
+hist_check_measures <- c("s_mfq_", "p_mfq_", "s_ari1w_", "p_ari1w_", "s_scared_", "p_scared_", "s_lsas_", "s_shaps_")
+for(i in seq_along(hist_check_measures)) {
+  iter <- as.numeric(i)
+  # iter=1
+  measure_name_tot <- paste(hist_check_measures[iter], "tot", sep="")
+  measure_name_date <- paste(hist_check_measures[iter], "date", sep="")
+  
+  old_temp <- prev_behav_database %>% select(Initials, Task_Name, Task_Date, matches(measure_name_tot), matches(measure_name_date))
+  old_temp[measure_name_tot] <- lapply(old_temp[measure_name_tot], replace_na, 999)
+  old_temp[measure_name_tot] <- lapply(old_temp[measure_name_tot], round, digits=0)
+  names(old_temp)[names(old_temp) == measure_name_tot] <- (paste0(measure_name_tot, "_old"))
+  names(old_temp)[names(old_temp) == measure_name_date] <- (paste0(measure_name_date, "_old"))
+  
+  new_temp <- Psychometrics_behav %>% select(Initials, Task_Name, Task_Date, matches(measure_name_tot), matches(measure_name_date)) 
+  new_temp[measure_name_tot] <- lapply(new_temp[measure_name_tot], replace_na, 999)
+  new_temp[measure_name_tot] <- lapply(new_temp[measure_name_tot], round, digits=0)
+  
+  combined_temp <- merge.default(old_temp, new_temp, all=TRUE)  %>%
+    filter(eval(parse(text=measure_name_tot)) != eval(parse(text=paste0(measure_name_tot, "_old"))) | 
+             eval(parse(text=measure_name_date)) != eval(parse(text=paste0(measure_name_date, "_old")))) %>% 
+    filter(eval(parse(text=paste0(measure_name_tot, "_old")))!=999) %>%
+    mutate(reason = ifelse((eval(parse(text=measure_name_tot))==999), 1, 0)) %>% mutate(reason=as.character(reason))
+  combined_temp[measure_name_tot] <- lapply(combined_temp[measure_name_tot], na_if, 999)
+  
+  if (hist_check_measures[iter]=="s_mfq_") {
+    combined_temp$reason <- recode(combined_temp$reason, `1`="MFQ (self) was present, now missing", `0`="MFQ (self) score/date change") 
+  } else if (hist_check_measures[iter]=="p_mfq_") {
+    combined_temp$reason <- recode(combined_temp$reason, `1`="MFQ (parent) was present, now missing", `0`="MFQ (parent) score/date change")
+  } else if (hist_check_measures[iter]=="s_ari1w_") {
+    combined_temp$reason <- recode(combined_temp$reason, `1`="ARI (self) was present, now missing", `0`="ARI (self) score/date change")
+  } else if (hist_check_measures[iter]=="p_ari1w_") {
+    combined_temp$reason <- recode(combined_temp$reason, `1`="ARI (parent) was present, now missing", `0`="ARI (parent) score/date change")
+  } else if (hist_check_measures[iter]=="s_scared_") {
+    combined_temp$reason <- recode(combined_temp$reason, `1`="SCARED (self) was present, now missing", `0`="SCARED (self) score/date change")
+  } else if (hist_check_measures[iter]=="p_scared_") {
+    combined_temp$reason <- recode(combined_temp$reason, `1`="SCARED (parent) was present, now missing", `0`="SCARED (parent) score/date change")
+  } else if (hist_check_measures[iter]=="s_lsas_") {
+    combined_temp$reason <- recode(combined_temp$reason, `1`="LSAS was present, now missing", `0`="LSAS score/date change")
+  } else if (hist_check_measures[iter]=="s_shaps_") {
+    combined_temp$reason <- recode(combined_temp$reason, `1`="SHAPS was present, now missing", `0`="SHAPS score/date change")
+  }
+  
+  names(combined_temp)[names(combined_temp) == "reason"] <- (paste0("reason_", iter))
+  assign(paste0(hist_check_measures[iter], "subset_historical"), combined_temp)
+  
+}
+
+# checking the scan medication form 
+old_temp <- prev_behav_database %>% select(Initials, Task_Name, Task_Date, matches("s_medsscan")) %>% 
+  rename(s_medsscan_date_old="s_medsscan_date", s_medsscan_med1name_old="s_medsscan_med1name", s_medsscan_med1dose_old="s_medsscan_med1dose")
+old_temp[,5:6] <- lapply(old_temp[,5:6], replace_na, 999)
+
+new_temp <- Psychometrics_behav %>% select(Initials, Task_Name, Task_Date, s_medsscan_date, s_medsscan_med1name, s_medsscan_med1dose)
+new_temp[,5:6] <- lapply(new_temp[,5:6], replace_na, 999)
+
+meds_subset_historical <- merge.default(old_temp, new_temp, all=TRUE) %>%
+  filter(s_medsscan_med1name != s_medsscan_med1name_old | s_medsscan_med1dose != s_medsscan_med1dose_old | 
+           s_medsscan_date != s_medsscan_date_old) %>% filter(s_medsscan_med1name_old != 999) %>%
+  mutate(reason_9 = ifelse((s_medsscan_med1name==999), 1, 0)) %>% mutate(reason_9=as.character(reason_9))
+meds_subset_historical[,5:6] <- lapply(meds_subset_historical[,5:6], na_if, 999)
+meds_subset_historical$reason_9 <- recode(meds_subset_historical$reason_9, `1`="Scan med info was present, now missing", `0`="Scan med info/date change") 
+
+# then merge all together & export for checking 
+historical_sets <- ls(pattern="_historical")
+historical_sets <- mget(historical_sets)
+historical_check_all_combined <- reduce(historical_sets, full_join)
+
+historical_check_all_combined$reason <- paste(historical_check_all_combined$reason_1, historical_check_all_combined$reason_2, historical_check_all_combined$reason_3, 
+                                              historical_check_all_combined$reason_4, historical_check_all_combined$reason_5, historical_check_all_combined$reason_6,
+                                              historical_check_all_combined$reason_7, historical_check_all_combined$reason_8, historical_check_all_combined$reason_9, sep="; ")
+historical_check_all_combined$reason <- gsub("NA; ", "", historical_check_all_combined$reason, fixed=TRUE)
+historical_check_all_combined$reason <- gsub("; NA", "", historical_check_all_combined$reason, fixed=TRUE)
+historical_check_all_combined$reason <- gsub("NA", "", historical_check_all_combined$reason, fixed=TRUE)
+historical_check_all_combined <- historical_check_all_combined %>% select(-matches("reason_"))
+
+historical_check %>% write_xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_CHANGE_", todays_date_formatted, ".xlsx"))
+
+# CRISIS sub-set & descriptives for Argyris -------------------------------
+
 suppressPackageStartupMessages(library(kableExtra))
 render(paste0(scripts, 'Reports/crisis_dataset_description.Rmd'),
        output_format = "html_document", output_file = 'CRISIS_completion_numbers', output_dir = paste0(database_location, 'COVID19/'))
@@ -3421,7 +3516,8 @@ rm(list=ls(pattern="common_identifiers"))
 rm(list=ls(pattern="data_"))
 rm(list=ls(pattern="na_names_"))
 rm(list=ls(pattern="parent_"))
-rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, 
+rm(list=ls(pattern="historical"))
+rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, old_temp, new_temp, combined_temp,
    measure_name, panic_subscale, sep_subscale, social_subscale, gad_subscale, school_subscale, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d,
    fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report,
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, 

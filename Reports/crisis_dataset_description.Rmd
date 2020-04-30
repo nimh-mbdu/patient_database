@@ -320,17 +320,23 @@ mfq_group_means <- mfq_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) 
   mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
 
 ############ SCARED
-scaredshort_subset <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_scaredshort_tot, s_scaredshort_date) %>%
-  filter(!is.na(s_scaredshort_tot)) %>% arrange(Initials, s_scaredshort_date)
-scaredshort_subset$row_label <- gsub("crisis_t1", "baseline", scaredshort_subset$row_label, fix=TRUE)
-scaredshort_subset$row_label <- gsub("crisis_t2", "followup", scaredshort_subset$row_label, fix=TRUE)
-scaredshort_subset$id <- gsub("3", "2", scaredshort_subset$id, fix=TRUE)
-scaredshort_subset$id <- gsub("4", "3", scaredshort_subset$id, fix=TRUE)
-scaredshort_subset <- scaredshort_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% filter(id!=4 & id!=5)
+scared_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_scared_tot, s_scared_date) %>% filter(!is.na(s_scared_tot)) %>% 
+  arrange(Initials, desc(s_scared_date)) %>% filter(!str_detect(row_label, "crisis")) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
+  mutate(row_label="pre-covid") %>% mutate(id=1)
+scaredshort_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_scaredshort_tot, s_scaredshort_date) %>%
+  filter(!is.na(s_scaredshort_tot)) %>% arrange(Initials, s_scaredshort_date) %>% mutate(s_scaredshort_tot=((s_scaredshort_tot/9)*41)) %>% 
+  mutate(s_scaredshort_tot=round(s_scaredshort_tot, digits = 0)) %>% rename(s_scared_tot="s_scaredshort_tot") %>% 
+  rename(s_scared_date="s_scaredshort_date")
+scared_subset <- merge.default(scared_subset1, scaredshort_subset2, all=TRUE)
+scared_subset$row_label <- gsub("crisis_t1", "baseline", scared_subset$row_label, fix=TRUE)
+scared_subset$row_label <- gsub("crisis_t2", "followup", scared_subset$row_label, fix=TRUE)
+scared_subset$id <- gsub("3", "2", scared_subset$id, fix=TRUE)
+scared_subset$id <- gsub("4", "3", scared_subset$id, fix=TRUE)
+scared_subset <- scared_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% filter(id!=4 & id!=5)
 
-scaredshort_group_means <- scaredshort_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>% 
-  summarise(s_scaredshort_mean=mean(s_scaredshort_tot), s_scaredshort_sd=sd(s_scaredshort_tot), s_scaredshort_N=n()) %>%
-  mutate(s_scaredshort_mean=round(s_scaredshort_mean, digit=2), s_scaredshort_sd=round(s_scaredshort_sd, digit=2)) %>% ungroup()
+scared_group_means <- scared_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>% 
+  summarise(s_scared_mean=mean(s_scared_tot), s_scared_sd=sd(s_scared_tot), s_scared_N=n()) %>%
+  mutate(s_scared_mean=round(s_scared_mean, digit=2), s_scared_sd=round(s_scared_sd, digit=2)) %>% ungroup()
 
 ```
 
@@ -438,13 +444,13 @@ ggplot() +
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-scaredshort_group_means$s_scaredshort_combined <- paste(scaredshort_group_means$s_scaredshort_mean, " (", scaredshort_group_means$s_scaredshort_sd, ")", sep="")
-scaredshort_group_means_t <- scaredshort_group_means %>% 
-  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_scaredshort_combined", "s_scaredshort_N")) %>% 
-  select(id, row_label, s_scaredshort_combined_Healthy, s_scaredshort_N_Healthy, s_scaredshort_combined_MDD, 
-         s_scaredshort_N_MDD, `s_scaredshort_combined_Sub-MDD`, `s_scaredshort_N_Sub-MDD`)
+scared_group_means$s_scared_combined <- paste(scared_group_means$s_scared_mean, " (", scared_group_means$s_scared_sd, ")", sep="")
+scared_group_means_t <- scared_group_means %>% 
+  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_scared_combined", "s_scared_N")) %>% 
+  select(id, row_label, s_scared_combined_Healthy, s_scared_N_Healthy, s_scared_combined_MDD, 
+         s_scared_N_MDD, `s_scared_combined_Sub-MDD`, `s_scared_N_Sub-MDD`)
 
-scaredshort_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Sub-MDD: M (SD)", "N")) %>% 
+scared_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Sub-MDD: M (SD)", "N")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -457,12 +463,12 @@ scaredshort_group_means_t %>% kable(., col.names = c("Time point", "Type", "Heal
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 ggplot() +
-  geom_line(data=scaredshort_group_means, aes(x=row_label, y=s_scaredshort_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=2) + 
-  geom_line(data = scaredshort_subset, aes(x=row_label, y=s_scaredshort_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
-  labs(x="\nTime point", y="SCARED (short) total\n") +
-  # labs(title="Depression symptoms\n", x="\nTime point", y="SCARED (short) total\n") +
+  geom_line(data=scared_group_means, aes(x=row_label, y=s_scared_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=2) + 
+  geom_line(data = scared_subset, aes(x=row_label, y=s_scared_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
+  labs(x="\nTime point", y="SCARED total\n") +
+  # labs(title="Depression symptoms\n", x="\nTime point", y="SCARED total\n") +
   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-  scale_x_discrete(expand = c(0,0), limit = c("baseline", "followup")) + 
+  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
@@ -477,6 +483,8 @@ ggplot() +
 rm(parent_contacted, child_contacted, parent_agreed, child_agreed, parent_completed_all_base_num, child_completed_all_base_num, parent_completed_all_fu_num, 
    child_completed_all_fu_num, parent_completed_all_both_num, child_completed_all_both_num, parent_completed_crisis_base_num, child_completed_crisis_base_num, 
    parent_completed_crisis_fu_num, child_completed_crisis_fu_num, parent_completed_crisis_both_num, child_completed_crisis_both_num, all_table, crisis_table,
-   measures_combined_long, pscared_tminus2_long, pmfq_tminus2_long, smfq_tminus2_long)
+   measures_combined_long, pscared_tminus2_long, pmfq_tminus2_long, smfq_tminus2_long, scared_group_means_t, scared_group_means, scared_subset, scaredshort_subset2,
+   scared_subset1, mfq_group_means_t, mfq_group_means, mfq_subset, mfq_subset1, mfq_subset2, crisis_group_means_t, crisis_group_means, crisis_subset, 
+   crisis_subset1, crisis_subset2, crisis_subset3)
 
 ```
