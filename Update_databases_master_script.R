@@ -5,7 +5,7 @@ rm(list = ls()) # command to clear all variables from R environment
 # directories -------------------------------------------------------------
 
 # what device are you running this script on? 
-computer = 'mac' # set this to either 'mac' or 'pc' or 'other'
+computer = 'pc' # set this to either 'mac' or 'pc' or 'other'
 
 if (computer=="pc") {
   string = 'W:/'
@@ -102,6 +102,11 @@ max_tasks <- c(to_change$max_tasks)
 max_MID <- c(to_change$max_MID)
 max_MMI <- c(to_change$max_MMI)
 max_MEG <- c(to_change$max_MEG)
+
+# crisis recruitment related
+child_contacted <- c(to_change$child_contacted)
+parent_contacted <- c(to_change$parent_contacted)
+parent_agreed <- c(to_change$parent_agreed)
 
 # database related - update with names of latest pulls (without file extension)
 latest_ctdb_pull <- c(to_change$latest_ctdb_pull)

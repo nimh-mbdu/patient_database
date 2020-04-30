@@ -3373,98 +3373,105 @@ if (file_save_check_combined$date_diff[1]==0) {
 
 # historical database checks ----------------------------------------------
 
-# importing previous version for comparison 
-prev_db_file <- list.files(path = paste0(database_location, "Backup/"), pattern = "^MASTER_DATABASE_BEHAVIOURAL", all.files = FALSE,
-                               full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
-prev_db_file_time <- file.mtime(paste0(database_location, "Backup/", prev_db_file)) %>% as.Date()
-prev_db_combined <- tibble(File=c(prev_db_file), Date=c(prev_db_file_time))
-prev_db_combined$date_diff <- as.numeric(difftime(last_week_date_formatted, prev_db_combined$Date, tz="", units = "days"))
-prev_db_combined$day_of_week <- weekdays(as.Date(prev_db_combined$Date))
-prev_db_combined <- prev_db_combined %>% filter(day_of_week=="Wednesday") %>% arrange(date_diff) %>% filter(date_diff>=0) %>% slice(1)
-prev_behav_database <- read_excel(paste0(database_location, "Backup/", prev_db_combined[1])) %>%
-  select(Initials, Task_Name, Task_Date, matches("_mfq_tot"), matches("_mfq_date"), matches("_ari1w_tot"), matches("_ari1w_date"), 
-         matches("_scared_tot"), matches("_scared_date"), matches("s_lsas_tot"), matches("s_lsas_date"),
-         matches("s_shaps_tot"), matches("s_shaps_date"), s_medsscan_date, s_medsscan_med1name, s_medsscan_med1dose) %>% mutate(source2="OLD")
-date_variabes <- prev_behav_database %>% select(matches("_Date"), matches("_date")) %>% colnames()
-prev_behav_database[date_variabes] <- lapply(prev_behav_database[date_variabes], as.Date)
+if (weekdays(as.Date(todays_date_formatted))=="Wednesday") {
+  print("Today is Wednesday -> creating historical task database change report")
 
-# checking the 5 core measures
-hist_check_measures <- c("s_mfq_", "p_mfq_", "s_ari1w_", "p_ari1w_", "s_scared_", "p_scared_", "s_lsas_", "s_shaps_")
-for(i in seq_along(hist_check_measures)) {
-  iter <- as.numeric(i)
-  # iter=1
-  measure_name_tot <- paste(hist_check_measures[iter], "tot", sep="")
-  measure_name_date <- paste(hist_check_measures[iter], "date", sep="")
+  # importing previous version for comparison 
+  prev_db_file <- list.files(path = paste0(database_location, "Backup/"), pattern = "^MASTER_DATABASE_BEHAVIOURAL", all.files = FALSE,
+                                 full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+  prev_db_file_time <- file.mtime(paste0(database_location, "Backup/", prev_db_file)) %>% as.Date()
+  prev_db_combined <- tibble(File=c(prev_db_file), Date=c(prev_db_file_time))
+  prev_db_combined$date_diff <- as.numeric(difftime(last_week_date_formatted, prev_db_combined$Date, tz="", units = "days"))
+  prev_db_combined$day_of_week <- weekdays(as.Date(prev_db_combined$Date))
+  prev_db_combined <- prev_db_combined %>% filter(day_of_week=="Wednesday") %>% arrange(date_diff) %>% filter(date_diff>=0) %>% slice(1)
+  prev_behav_database <- read_excel(paste0(database_location, "Backup/", prev_db_combined[1])) %>%
+    select(Initials, Task_Name, Task_Date, matches("_mfq_tot"), matches("_mfq_date"), matches("_ari1w_tot"), matches("_ari1w_date"), 
+           matches("_scared_tot"), matches("_scared_date"), matches("s_lsas_tot"), matches("s_lsas_date"),
+           matches("s_shaps_tot"), matches("s_shaps_date"), s_medsscan_date, s_medsscan_med1name, s_medsscan_med1dose) %>% mutate(source2="OLD")
+  date_variabes <- prev_behav_database %>% select(matches("_Date"), matches("_date")) %>% colnames()
+  prev_behav_database[date_variabes] <- lapply(prev_behav_database[date_variabes], as.Date)
   
-  old_temp <- prev_behav_database %>% select(Initials, Task_Name, Task_Date, matches(measure_name_tot), matches(measure_name_date))
-  old_temp[measure_name_tot] <- lapply(old_temp[measure_name_tot], replace_na, 999)
-  old_temp[measure_name_tot] <- lapply(old_temp[measure_name_tot], round, digits=0)
-  names(old_temp)[names(old_temp) == measure_name_tot] <- (paste0(measure_name_tot, "_old"))
-  names(old_temp)[names(old_temp) == measure_name_date] <- (paste0(measure_name_date, "_old"))
-  
-  new_temp <- Psychometrics_behav %>% select(Initials, Task_Name, Task_Date, matches(measure_name_tot), matches(measure_name_date)) 
-  new_temp[measure_name_tot] <- lapply(new_temp[measure_name_tot], replace_na, 999)
-  new_temp[measure_name_tot] <- lapply(new_temp[measure_name_tot], round, digits=0)
-  
-  combined_temp <- merge.default(old_temp, new_temp, all=TRUE)  %>%
-    filter(eval(parse(text=measure_name_tot)) != eval(parse(text=paste0(measure_name_tot, "_old"))) | 
-             eval(parse(text=measure_name_date)) != eval(parse(text=paste0(measure_name_date, "_old")))) %>% 
-    filter(eval(parse(text=paste0(measure_name_tot, "_old")))!=999) %>%
-    mutate(reason = ifelse((eval(parse(text=measure_name_tot))==999), 1, 0)) %>% mutate(reason=as.character(reason))
-  combined_temp[measure_name_tot] <- lapply(combined_temp[measure_name_tot], na_if, 999)
-  
-  if (hist_check_measures[iter]=="s_mfq_") {
-    combined_temp$reason <- recode(combined_temp$reason, `1`="MFQ (self) was present, now missing", `0`="MFQ (self) score/date change") 
-  } else if (hist_check_measures[iter]=="p_mfq_") {
-    combined_temp$reason <- recode(combined_temp$reason, `1`="MFQ (parent) was present, now missing", `0`="MFQ (parent) score/date change")
-  } else if (hist_check_measures[iter]=="s_ari1w_") {
-    combined_temp$reason <- recode(combined_temp$reason, `1`="ARI (self) was present, now missing", `0`="ARI (self) score/date change")
-  } else if (hist_check_measures[iter]=="p_ari1w_") {
-    combined_temp$reason <- recode(combined_temp$reason, `1`="ARI (parent) was present, now missing", `0`="ARI (parent) score/date change")
-  } else if (hist_check_measures[iter]=="s_scared_") {
-    combined_temp$reason <- recode(combined_temp$reason, `1`="SCARED (self) was present, now missing", `0`="SCARED (self) score/date change")
-  } else if (hist_check_measures[iter]=="p_scared_") {
-    combined_temp$reason <- recode(combined_temp$reason, `1`="SCARED (parent) was present, now missing", `0`="SCARED (parent) score/date change")
-  } else if (hist_check_measures[iter]=="s_lsas_") {
-    combined_temp$reason <- recode(combined_temp$reason, `1`="LSAS was present, now missing", `0`="LSAS score/date change")
-  } else if (hist_check_measures[iter]=="s_shaps_") {
-    combined_temp$reason <- recode(combined_temp$reason, `1`="SHAPS was present, now missing", `0`="SHAPS score/date change")
+  # checking the 5 core measures
+  hist_check_measures <- c("s_mfq_", "p_mfq_", "s_ari1w_", "p_ari1w_", "s_scared_", "p_scared_", "s_lsas_", "s_shaps_")
+  for(i in seq_along(hist_check_measures)) {
+    iter <- as.numeric(i)
+    # iter=1
+    measure_name_tot <- paste(hist_check_measures[iter], "tot", sep="")
+    measure_name_date <- paste(hist_check_measures[iter], "date", sep="")
+    
+    old_temp <- prev_behav_database %>% select(Initials, Task_Name, Task_Date, matches(measure_name_tot), matches(measure_name_date))
+    old_temp[measure_name_tot] <- lapply(old_temp[measure_name_tot], replace_na, 999)
+    old_temp[measure_name_tot] <- lapply(old_temp[measure_name_tot], round, digits=0)
+    names(old_temp)[names(old_temp) == measure_name_tot] <- (paste0(measure_name_tot, "_old"))
+    names(old_temp)[names(old_temp) == measure_name_date] <- (paste0(measure_name_date, "_old"))
+    
+    new_temp <- Psychometrics_behav %>% select(Initials, Task_Name, Task_Date, matches(measure_name_tot), matches(measure_name_date)) 
+    new_temp[measure_name_tot] <- lapply(new_temp[measure_name_tot], replace_na, 999)
+    new_temp[measure_name_tot] <- lapply(new_temp[measure_name_tot], round, digits=0)
+    
+    combined_temp <- merge.default(old_temp, new_temp, all=TRUE)  %>%
+      filter(eval(parse(text=measure_name_tot)) != eval(parse(text=paste0(measure_name_tot, "_old"))) | 
+               eval(parse(text=measure_name_date)) != eval(parse(text=paste0(measure_name_date, "_old")))) %>% 
+      filter(eval(parse(text=paste0(measure_name_tot, "_old")))!=999) %>%
+      mutate(reason = ifelse((eval(parse(text=measure_name_tot))==999), 1, 0)) %>% mutate(reason=as.character(reason))
+    combined_temp[measure_name_tot] <- lapply(combined_temp[measure_name_tot], na_if, 999)
+    
+    if (hist_check_measures[iter]=="s_mfq_") {
+      combined_temp$reason <- recode(combined_temp$reason, `1`="MFQ (self) was present, now missing", `0`="MFQ (self) score/date change") 
+    } else if (hist_check_measures[iter]=="p_mfq_") {
+      combined_temp$reason <- recode(combined_temp$reason, `1`="MFQ (parent) was present, now missing", `0`="MFQ (parent) score/date change")
+    } else if (hist_check_measures[iter]=="s_ari1w_") {
+      combined_temp$reason <- recode(combined_temp$reason, `1`="ARI (self) was present, now missing", `0`="ARI (self) score/date change")
+    } else if (hist_check_measures[iter]=="p_ari1w_") {
+      combined_temp$reason <- recode(combined_temp$reason, `1`="ARI (parent) was present, now missing", `0`="ARI (parent) score/date change")
+    } else if (hist_check_measures[iter]=="s_scared_") {
+      combined_temp$reason <- recode(combined_temp$reason, `1`="SCARED (self) was present, now missing", `0`="SCARED (self) score/date change")
+    } else if (hist_check_measures[iter]=="p_scared_") {
+      combined_temp$reason <- recode(combined_temp$reason, `1`="SCARED (parent) was present, now missing", `0`="SCARED (parent) score/date change")
+    } else if (hist_check_measures[iter]=="s_lsas_") {
+      combined_temp$reason <- recode(combined_temp$reason, `1`="LSAS was present, now missing", `0`="LSAS score/date change")
+    } else if (hist_check_measures[iter]=="s_shaps_") {
+      combined_temp$reason <- recode(combined_temp$reason, `1`="SHAPS was present, now missing", `0`="SHAPS score/date change")
+    }
+    
+    names(combined_temp)[names(combined_temp) == "reason"] <- (paste0("reason_", iter))
+    assign(paste0(hist_check_measures[iter], "subset_historical"), combined_temp)
+    
   }
   
-  names(combined_temp)[names(combined_temp) == "reason"] <- (paste0("reason_", iter))
-  assign(paste0(hist_check_measures[iter], "subset_historical"), combined_temp)
+  # checking the scan medication form 
+  old_temp <- prev_behav_database %>% select(Initials, Task_Name, Task_Date, matches("s_medsscan")) %>% 
+    rename(s_medsscan_date_old="s_medsscan_date", s_medsscan_med1name_old="s_medsscan_med1name", s_medsscan_med1dose_old="s_medsscan_med1dose")
+  old_temp[,5:6] <- lapply(old_temp[,5:6], replace_na, 999)
   
-}
-
-# checking the scan medication form 
-old_temp <- prev_behav_database %>% select(Initials, Task_Name, Task_Date, matches("s_medsscan")) %>% 
-  rename(s_medsscan_date_old="s_medsscan_date", s_medsscan_med1name_old="s_medsscan_med1name", s_medsscan_med1dose_old="s_medsscan_med1dose")
-old_temp[,5:6] <- lapply(old_temp[,5:6], replace_na, 999)
-
-new_temp <- Psychometrics_behav %>% select(Initials, Task_Name, Task_Date, s_medsscan_date, s_medsscan_med1name, s_medsscan_med1dose)
-new_temp[,5:6] <- lapply(new_temp[,5:6], replace_na, 999)
-
-meds_subset_historical <- merge.default(old_temp, new_temp, all=TRUE) %>%
-  filter(s_medsscan_med1name != s_medsscan_med1name_old | s_medsscan_med1dose != s_medsscan_med1dose_old | 
-           s_medsscan_date != s_medsscan_date_old) %>% filter(s_medsscan_med1name_old != 999) %>%
-  mutate(reason_9 = ifelse((s_medsscan_med1name==999), 1, 0)) %>% mutate(reason_9=as.character(reason_9))
-meds_subset_historical[,5:6] <- lapply(meds_subset_historical[,5:6], na_if, 999)
-meds_subset_historical$reason_9 <- recode(meds_subset_historical$reason_9, `1`="Scan med info was present, now missing", `0`="Scan med info/date change") 
-
-# then merge all together & export for checking 
-historical_sets <- ls(pattern="_historical")
-historical_sets <- mget(historical_sets)
-historical_check_all_combined <- reduce(historical_sets, full_join)
-
-historical_check_all_combined$reason <- paste(historical_check_all_combined$reason_1, historical_check_all_combined$reason_2, historical_check_all_combined$reason_3, 
-                                              historical_check_all_combined$reason_4, historical_check_all_combined$reason_5, historical_check_all_combined$reason_6,
-                                              historical_check_all_combined$reason_7, historical_check_all_combined$reason_8, historical_check_all_combined$reason_9, sep="; ")
-historical_check_all_combined$reason <- gsub("NA; ", "", historical_check_all_combined$reason, fixed=TRUE)
-historical_check_all_combined$reason <- gsub("; NA", "", historical_check_all_combined$reason, fixed=TRUE)
-historical_check_all_combined$reason <- gsub("NA", "", historical_check_all_combined$reason, fixed=TRUE)
-historical_check_all_combined <- historical_check_all_combined %>% select(-matches("reason_"))
-
-historical_check %>% write_xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_CHANGE_", todays_date_formatted, ".xlsx"))
+  new_temp <- Psychometrics_behav %>% select(Initials, Task_Name, Task_Date, s_medsscan_date, s_medsscan_med1name, s_medsscan_med1dose)
+  new_temp[,5:6] <- lapply(new_temp[,5:6], replace_na, 999)
+  
+  meds_subset_historical <- merge.default(old_temp, new_temp, all=TRUE) %>%
+    filter(s_medsscan_med1name != s_medsscan_med1name_old | s_medsscan_med1dose != s_medsscan_med1dose_old | 
+             s_medsscan_date != s_medsscan_date_old) %>% filter(s_medsscan_med1name_old != 999) %>%
+    mutate(reason_9 = ifelse((s_medsscan_med1name==999), 1, 0)) %>% mutate(reason_9=as.character(reason_9))
+  meds_subset_historical[,5:6] <- lapply(meds_subset_historical[,5:6], na_if, 999)
+  meds_subset_historical$reason_9 <- recode(meds_subset_historical$reason_9, `1`="Scan med info was present, now missing", `0`="Scan med info/date change") 
+  
+  # then merge all together & export for checking 
+  historical_sets <- ls(pattern="_historical")
+  historical_sets <- mget(historical_sets)
+  historical_check_all_combined <- reduce(historical_sets, full_join)
+  
+  historical_check_all_combined$reason <- paste(historical_check_all_combined$reason_1, historical_check_all_combined$reason_2, historical_check_all_combined$reason_3, 
+                                                historical_check_all_combined$reason_4, historical_check_all_combined$reason_5, historical_check_all_combined$reason_6,
+                                                historical_check_all_combined$reason_7, historical_check_all_combined$reason_8, historical_check_all_combined$reason_9, sep="; ")
+  historical_check_all_combined$reason <- gsub("NA; ", "", historical_check_all_combined$reason, fixed=TRUE)
+  historical_check_all_combined$reason <- gsub("; NA", "", historical_check_all_combined$reason, fixed=TRUE)
+  historical_check_all_combined$reason <- gsub("NA", "", historical_check_all_combined$reason, fixed=TRUE)
+  historical_check_all_combined <- historical_check_all_combined %>% select(-matches("reason_"))
+  
+  historical_check_all_combined %>% write_xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_CHANGE_", todays_date_formatted, ".xlsx"))
+  
+} else {
+  print("Historical task database change report not produced - only produced on Wednesdays")
+  }
 
 # CRISIS sub-set & descriptives for Argyris -------------------------------
 
@@ -3517,15 +3524,17 @@ rm(list=ls(pattern="data_"))
 rm(list=ls(pattern="na_names_"))
 rm(list=ls(pattern="parent_"))
 rm(list=ls(pattern="historical"))
-rm(measure_temp_combined, tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, old_temp, new_temp, combined_temp,
+rm(list=ls(pattern="temp"))
+rm(tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, prev_db_file, prev_db_file_time, numeric_variables,
    measure_name, panic_subscale, sep_subscale, social_subscale, gad_subscale, school_subscale, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d,
-   fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report,
-   c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, 
+   fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report, fill_in,
+   c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, date_variabes,
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, sdq_w_names, sdq_dates, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, task_DB, task_DB_date, 
    how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, sibling,
-   measure_temp, parent, child, p, c, q, incorrect, correct, old_dx_temp, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, temp_before, file_save_check, task_sets,
+   parent, child, p, c, q, incorrect, correct, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, file_save_check, task_sets, measure_name_date, measure_name_tot,
    file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent,
-   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, measure_temp_ctdb, c_medsclin_sdq, measure_temp_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, 
-   not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, s_covid19_temp_sdq, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task)
+   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, c_medsclin_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, c_medsclin_combined,
+   not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task,
+   task_DB_date_before_covid, task_DB_date_since_covid, prev_behav_database, prev_db_combined, mmi_recovery_not_tracked)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)
