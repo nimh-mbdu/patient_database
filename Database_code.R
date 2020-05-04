@@ -101,7 +101,7 @@
 
   #****** CTDB = where data is stored for those not in 0037
   
-  CTDB_Data_Download <- read_excel(paste0(ctdb_pull, latest_ctdb_pull, ".xlsx"), sheet = 'Data_and_Scores', col_types = "text")
+  CTDB_Data_Download <- read_excel(paste0(ctdb_pull, latest_ctdb_pull, ".xlsx"), sheet = 'Data_and_Scores', col_types = "text") %>% mutate(source = "CTDB")
   
   # changing column names
   
@@ -113,7 +113,7 @@
   
   #****** Imputed data
   
-  imported_imputed_mfqs <- read.csv(imputed_mfqs) 
+  imported_imputed_mfqs <- read.csv(imputed_mfqs) %>% mutate(source = "IMPUTED")
   imported_imputed_mfqs$s_mfq_date <- as.Date(imported_imputed_mfqs$s_mfq_date, tz="", "%m/%d/%y")
   imported_imputed_mfqs$Overall_date <- imported_imputed_mfqs$s_mfq_date
   
@@ -286,7 +286,7 @@
 
   # joining parent and child report 
   
-  ctdb_w_plusid <- merge.default(ctdb_w_plusid_child, ctdb_w_plusid_parent_reduced, all=TRUE) %>% mutate(source = "CTDB")
+  ctdb_w_plusid <- merge.default(ctdb_w_plusid_child, ctdb_w_plusid_parent_reduced, all=TRUE)
   
   #****** 
   
