@@ -5,7 +5,7 @@ rm(list = ls()) # command to clear all variables from R environment
 # directories -------------------------------------------------------------
 
 # what device are you running this script on? 
-computer = 'pc' # set this to either 'mac' or 'pc' or 'other'
+computer = 'mac' # set this to either 'mac' or 'pc' or 'other'
 
 if (computer=="pc") {
   string = 'W:/'
@@ -27,15 +27,6 @@ clinician_sheet_location = paste0(string, "Patient Information/Clinician Sheet/"
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring 
 graphs_location = paste0(database_location, "graphs/")
 clinician_supervision_location = paste0(string, "Psychotherapy/Supervision/")
-  
-# other data: 
-imputed_mfqs = paste0(database_location, 'other_data_never_delete/IMPUTED_MFQ_NEVER_DELETE.csv')
-data_23495 = paste0(database_location, 'other_data_never_delete/4711-5358-6649-5157_23495_pull_03222019_01-M-0192.xlsx') # this is the data we pulled from SDQ for the participant who signed into 0192 as an adult
-data_23544 = paste0(database_location, 'other_data_never_delete/8768-8233-7459-5808_23544_pull_05222019_02-M-0021.xlsx') 
-data_22279 = paste0(database_location, 'other_data_never_delete/2738-0093-0639-3598_22279_pull_07242019_02-M-0186.xlsx')
-data_hyphen_issue = paste0(database_location, 'other_data_never_delete/data_plusids_without_hyphens.xlsx')
-data_old_dx_checklist = paste0(database_location, 'other_data_never_delete/ksads_dx_checklist.2019-07-26T14_03_12.txt')
-data_old_mdd_form = paste0(database_location, 'other_data_never_delete/mdd.2019-07-26T14_03_38.txt')
 
 # location of backups
 backup_location = paste0(IRTA_tracker_location, "IRTA_Master_Backups/") # IRTA tracker backup location 
@@ -114,8 +105,8 @@ latest_dawba_pull <- c(to_change$latest_dawba_pull)
 latest_sdq_pull <- c(to_change$latest_sdq_pull)
 
 # check list of current IRTAs is correct
-current_IRTAs_full <- c("Kenzie Jackson", "Katy Chang", "Christine Wei", "Stuart Kirwan", "Lisa Gorham", "Kate Haynes", "Chris Camp")
-current_IRTAs_init <- c("KJ", "KC", "CW", "SK", "LG", "KH", "CC")
+current_IRTAs_full <- c("Katy Chang", "Christine Wei", "Stuart Kirwan", "Lisa Gorham", "Kate Haynes", "Chris Camp")
+current_IRTAs_init <- c("KC", "CW", "SK", "LG", "KH", "CC")
 
 # functions ---------------------------------------------------------------
 

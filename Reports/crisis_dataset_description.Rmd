@@ -1,6 +1,6 @@
 ---
 title: "CRISIS dataset"
-output:
+output: 
   html_document:
     df_print: paged
   word_document:
@@ -75,6 +75,11 @@ if (exists("MMI_recovery_combined2")==FALSE) {
 } else {
         print("MMI recovery completion info already imported")
 }
+
+# crisis recruitment related
+child_contacted <- c(to_change$child_contacted)
+parent_contacted <- c(to_change$parent_contacted)
+parent_agreed <- c(to_change$parent_agreed)
 
 ```
 
@@ -414,17 +419,6 @@ mfq_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-# ggplot(mfq_subset, aes(x=row_label, y=s_mfq_tot, color=c_ksadsdx_primary_dx), na.rm = TRUE) +
-#   geom_line(aes(group=Initials), alpha=0.25) +
-#   geom_line(data = mfq_group_means, size=2) + 
-#   labs(x="\nTime point", y="MFQ total\n") +
-#   # labs(title="Depression symptoms\n", x="\nTime point", y="MFQ total\n") +
-#   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-#   scale_x_discrete(limit = c("pre-covid", "baseline", "followup")) + 
-#   scale_x_discrete(expand = c(0,0)) +
-#   theme_minimal() +
-#   guides(color=guide_legend("Diagnosis:"))
-
 ggplot() +
   geom_line(data=mfq_group_means, aes(x=row_label, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=2) + 
   geom_line(data = mfq_subset, aes(x=row_label, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
@@ -433,6 +427,100 @@ ggplot() +
   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
   scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup")) + 
   theme_minimal() +
+  guides(color=guide_legend("Diagnosis:"))
+
+```
+
+##### ALTERNATIVE MFQ GRAPH: all timepoints in our study
+###
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+measures_all <- Psychometrics_treatment %>% filter(Clinical_Visit_Date >= "2016-10-01") %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, SEX, Age_at_visit,
+         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+         s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, 
+         s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, s_crisis_fu_tot, s_crisis_fu_date, 
+         p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, 
+         p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, p_crisis_base_date, p_crisis_fu_tot, p_crisis_fu_date) %>% 
+  rename(Age = "Age_at_visit") %>% mutate(Age = round(Age, digits = 0))
+measures_all$s_mfq_tot <- coalesce(measures_all$s_mfq_tot, measures_all$s_mfq1w_tot) %>% round(., digits = 0)
+measures_all$p_mfq_tot <- coalesce(measures_all$p_mfq_tot, measures_all$p_mfq1w_tot) %>% round(., digits = 0)
+measures_all$s_mfq_date <- coalesce(measures_all$s_mfq_date, measures_all$s_mfq1w_date) %>% round(., digits = 0)
+measures_all$p_mfq_date <- coalesce(measures_all$p_mfq_date, measures_all$p_mfq1w_date) %>% round(., digits = 0)
+measures_all <- measures_all %>% select(-s_mfq1w_tot, -p_mfq1w_tot, -s_mfq1w_date, -p_mfq1w_date) 
+
+split1 <- colsplit(measures_all$Clinical_Visit_Date, "-", names = c("year", "month", "day"))
+measures_all <- cbind(measures_all, split1)
+measures_all <- measures_all %>% mutate(day2 = ifelse(day < 7, 1, ifelse((day >= 7 & day <14), 7, ifelse((day >=14 & day < 21), 14, ifelse(day >=21, 21, 0)))))
+measures_all$Clinical_Visit_Date3c <- as.Date(paste(measures_all$year, measures_all$month, measures_all$day2, sep="-"))
+measures_all <- measures_all %>% select(Initials:IRTA_tracker, matches("Clinical_Visit_Date"), year, month, day, day2, Clinical_Visit_Type:p_crisis_fu_date)
+
+s_mfq_subset <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot))
+mfq_group_means <- s_mfq_subset %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
+  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
+  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
+
+s_mfq_subset_recent <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot)) %>%
+  filter(Clinical_Visit_Date3c >= "2020-01-01") %>% select(Initials, Clinical_Visit_Date, Clinical_Visit_Date3c, c_ksadsdx_primary_dx, s_mfq_tot)
+mfq_group_means_recent <- s_mfq_subset_recent %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
+  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
+  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
+
+s_mfq_subset_recent2 <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot)) %>%
+  filter(Clinical_Visit_Date3c >= "2020-03-01") %>% select(Initials, Clinical_Visit_Date, Clinical_Visit_Date3c, c_ksadsdx_primary_dx, s_mfq_tot)
+mfq_group_means_recent2 <- s_mfq_subset_recent2 %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
+  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
+  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot() +
+  geom_line(data= mfq_group_means, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5) +
+  geom_line(data = s_mfq_subset, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
+  labs(x="\nTime point", y="MFQ total\n") +
+  scale_color_manual(values=c("#CC0000", "#006600")) + 
+  scale_x_date(date_break = "4 months", date_labels = "%m/%y") +
+  geom_vline(xintercept=as.Date("2020-03-01"), size=1, colour="#000000") +
+  geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=30), colour="#000000", angle=90, text=element_text(size=10)) +
+  ylim(0,40) +
+  theme_minimal() +
+  guides(color=guide_legend("Diagnosis:"))
+
+```
+
+Limiting to measures collected from Jan 2020 - present: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot() +
+  geom_line(data = mfq_group_means_recent, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5, na.rm=TRUE) +
+  geom_line(data = s_mfq_subset_recent, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25, na.rm=TRUE) +
+  labs(x="\nTime point", y="MFQ total\n") +
+  scale_color_manual(values=c("#CC0000", "#006600")) +
+  scale_x_date(date_break = "1 month", date_labels = "%m/%y") +
+  geom_vline(xintercept=as.Date("2020-03-01"), size=1, colour="#000000") +
+  geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=30), colour="#000000", angle=90, text=element_text(size=10)) +
+  theme_minimal() + ylim(0,40) +
+  guides(color=guide_legend("Diagnosis:"))
+
+```
+
+Limiting to measures collected from March 2020 - present: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot() +
+  geom_line(data = mfq_group_means_recent2, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5, na.rm=TRUE) +
+  geom_line(data = s_mfq_subset_recent2, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25, na.rm=TRUE) +
+  labs(x="\nTime point", y="MFQ total\n") +
+  scale_color_manual(values=c("#CC0000", "#006600")) +
+  scale_x_date(date_break = "1 month", date_labels = "%m/%y") +
+  # geom_vline(xintercept=as.Date("2020-03-01"), size=1, colour="#000000") +
+  # geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=25), colour="#000000", angle=90, text=element_text(size=10)) +
+  theme_minimal() + ylim(0,40) +
   guides(color=guide_legend("Diagnosis:"))
 
 ```
