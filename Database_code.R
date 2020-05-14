@@ -1051,10 +1051,10 @@
     arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
     slice(1) %>%
     ungroup() %>% 
-    group_by(Initials, Task_Name, c_ksadsdx_date) %>%
-    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_ksadsdx_date, measurement_TDiff_abs) %>%
-    slice(1) %>%
-    ungroup() %>%
+    # group_by(Initials, Task_Name, c_ksadsdx_date) %>%
+    # arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, c_ksadsdx_date, measurement_TDiff_abs) %>%
+    # slice(1) %>%
+    # ungroup() %>%
     # filter(measurement_TDiff_abs<=60) %>% 
     select(-measurement_TDiff_abs)
   
@@ -1072,10 +1072,10 @@
     arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
     slice(1) %>%
     ungroup() %>% 
-    group_by(Initials, c_ksadsdx_date) %>%
-    arrange(FIRST_NAME, LAST_NAME, Initials, c_ksadsdx_date, measurement_TDiff_abs) %>%
-    slice(1) %>%
-    ungroup() %>%
+    # group_by(Initials, c_ksadsdx_date) %>%
+    # arrange(FIRST_NAME, LAST_NAME, Initials, c_ksadsdx_date, measurement_TDiff_abs) %>%
+    # slice(1) %>%
+    # ungroup() %>%
     select(-measurement_TDiff_abs)
 
 # IQ, handedness, tanner -------------------------------------------
