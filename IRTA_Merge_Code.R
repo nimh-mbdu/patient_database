@@ -387,6 +387,10 @@ task_reshape_master$Clinical_Visit_Number <- na_if(task_reshape_master$Clinical_
   
   irta_tracker_check <- task_reshape_master %>% filter(Task_Name=="MMI_recovery") %>% select(Initials, SDAN, IRTA_tracker, Task_Name, Task_Date, Task_Number)
   MMI_recovery_combined2 <- merge.default(irta_tracker_check, MMI_recovery_combined, all = TRUE) %>% select(-File_last_modified)
+  MMI_recovery_combined2$measurement_TDiff <- as.numeric(difftime(MMI_recovery_combined2$Task_Completed_Date, MMI_recovery_combined2$Task_Date, tz="", units = "days"))
+  MMI_recovery_combined2 <- MMI_recovery_combined2 %>% mutate(measurement_TDiff_abs=abs(measurement_TDiff)) %>% group_by(Initials, Task_Name, Task_Date) %>% 
+    arrange(Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% slice(1) %>% ungroup() %>% group_by(Initials, Task_Name, Task_Completed_Date) %>% 
+    arrange(Initials, Task_Name, Task_Completed_Date, measurement_TDiff_abs) %>% slice(1) %>% ungroup() %>% select(-measurement_TDiff_abs, -measurement_TDiff)
   mmi_recovery_not_tracked <- MMI_recovery_combined2 %>% filter(is.na(Task_Name)) %>% mutate(reason24="MMI_recovery completed but missing from IRTA tracker") 
   
 # combining the above 

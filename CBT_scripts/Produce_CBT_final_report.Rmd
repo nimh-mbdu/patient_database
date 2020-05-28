@@ -163,6 +163,12 @@ if (Clinician=="Kathryn") {
   clinician_position = "Treating Clinician"
   clinician_location = "Mood Brain & Development Unit"
   clinician_contact = "301-435-1553"
+} else if (Clinician=="Mollie") {
+  treating_clinician = "Mollie Davis"
+  clinician_cred = "MSW, LCSW-C"
+  clinician_position = "Treating Clinician"
+  clinician_location = "Mood Brain & Development Unit"
+  clinician_contact = "301-496-0650" 
 } else {
   treating_clinician = "Jeasmine Aizvera"
   clinician_cred = "LCSW-C"

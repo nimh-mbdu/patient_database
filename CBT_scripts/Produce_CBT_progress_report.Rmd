@@ -121,8 +121,8 @@ diagnosis_full_names <- read_excel(paste0(database_location, "other_data_never_d
 dx <- tail(data$c_ksadsdx_primary_dx,1)
 dx <- gsub(eval(diagnosis_full_names$Initials), eval(diagnosis_full_names$Full), dx, fixed=TRUE)
 
-comorbid1 <- tail(data$c_ksadsdx_ongoing_comorbid_combined,1)
-comorbid1 <- gsub("MDD, ", "", comorbid1, fixed=TRUE) 
+comorbid1 <- tail(data$c_ksadsdx_ongoing_comorbid_dx_all,1)
+# comorbid1 <- gsub("MDD, ", "", comorbid1, fixed=TRUE) 
 comorbid2 <- str_split(comorbid1, ", ", n = Inf, simplify = TRUE) %>% t()
 # comorbid2 <- tail(data$c_ksadsdx_comorbid_dx_combined,1)
 for(h in seq_len(nrow(diagnosis_full_names))) {
@@ -163,6 +163,12 @@ if (Clinician=="Kathryn") {
   clinician_position = "Treating Clinician"
   clinician_location = "Mood Brain & Development Unit"
   clinician_contact = "301-435-1553"
+} else if (Clinician=="Mollie") {
+  treating_clinician = "Mollie Davis"
+  clinician_cred = "MSW, LCSW-C"
+  clinician_position = "Treating Clinician"
+  clinician_location = "Mood Brain & Development Unit"
+  clinician_contact = "301-496-0650" 
 } else {
   treating_clinician = "Jeasmine Aizvera"
   clinician_cred = "LCSW-C"
@@ -228,7 +234,7 @@ Cognitive Behavioral Therapy (CBT) for Adolescent Depression, Completed Visit # 
     + Aftercare: *INSERT*
 5. Communication with pediatrician/community provider
     + *INSERT*
-6. `r f_name`'s self-report scores: During treatment, we monitor a `r f_name`'s symptoms through weekly self-report questionnaires, each summarized below:
+6. `r f_name`'s self-report scores: During treatment, we monitor `r f_name`'s symptoms through weekly self-report questionnaires, each summarized below:
     + Depressive symptoms are tracked through the Mood and Feelings Questionnaire-short version (MFQ);
     + General anxiety through the Self-Report for Childhood Anxiety Related Emotional Disorders (SCARED);
     + Anhedonia through the Snaith-Hamilton Pleasure Scale (SHAPS);

@@ -1079,72 +1079,122 @@ child_completed_crisis_base <- measures_completed %>% filter(!is.na(s_crisis_bas
   slice(1) %>% ungroup() %>% select(Initials, s_crisis_base_tot)
 child_completed_crisis_base_num <- child_completed_crisis_base %>% nrow() %>% as.numeric()
 
-##### all followup measures completed 
+##### all followup measures completed (first follow up)
 # parent
-parent_completed_all_fu <- measures_completed %>% filter(!is.na(p_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
+parent_completed_all_fu1 <- measures_completed %>% filter(!is.na(p_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
   slice(1) %>% ungroup() %>% select(Initials, p_mfq_tot, p_scaredshort_tot, p_crisis_fu_tot) %>% filter(!is.na(p_mfq_tot) & !is.na(p_scaredshort_tot))
-parent_completed_all_fu_num <- parent_completed_all_fu %>% nrow() %>% as.numeric() 
+parent_completed_all_fu_num1 <- parent_completed_all_fu1 %>% nrow() %>% as.numeric() 
 # child 
-child_completed_all_fu <- measures_completed %>% filter(!is.na(s_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
+child_completed_all_fu1 <- measures_completed %>% filter(!is.na(s_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
   slice(1) %>% ungroup() %>% select(Initials, s_mfq_tot, s_scaredshort_tot, s_crisis_fu_tot) %>% filter(!is.na(s_mfq_tot) & !is.na(s_scaredshort_tot))
-child_completed_all_fu_num <- child_completed_all_fu %>% nrow() %>% as.numeric() 
+child_completed_all_fu_num1 <- child_completed_all_fu1 %>% nrow() %>% as.numeric() 
 ##### crisis followup completed 
 # parent
-parent_completed_crisis_fu <- measures_completed %>% filter(!is.na(p_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
+parent_completed_crisis_fu1 <- measures_completed %>% filter(!is.na(p_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
   slice(1) %>% ungroup() %>% select(Initials, p_crisis_fu_tot)
-parent_completed_crisis_fu_num <- parent_completed_crisis_fu %>% nrow() %>% as.numeric() 
+parent_completed_crisis_fu_num1 <- parent_completed_crisis_fu1 %>% nrow() %>% as.numeric() 
 # child 
-child_completed_crisis_fu <- measures_completed %>% filter(!is.na(s_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
+child_completed_crisis_fu1 <- measures_completed %>% filter(!is.na(s_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
   slice(1) %>% ungroup() %>% select(Initials, s_crisis_fu_tot)
-child_completed_crisis_fu_num <- child_completed_crisis_fu %>% nrow() %>% as.numeric() 
-
-##### crisis baseline + followup completed, all measures
+child_completed_crisis_fu_num1 <- child_completed_crisis_fu1 %>% nrow() %>% as.numeric() 
+##### all followup measures completed (second follow up)
 # parent
-parent_completed_all_fu <- parent_completed_all_fu %>% rename(p_mfq_fu_tot="p_mfq_tot") %>% rename(p_scaredshort_fu_tot="p_scaredshort_tot")
-parent_completed_all_both <- merge.default(parent_completed_all_base, parent_completed_all_fu, all=TRUE) %>% 
-  filter(!is.na(p_crisis_base_tot)) %>% filter(!is.na(p_crisis_fu_tot))
-parent_completed_all_both_num <- parent_completed_all_both %>% nrow() %>% as.numeric() 
+parent_completed_all_fu2 <- measures_completed %>% filter(!is.na(p_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% filter(n()>1) %>% 
+  slice(2) %>% ungroup() %>% select(Initials, p_mfq_tot, p_scaredshort_tot, p_crisis_fu_tot) %>% filter(!is.na(p_mfq_tot) & !is.na(p_scaredshort_tot))
+parent_completed_all_fu_num2 <- parent_completed_all_fu2 %>% nrow() %>% as.numeric() 
 # child 
-child_completed_all_fu <- child_completed_all_fu %>% rename(s_mfq_fu_tot="s_mfq_tot") %>% rename(s_scaredshort_fu_tot="s_scaredshort_tot")
-child_completed_all_both <- merge.default(child_completed_all_base, child_completed_all_fu, all=TRUE) %>% 
+child_completed_all_fu2 <- measures_completed %>% filter(!is.na(s_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% filter(n()>1) %>% 
+  slice(2) %>% ungroup() %>% select(Initials, s_mfq_tot, s_scaredshort_tot, s_crisis_fu_tot) %>% filter(!is.na(s_mfq_tot) & !is.na(s_scaredshort_tot))
+child_completed_all_fu_num2 <- child_completed_all_fu2 %>% nrow() %>% as.numeric() 
+##### crisis followup completed 
+# parent
+parent_completed_crisis_fu2 <- measures_completed %>% filter(!is.na(p_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% filter(n()>1) %>% 
+  slice(2) %>% ungroup() %>% select(Initials, p_crisis_fu_tot)
+parent_completed_crisis_fu_num2 <- parent_completed_crisis_fu2 %>% nrow() %>% as.numeric() 
+# child 
+child_completed_crisis_fu2 <- measures_completed %>% filter(!is.na(s_crisis_fu_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% filter(n()>1) %>% 
+  slice(2) %>% ungroup() %>% select(Initials, s_crisis_fu_tot)
+child_completed_crisis_fu_num2 <- child_completed_crisis_fu2 %>% nrow() %>% as.numeric() 
+
+##### crisis baseline + followup completed, all measures (first follow up)
+# parent
+parent_completed_all_fu1 <- parent_completed_all_fu1 %>% rename(p_mfq_fu_tot="p_mfq_tot") %>% rename(p_scaredshort_fu_tot="p_scaredshort_tot")
+parent_completed_all_both1 <- merge.default(parent_completed_all_base, parent_completed_all_fu1, all=TRUE) %>% 
+  filter(!is.na(p_crisis_base_tot)) %>% filter(!is.na(p_crisis_fu_tot))
+parent_completed_all_both_num1 <- parent_completed_all_both1 %>% nrow() %>% as.numeric() 
+# child 
+child_completed_all_fu1 <- child_completed_all_fu1 %>% rename(s_mfq_fu_tot="s_mfq_tot") %>% rename(s_scaredshort_fu_tot="s_scaredshort_tot")
+child_completed_all_both1 <- merge.default(child_completed_all_base, child_completed_all_fu1, all=TRUE) %>% 
   filter(!is.na(s_crisis_base_tot)) %>% filter(!is.na(s_crisis_fu_tot))
-child_completed_all_both_num <- child_completed_all_both %>% nrow() %>% as.numeric() 
+child_completed_all_both_num1 <- child_completed_all_both1 %>% nrow() %>% as.numeric() 
 ##### crisis baseline + followup completed, crisis only
 # parent
-parent_completed_crisis_both <- merge.default(parent_completed_crisis_base, parent_completed_crisis_fu, all=TRUE) %>%
+parent_completed_crisis_both1 <- merge.default(parent_completed_crisis_base, parent_completed_crisis_fu1, all=TRUE) %>%
   filter(!is.na(p_crisis_fu_tot)) %>% filter(!is.na(p_crisis_base_tot)) 
-parent_completed_crisis_both_num <- parent_completed_crisis_both %>% nrow() %>% as.numeric() 
+parent_completed_crisis_both_num1 <- parent_completed_crisis_both1 %>% nrow() %>% as.numeric() 
 # child 
-child_completed_crisis_both <- merge.default(child_completed_crisis_base, child_completed_crisis_fu, all=TRUE) %>% 
+child_completed_crisis_both1 <- merge.default(child_completed_crisis_base, child_completed_crisis_fu1, all=TRUE) %>% 
   filter(!is.na(s_crisis_fu_tot)) %>% filter(!is.na(s_crisis_base_tot))
-child_completed_crisis_both_num <- child_completed_crisis_both %>% nrow() %>% as.numeric() 
+child_completed_crisis_both_num1 <- child_completed_crisis_both1 %>% nrow() %>% as.numeric() 
+##### crisis baseline + followup completed, all measures (second follow up)
+# parent
+parent_completed_all_fu2 <- parent_completed_all_fu2 %>% rename(p_mfq_fu2_tot="p_mfq_tot") %>% rename(p_scaredshort_fu2_tot="p_scaredshort_tot") %>% 
+  rename(p_crisis_fu2_tot="p_crisis_fu_tot")
+parent_completed_all_both2 <- merge.default(parent_completed_all_both1, parent_completed_all_fu2, all=TRUE) %>%
+  filter(!is.na(p_crisis_base_tot)) %>% filter(!is.na(p_crisis_fu_tot)) %>% filter(!is.na(p_crisis_fu2_tot))
+parent_completed_all_both_num2 <- parent_completed_all_both2 %>% nrow() %>% as.numeric()
+# # child 
+child_completed_all_fu2 <- child_completed_all_fu2 %>% rename(s_mfq_fu2_tot="s_mfq_tot") %>% rename(s_scaredshort_fu2_tot="s_scaredshort_tot") %>% 
+  rename(s_crisis_fu2_tot="s_crisis_fu_tot")
+child_completed_all_both2 <- merge.default(child_completed_all_both1, child_completed_all_fu2, all=TRUE) %>%
+  filter(!is.na(s_crisis_base_tot)) %>% filter(!is.na(s_crisis_fu_tot)) %>% filter(!is.na(s_crisis_fu2_tot))
+child_completed_all_both_num2 <- child_completed_all_both2 %>% nrow() %>% as.numeric()
+##### crisis baseline + followup completed, crisis only
+# parent
+parent_completed_crisis_fu2 <- parent_completed_crisis_fu2 %>% rename(p_crisis_fu2_tot="p_crisis_fu_tot")
+parent_completed_crisis_both2 <- merge.default(parent_completed_crisis_both1, parent_completed_crisis_fu2, all=TRUE) %>%
+  filter(!is.na(p_crisis_fu_tot)) %>% filter(!is.na(p_crisis_fu2_tot))
+parent_completed_crisis_both_num2 <- parent_completed_crisis_both2 %>% nrow() %>% as.numeric()
+# child
+child_completed_crisis_fu2 <- child_completed_crisis_fu2 %>% rename(s_crisis_fu2_tot="s_crisis_fu_tot")
+child_completed_crisis_both2 <- merge.default(child_completed_crisis_both1, child_completed_crisis_fu2, all=TRUE) %>%
+  filter(!is.na(s_crisis_fu_tot)) %>% filter(!is.na(s_crisis_fu2_tot))
+child_completed_crisis_both_num2 <- child_completed_crisis_both2 %>% nrow() %>% as.numeric()
 
 # combine these
 all_table <- tibble(Respondant=c("Parent", "Child"), 
                     Tot_contacted=c(parent_contacted, child_contacted),
                     Tot_agreed=c(parent_agreed, child_agreed), 
                     ALL_base_completed=c(parent_completed_all_base_num, child_completed_all_base_num), 
-                    ALL_fu_completed=c(parent_completed_all_fu_num, child_completed_all_fu_num), 
-                    ALL_both_completed=c(parent_completed_all_both_num, child_completed_all_both_num)) %>%
+                    ALL_fu_completed=c(parent_completed_all_fu_num1, child_completed_all_fu_num1), 
+                    ALL_fu2_completed=c(parent_completed_all_fu_num2, child_completed_all_fu_num2),
+                    ALL_both_completed=c(parent_completed_all_both_num1, child_completed_all_both_num1), 
+                    ALL_both2_completed=c(parent_completed_all_both_num2, child_completed_all_both_num2)) %>%
   mutate(Agreed_percent = (Tot_agreed/Tot_contacted)*100) %>% mutate(All_base_percent = (ALL_base_completed/Tot_agreed)*100) %>%
-  mutate(All_fu_percent = (ALL_fu_completed/Tot_agreed)*100) %>% mutate(All_both_percent = (ALL_both_completed/Tot_agreed)*100) %>%
+  mutate(All_fu_percent = (ALL_fu_completed/Tot_agreed)*100) %>% mutate(All_fu2_percent = (ALL_fu2_completed/Tot_agreed)*100) %>% 
+  mutate(All_both_percent = (ALL_both_completed/Tot_agreed)*100) %>% mutate(All_both2_percent = (ALL_both2_completed/Tot_agreed)*100) %>%
   mutate(Agreed_percent=round(Agreed_percent, digits=2)) %>% mutate(All_base_percent=round(All_base_percent, digits=2)) %>% 
   mutate(All_fu_percent=round(All_fu_percent, digits=2)) %>% mutate(All_both_percent=round(All_both_percent, digits=2)) %>% 
+  mutate(All_fu2_percent=round(All_fu2_percent, digits=2)) %>% mutate(All_both2_percent=round(All_both2_percent, digits=2)) %>%
   select(Respondant, Tot_contacted, Tot_agreed, Agreed_percent, ALL_base_completed, All_base_percent, ALL_fu_completed, All_fu_percent, 
-         ALL_both_completed, All_both_percent)
+         ALL_fu2_completed, All_fu2_percent, ALL_both_completed, All_both_percent, ALL_both2_completed, All_both2_percent)
 
 crisis_table <- tibble(Respondant=c("Parent", "Child"), 
                        Tot_contacted=c(parent_contacted, child_contacted),
                        Tot_agreed=c(parent_agreed, child_agreed), 
                        CRISIS_base_completed=c(parent_completed_crisis_base_num, child_completed_crisis_base_num),
-                       CRISIS_fu_completed=c(parent_completed_crisis_fu_num, child_completed_crisis_fu_num), 
-                       CRISIS_both_completed=c(parent_completed_crisis_both_num, child_completed_crisis_both_num)) %>% 
+                       CRISIS_fu_completed=c(parent_completed_crisis_fu_num1, child_completed_crisis_fu_num1), 
+                       CRISIS_fu2_completed=c(parent_completed_crisis_fu_num2, child_completed_crisis_fu_num2), 
+                       CRISIS_both_completed=c(parent_completed_crisis_both_num1, child_completed_crisis_both_num1), 
+                       CRISIS_both2_completed=c(parent_completed_crisis_both_num2, child_completed_crisis_both_num2)) %>% 
   mutate(Agreed_percent = (Tot_agreed/Tot_contacted)*100) %>% mutate(CRISIS_base_percent = (CRISIS_base_completed/Tot_agreed)*100) %>%
   mutate(CRISIS_fu_percent = (CRISIS_fu_completed/Tot_agreed)*100) %>% mutate(CRISIS_both_percent = (CRISIS_both_completed/Tot_agreed)*100) %>%
+  mutate(CRISIS_fu2_percent = (CRISIS_fu2_completed/Tot_agreed)*100) %>% mutate(CRISIS_both2_percent = (CRISIS_both2_completed/Tot_agreed)*100) %>%
   mutate(Agreed_percent=round(Agreed_percent, digits=2)) %>% mutate(CRISIS_base_percent=round(CRISIS_base_percent, digits=2)) %>% 
   mutate(CRISIS_fu_percent=round(CRISIS_fu_percent, digits=2)) %>% mutate(CRISIS_both_percent=round(CRISIS_both_percent, digits=2)) %>% 
+  mutate(CRISIS_fu2_percent=round(CRISIS_fu2_percent, digits=2)) %>% mutate(CRISIS_both2_percent=round(CRISIS_both2_percent, digits=2)) %>% 
   select(Respondant, Tot_contacted, Tot_agreed, Agreed_percent, CRISIS_base_completed, CRISIS_base_percent, CRISIS_fu_completed, CRISIS_fu_percent, 
-         CRISIS_both_completed, CRISIS_both_percent)
+         CRISIS_fu2_completed, CRISIS_fu2_percent, CRISIS_both_completed, CRISIS_both_percent, CRISIS_both2_completed, CRISIS_both2_percent)
 
 ```
 
@@ -1156,8 +1206,8 @@ crisis_table <- tibble(Respondant=c("Parent", "Child"),
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 all_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%", 
-                                     "Completed all Psych: baseline", "%", "Completed all Psych: follow up", "%", 
-                                     "Completed all Psych: baseline & follow up", "%")) %>% 
+                                     "Completed all Psych: baseline", "%", "Completed all Psych: follow up 1", "%", "Completed all Psych: follow up 2", "%", 
+                                     "Completed all Psych: baseline & follow up 1", "%", "Completed all Psych: baseline & follow ups 1 & 2", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -1170,8 +1220,8 @@ all_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agr
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 crisis_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%", 
-                                     "Completed CRISIS: baseline", "%", "Completed CRISIS: follow up", "%", 
-                                     "Completed CRISIS: baseline & follow up", "%")) %>% 
+                                     "Completed CRISIS: baseline", "%", "Completed CRISIS: follow up 1", "%", "Completed CRISIS: follow up 2", "%",
+                                     "Completed CRISIS: baseline & follow up 1", "%", "Completed CRISIS: baseline & follow ups 1 & 2", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -1186,11 +1236,17 @@ diagnosis <- crisis %>% select(Initials, IRTA_tracker, c_ksadsdx_primary_dx, c_k
   group_by(Initials) %>% slice(1) %>% ungroup() 
 MMI_recovery_completed <- MMI_recovery_combined2 %>% filter(!is.na(Task_Completed_Date)) %>% left_join(., diagnosis)
 
-MMI_recovery_table_Dx <- MMI_recovery_completed %>% group_by(Initials) %>% arrange(Task_Completed_Date) %>% 
-  slice(n()) %>% ungroup() %>% group_by(c_ksadsdx_primary_dx) %>% tally() %>% rename(Diagnosis = "c_ksadsdx_primary_dx")
-MMI_recovery_total <- MMI_recovery_table_Dx %>% select(n) %>% colSums() %>% as.numeric() %>% 
-  as.data.frame() %>% rename(n = ".") %>% mutate(Diagnosis = "Total") %>% select(Diagnosis, n)
-MMI_recovery_table_Dx <- rbind(MMI_recovery_table_Dx, MMI_recovery_total)
+# MMI_recovery_table_Dx <- MMI_recovery_completed %>% group_by(Initials) %>% arrange(Task_Completed_Date) %>% 
+#   slice(n()) %>% ungroup() %>% group_by(c_ksadsdx_primary_dx) %>% tally() %>% rename(Diagnosis = "c_ksadsdx_primary_dx")
+
+MMI_recovery_table_Dx <- MMI_recovery_completed %>% select(Initials, Task_Completed_Date, c_ksadsdx_primary_dx) %>% distinct(., .keep_all = TRUE) %>% 
+  group_by(Initials, c_ksadsdx_primary_dx) %>% tally() %>% rename(Diagnosis = "c_ksadsdx_primary_dx", Num="n") %>% group_by(Diagnosis, Num) %>% 
+  tally() %>% ungroup() %>% mutate(row_tot = (Num*n))
+MMI_1_total <- MMI_recovery_table_Dx %>% filter(Num==1) %>% select(row_tot) %>% colSums(.) %>% as.numeric()
+MMI_2_total <- MMI_recovery_table_Dx %>% filter(Num==2) %>% select(row_tot) %>% colSums(.) %>% as.numeric()
+MMI_grand_total <- MMI_recovery_table_Dx %>% select(row_tot) %>% colSums(.) %>% as.numeric()
+MMI_totals <- tibble(Diagnosis=c("Total once", "Total twice", "Grand total"), Num=c(1, 2, NA), n=c(NA), row_tot=c(MMI_1_total, MMI_2_total, MMI_grand_total))
+MMI_recovery_table_Dx <- rbind(MMI_recovery_table_Dx, MMI_totals)
 
 MMI_recovery_latest <- MMI_recovery_completed %>% group_by(Initials) %>% arrange(Task_Completed_Date) %>% slice(n()) %>% ungroup() %>% 
   filter(Task_Completed_Date > last_week_date_formatted) %>% group_by(c_ksadsdx_primary_dx) %>% tally() %>% rename(Diagnosis = "c_ksadsdx_primary_dx")
@@ -1206,7 +1262,7 @@ Overall:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-MMI_recovery_table_Dx %>% kable(., col.names = c("Diagnosis", "Freq")) %>%
+MMI_recovery_table_Dx %>% kable(., col.names = c("Diagnosis", "Number of times completed", "Freq", "Total")) %>%
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -1267,7 +1323,7 @@ current_outpatients <- outpatients %>% filter(Eligible=="Active in treatment") %
 current_outpatients$Clinical_Visit_Date <- format(current_outpatients$Clinical_Visit_Date, "%B %d %Y")
 
 if (nrow(current_outpatients)=="0") {
-  current_outpatients <- rbind(current_outpatients, tibble(Initials=c("No upcoming MEG scheduled"), Clinical_Visit_Date=c(NA), 
+  current_outpatients <- rbind(current_outpatients, tibble(Initials=c("None currently in treatment"), Clinical_Visit_Date=c(NA), 
                                                            Clinical_Visit_Number=c(NA), IRTA_tracker=c(NA)))
   }
 

@@ -73,22 +73,35 @@
   
   # fix date conversion below, check format & specify 
   
-  SDQ_Data_Download_raw$dateadded <- gsub("0019", "2019", SDQ_Data_Download_raw$dateadded, fixed=TRUE)
-  SDQ_Data_Download_raw$dateadded <- gsub("0018", "2018", SDQ_Data_Download_raw$dateadded, fixed=TRUE)
+  SDQ_Data_dateadded_uk <- SDQ_Data_Download_raw %>% filter(str_detect(dateadded, "-"))
+  SDQ_Data_dateadded_uk$dateadded <- gsub("0019", "2019", SDQ_Data_dateadded_uk$dateadded, fixed=TRUE)
+  SDQ_Data_dateadded_uk$dateadded <- gsub("0018", "2018", SDQ_Data_dateadded_uk$dateadded, fixed=TRUE)
+  SDQ_Data_dateadded_uk$dateadded <- gsub("82018", "2018", SDQ_Data_dateadded_uk$dateadded, fixed=TRUE)
+  SDQ_Data_dateadded_uk$dateadded <- gsub("72018", "2018", SDQ_Data_dateadded_uk$dateadded, fixed=TRUE)
+  SDQ_Data_dateadded_uk$dateadded <- as.Date(SDQ_Data_dateadded_uk$dateadded, "%Y-%m-%d")
   
-  SDQ_Data_Download_raw$Overall_date <- coalesce(as.Date(SDQ_Data_Download_raw$modedate, "%Y-%m-%d"), as.Date(SDQ_Data_Download_raw$dateadded, "%Y-%m-%d")) %>%
-    coalesce(., as.Date(SDQ_Data_Download_raw$maxdate, "%Y-%m-%d")) %>% 
-    coalesce(., as.Date(SDQ_Data_Download_raw$mindate, "%Y-%m-%d")) 
+  SDQ_Data_dateadded_usa <- SDQ_Data_Download_raw %>% filter(str_detect(dateadded, "/"))
+  SDQ_Data_dateadded_usa$dateadded <- as.Date(SDQ_Data_dateadded_usa$dateadded, "%m/%d/%Y")
+  
+  SDQ_Data_dateadded_missing <- SDQ_Data_Download_raw %>% filter(is.na(dateadded) | (!str_detect(dateadded, "-") & !str_detect(dateadded, "/")))
+  SDQ_Data_dateadded_missing$dateadded <- na_if(SDQ_Data_dateadded_missing$dateadded, "")
+  SDQ_Data_dateadded_missing$dateadded <- as.Date(SDQ_Data_dateadded_missing$dateadded)
+  
+  SDQ_Data_dateadded_fixed <- merge.default(SDQ_Data_dateadded_uk, SDQ_Data_dateadded_usa, all=TRUE) %>% merge.default(., SDQ_Data_dateadded_missing, all=TRUE)
+
+  SDQ_Data_dateadded_fixed$Overall_date <- coalesce(SDQ_Data_dateadded_fixed$dateadded, as.Date(SDQ_Data_dateadded_fixed$Done, "%Y-%m-%d")) %>%
+    coalesce(., as.Date(SDQ_Data_dateadded_fixed$maxdate, "%Y-%m-%d")) %>% coalesce(., as.Date(SDQ_Data_dateadded_fixed$modedate, "%Y-%m-%d")) %>% 
+    coalesce(., as.Date(SDQ_Data_dateadded_fixed$mindate, "%Y-%m-%d")) 
   
   # changing column names
 
   sdq_columns <- read_excel(paste0(database_location, "other_data_never_delete/sdq_column_names_and_descriptions.xlsx"))
-  setnames(SDQ_Data_Download_raw, old=c(sdq_columns$old_name), new=c(sdq_columns$new_name), skip_absent=TRUE)
+  setnames(SDQ_Data_dateadded_fixed, old=c(sdq_columns$old_name), new=c(sdq_columns$new_name), skip_absent=TRUE)
   # setnames(SDQ_Data_Download_raw, old=c(sdq_columns$old_name), new=c(sdq_columns$new_name))
   
-  SDQ_Data_Download <- SDQ_Data_Download_raw %>% select(sdq_columns$new_name) %>% arrange(PLUSID, Overall_date) %>% select(-SID)
+  SDQ_Data_Download <- SDQ_Data_dateadded_fixed %>% select(sdq_columns$new_name) %>% arrange(PLUSID, Overall_date) %>% select(-SID)
   
-  sdq_dates <- select(SDQ_Data_Download, matches("_date")) %>% colnames()
+  sdq_dates <- SDQ_Data_Download %>% select(matches("_date")) %>% select(-Overall_date) %>% colnames()
   SDQ_Data_Download[sdq_dates] <- lapply(SDQ_Data_Download[sdq_dates], as.Date, "%d-%m-%Y")
   SDQ_Data_Download[SDQ_Data_Download==-2] <- NA
   
@@ -3600,4 +3613,4 @@ rm(tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns
    ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, c_medsclin_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, c_medsclin_combined,
    not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task,
    task_DB_date_before_covid, task_DB_date_since_covid, prev_behav_database, prev_db_combined, mmi_recovery_not_tracked)
-rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download)
+rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download, SDQ_Data_dateadded_fixed, SDQ_Data_dateadded_missing, SDQ_Data_dateadded_uk, SDQ_Data_dateadded_usa)

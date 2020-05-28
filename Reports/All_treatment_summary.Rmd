@@ -120,7 +120,8 @@ current_inpatients <- MATCH_tracker %>% group_by(Initials) %>% arrange(Clinical_
 inpatient_list <- c(current_inpatients$Initials)
 
 current_outpatients <- CBT_report %>% group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% ungroup() %>% 
-  filter(Eligible=="Include" | is.na(Eligible)) %>% filter(!str_detect(Clinical_Visit_Type, "o0")) %>% 
+  filter(Eligible=="Include" | is.na(Eligible)) %>% 
+  # filter(!str_detect(Clinical_Visit_Type, "o0")) %>% 
   select(FIRST_NAME, LAST_NAME, Initials, SDAN, Age_at_visit, SEX, c_ksadsdx_dx_detailed, IRTA_tracker)
 outpatient_list <- c(current_outpatients$Initials)
 
