@@ -1246,7 +1246,7 @@ MMI_1_total <- MMI_recovery_table_Dx %>% filter(Num==1) %>% select(row_tot) %>% 
 MMI_2_total <- MMI_recovery_table_Dx %>% filter(Num==2) %>% select(row_tot) %>% colSums(.) %>% as.numeric()
 MMI_grand_total <- MMI_recovery_table_Dx %>% select(row_tot) %>% colSums(.) %>% as.numeric()
 MMI_totals <- tibble(Diagnosis=c("Total once", "Total twice", "Grand total"), Num=c(1, 2, NA), n=c(NA), row_tot=c(MMI_1_total, MMI_2_total, MMI_grand_total))
-MMI_recovery_table_Dx <- rbind(MMI_recovery_table_Dx, MMI_totals)
+MMI_recovery_table_Dx <- rbind(MMI_recovery_table_Dx, MMI_totals) %>% select(-n)
 
 MMI_recovery_latest <- MMI_recovery_completed %>% group_by(Initials) %>% arrange(Task_Completed_Date) %>% slice(n()) %>% ungroup() %>% 
   filter(Task_Completed_Date > last_week_date_formatted) %>% group_by(c_ksadsdx_primary_dx) %>% tally() %>% rename(Diagnosis = "c_ksadsdx_primary_dx")
@@ -1262,7 +1262,7 @@ Overall:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-MMI_recovery_table_Dx %>% kable(., col.names = c("Diagnosis", "Number of times completed", "Freq", "Total")) %>%
+MMI_recovery_table_Dx %>% kable(., col.names = c("Diagnosis", "Number of times completed", "Total")) %>%
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
