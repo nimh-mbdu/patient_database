@@ -1200,27 +1200,40 @@ crisis_table <- tibble(Respondant=c("Parent", "Child"),
 
 ***
 
-##### Completed all measures (MFQ, SCARED (short) & CRISIS): 
-### 
+##### Agreed to participate:
+###
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-all_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%", 
-                                     "Completed all Psych: baseline", "%", "Completed all Psych: follow up 1", "%", "Completed all Psych: follow up 2", "%", 
-                                     "Completed all Psych: baseline & follow up 1", "%", "Completed all Psych: baseline & follow ups 1 & 2", "%")) %>% 
+all_table %>% select(-ALL_base_completed:-All_both2_percent) %>% 
+  kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
 ***
 
-##### Completed CRISIS measure only: 
+##### Completed all measures (MFQ, SCARED (short) & CRISIS): 
+### 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+all_table %>% select(-Tot_contacted:-Agreed_percent) %>% 
+  kable(., col.names = c("Respondant", "Completed baseline", "%", "Completed follow up 1", "%", "Completed follow up 2", "%", 
+                                     "Completed baseline & follow up 1", "%", "Completed baseline & follow ups 1 & 2", "%")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+##### Completed CRISIS: 
 ###
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-crisis_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%", 
-                                     "Completed CRISIS: baseline", "%", "Completed CRISIS: follow up 1", "%", "Completed CRISIS: follow up 2", "%",
+crisis_table %>% select(-Tot_contacted:-Agreed_percent) %>% 
+  kable(., col.names = c("Respondant", "Completed CRISIS: baseline", "%", "Completed CRISIS: follow up 1", "%", "Completed CRISIS: follow up 2", "%",
                                      "Completed CRISIS: baseline & follow up 1", "%", "Completed CRISIS: baseline & follow ups 1 & 2", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 

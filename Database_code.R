@@ -208,7 +208,7 @@
   manual_sets <- ls(pattern="manual_")
   manual_sets <- mget(manual_sets)
   manual_combined <- reduce(manual_sets, full_join)
-  fill_names <- manual_combined %>% select(-Initials) %>% colnames()
+  fill_names <- manual_combined %>% select(-Initials, -Overall_date) %>% colnames()
   manual_combined <- manual_combined %>% 
     group_by(Initials, Overall_date) %>% 
     fill(., fill_names, .direction = "down") %>%
@@ -3381,6 +3381,7 @@ measures_combined_long <- merge.default(smfq1w_tminus2_long, sscared_tminus2_lon
 # Combining  
 measures_dataset_w_qc <- left_join(measures_dataset_w_missing, measures_dataset_qc) %>% merge.default(contact_info) 
 
+fill_names <- c("SDAN", "PLUSID", "IRTA_tracker", "FIRST_NAME", "LAST_NAME", "Child_Phone_Number", "Parent_Contact_Number", "c_ksadsdx_primary_dx", "c_ksadsdx_dx_detailed")
 measures_dataset_tminus2_long <- merge.default(measures_dataset_w_qc, measures_combined_long, all=TRUE) %>% mutate(s_covid19_22_other_comments = as.character(s_covid19_22_other_comments))
 measures_dataset_tminus2_long$s_mfq_tot <- coalesce(measures_dataset_tminus2_long$s_mfq_tot, measures_dataset_tminus2_long$s_mfq1w_tot)
 measures_dataset_tminus2_long$s_mfq_date <- coalesce(measures_dataset_tminus2_long$s_mfq_date, measures_dataset_tminus2_long$s_mfq1w_date)
@@ -3446,7 +3447,7 @@ prev_crisis_combined$date_diff <- as.numeric(difftime(todays_date_formatted, pre
 prev_crisis_combined <- prev_crisis_combined %>% arrange(date_diff) %>% filter(date_diff>0) %>% slice(1)
 prev_crisis_database <- read_excel(paste0(database_location, "COVID19/", prev_crisis_combined[1])) %>% mutate(source1="OLD")
 hist_check <- measures_dataset_tminus2_long %>% mutate(source2="NEW") %>% merge.default(., prev_crisis_database, all=TRUE) %>% 
-  filter(is.na(source1) | is.na(source2)) %>% select(Initials, Clinical_Visit_Date) %>% distinct(., .keep_all = TRUE) %>% mutate(New_info="Yes")
+  filter(is.na(source1) | is.na(source2)) %>% filter(!is.na(source2)) %>% select(Initials, Clinical_Visit_Date) %>% distinct(., .keep_all = TRUE) %>% mutate(New_info="Yes")
 measures_dataset_tminus2_long <- left_join(measures_dataset_tminus2_long, hist_check)
 
 # final reorder

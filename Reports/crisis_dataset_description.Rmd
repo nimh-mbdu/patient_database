@@ -258,14 +258,27 @@ crisis_table <- tibble(Respondant=c("Parent", "Child"),
 
 ***
 
+##### Agreed to participate:
+###
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+all_table %>% select(-ALL_base_completed:-All_both2_percent) %>% 
+  kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
 ##### Completed all measures (MFQ, SCARED (short) & CRISIS): 
 ### 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-all_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%", 
-                                     "Completed all Psych: baseline", "%", "Completed all Psych: follow up 1", "%", "Completed all Psych: follow up 2", "%", 
-                                     "Completed all Psych: baseline & follow up 1", "%", "Completed all Psych: baseline & follow ups 1 & 2", "%")) %>% 
+all_table %>% select(-Tot_contacted:-Agreed_percent) %>% 
+  kable(., col.names = c("Respondant", "Completed baseline", "%", "Completed follow up 1", "%", "Completed follow up 2", "%", 
+                                     "Completed baseline & follow up 1", "%", "Completed baseline & follow ups 1 & 2", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -277,8 +290,8 @@ all_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agr
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-crisis_table %>% kable(., col.names = c("Respondant", "Total Contacted", "Total Agreed to Participate", "%", 
-                                     "Completed CRISIS: baseline", "%", "Completed CRISIS: follow up 1", "%", "Completed CRISIS: follow up 2", "%",
+crisis_table %>% select(-Tot_contacted:-Agreed_percent) %>% 
+  kable(., col.names = c("Respondant", "Completed CRISIS: baseline", "%", "Completed CRISIS: follow up 1", "%", "Completed CRISIS: follow up 2", "%",
                                      "Completed CRISIS: baseline & follow up 1", "%", "Completed CRISIS: baseline & follow ups 1 & 2", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
@@ -342,16 +355,21 @@ crisis_final <- crisis_final %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Se
 
 ############ CRISIS
 crisis_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_3m_tot, s_crisis_3m_date) %>% 
-  filter(!is.na(s_crisis_3m_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_3m_tot") %>% rename(s_crisis_date="s_crisis_3m_date") %>% 
-  mutate(row_label="pre-covid") %>% mutate(id="1")
+  filter(!is.na(s_crisis_3m_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
+  rename(s_crisis_tot="s_crisis_3m_tot") %>% rename(s_crisis_date="s_crisis_3m_date") %>% mutate(row_label="pre-covid") %>% mutate(id="1")
 crisis_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_base_tot, s_crisis_base_date) %>% 
-  filter(!is.na(s_crisis_base_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_base_tot") %>% rename(s_crisis_date="s_crisis_base_date") %>% 
-  mutate(row_label="baseline") %>% mutate(id="2")
+  filter(!is.na(s_crisis_base_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
+  rename(s_crisis_tot="s_crisis_base_tot") %>% rename(s_crisis_date="s_crisis_base_date") %>% mutate(row_label="baseline") %>% mutate(id="2")
 crisis_subset3 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>%
-  mutate(row_label="followup") %>% mutate(id="3")
-crisis_subset <- merge.default(crisis_subset1, crisis_subset2, all = TRUE) %>% merge.default(., crisis_subset3, all = TRUE) 
-crisis_subset <- crisis_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% filter(id!=4 & id!=5)
+  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
+  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup1") %>% mutate(id="3")
+crisis_subset4 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
+  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% filter(n()>1) %>% slice(2) %>% ungroup() %>% 
+  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup2") %>% mutate(id="4")
+
+crisis_subset <- merge.default(crisis_subset1, crisis_subset2, all = TRUE) %>% merge.default(., crisis_subset3, all = TRUE) %>% 
+  merge.default(., crisis_subset4, all = TRUE) 
+crisis_subset <- crisis_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) 
 
 crisis_group_means <- crisis_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>%
   summarise(s_crisis_mean=mean(s_crisis_tot), s_crisis_sd=sd(s_crisis_tot), s_crisis_N=n()) %>%
@@ -362,13 +380,9 @@ mfq_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_l
   arrange(Initials, desc(s_mfq_date)) %>% filter(!str_detect(row_label, "crisis")) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
   mutate(row_label="pre-covid") %>% mutate(id=1)
 mfq_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_mfq_tot, s_mfq_date) %>% filter(!is.na(s_mfq_tot)) %>% 
-  arrange(Initials, s_mfq_date) %>% filter(str_detect(row_label, "crisis"))
+  arrange(Initials, s_mfq_date) %>% filter(str_detect(row_label, "crisis")) %>% group_by(Initials) %>% mutate(id = (row_number()+1)) %>% ungroup()
 mfq_subset <- merge.default(mfq_subset1, mfq_subset2, all=TRUE)
-mfq_subset$row_label <- gsub("crisis_t1", "baseline", mfq_subset$row_label, fix=TRUE)
-mfq_subset$row_label <- gsub("crisis_t2", "followup", mfq_subset$row_label, fix=TRUE)
-mfq_subset$id <- gsub("3", "2", mfq_subset$id, fix=TRUE)
-mfq_subset$id <- gsub("4", "3", mfq_subset$id, fix=TRUE)
-mfq_subset <- mfq_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% filter(id!=4 & id!=5)
+mfq_subset$row_label <- recode(mfq_subset$id, `1`="pre-covid", `2`="baseline", `3`="followup1", `4`="followup2", `5`="followup3", `6`="followup4")
 
 mfq_group_means <- mfq_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>% 
   summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
@@ -381,13 +395,9 @@ scared_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, ro
 scaredshort_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_scaredshort_tot, s_scaredshort_date) %>%
   filter(!is.na(s_scaredshort_tot)) %>% arrange(Initials, s_scaredshort_date) %>% mutate(s_scaredshort_tot=((s_scaredshort_tot/9)*41)) %>% 
   mutate(s_scaredshort_tot=round(s_scaredshort_tot, digits = 0)) %>% rename(s_scared_tot="s_scaredshort_tot") %>% 
-  rename(s_scared_date="s_scaredshort_date")
+  rename(s_scared_date="s_scaredshort_date") %>% group_by(Initials) %>% mutate(id = (row_number()+1)) %>% ungroup()
 scared_subset <- merge.default(scared_subset1, scaredshort_subset2, all=TRUE)
-scared_subset$row_label <- gsub("crisis_t1", "baseline", scared_subset$row_label, fix=TRUE)
-scared_subset$row_label <- gsub("crisis_t2", "followup", scared_subset$row_label, fix=TRUE)
-scared_subset$id <- gsub("3", "2", scared_subset$id, fix=TRUE)
-scared_subset$id <- gsub("4", "3", scared_subset$id, fix=TRUE)
-scared_subset <- scared_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) %>% filter(id!=4 & id!=5)
+scared_subset$row_label <- recode(scared_subset$id, `1`="pre-covid", `2`="baseline", `3`="followup1", `4`="followup2", `5`="followup3", `6`="followup4")
 
 scared_group_means <- scared_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>% 
   summarise(s_scared_mean=mean(s_scared_tot), s_scared_sd=sd(s_scared_tot), s_scared_N=n()) %>%
@@ -425,7 +435,7 @@ ggplot() +
   labs(x="\nTime point", y="CRISIS total\n") +
   # labs(title="Depression symptoms\n", x="\nTime point", y="CRISIS total\n") +
   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup")) + 
+  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
@@ -475,7 +485,7 @@ ggplot() +
   labs(x="\nTime point", y="MFQ total\n") +
   # labs(title="Depression symptoms\n", x="\nTime point", y="MFQ total\n") +
   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup")) + 
+  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
@@ -606,7 +616,7 @@ ggplot() +
   labs(x="\nTime point", y="SCARED total\n") +
   # labs(title="Depression symptoms\n", x="\nTime point", y="SCARED total\n") +
   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup")) + 
+  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
