@@ -72,7 +72,7 @@ date_variabes <- CBT_report %>% select(matches("_date"), matches("_Date")) %>% c
 date_variabes <- c(date_variabes, "DOB")
 CBT_report[date_variabes] <- lapply(CBT_report[date_variabes], as.Date)
 
-numeric_variables <- CBT_report %>% select(matches("_tot")) %>% colnames()
+numeric_variables <- CBT_report %>% select(matches("_tot"), Clinical_Visit_Number) %>% colnames()
 CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], as.numeric)
 CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], round)
 
@@ -265,13 +265,14 @@ MFQ (Mood & Feelings Questionnaire): 13 items rated 0-2, clinical cutoff score =
 
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
   gather(Measure, value, s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="Depressive symptoms\n", x="\nCBT Visit Date", y="Depression Score\n") +
+  labs(title="Depressive symptoms\n", x="\nCBT Visit Number", y="Depression Score\n") +
   ylim(0,27) +
   scale_shape_manual(labels = c("Father", "Mother", "Child"), values=c(17, 16, 5)) +
+  scale_x_continuous(breaks=seq(0, nrow(data), 1)) +
   theme_minimal() +
   guides(shape=guide_legend("Person reporting:"))
 
@@ -283,7 +284,8 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_mfq1w_tot, p_mfq1w_tot, p_mfq1w_parent) %>%
-  mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_mfq1w_tot = replace_na(p_mfq1w_tot, " ")) %>% mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% 
+  mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_mfq1w_tot = replace_na(p_mfq1w_tot, " ")) %>% 
+  mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
@@ -310,13 +312,14 @@ SCARED (Self-Report for Anxiety Related Emotional Disorders): 41 items rated 0-2
 
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
   gather(Measure, value, s_scared_tot, p_f_scared_tot, p_m_scared_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="General anxiety symptoms\n", x="\nCBT Visit Date", y="Anxiety Score\n") +
+  labs(title="General anxiety symptoms\n", x="\nCBT Visit Number", y="Anxiety Score\n") +
   ylim(0,83) +
   scale_shape_manual(labels = c("Father", "Mother", "Child"), values=c(17, 16, 5)) +
+  scale_x_continuous(breaks=seq(0, nrow(data), 1)) +
   theme_minimal() +
   guides(shape=guide_legend("Person reporting:"))
 
@@ -355,13 +358,14 @@ SHAPS (Snaith-Hamilton Pleasure Scale): 14 items rated 0-3, higher scores reflec
 
 data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
   gather(Measure, value, s_shaps_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="Anhedonia symptoms\n", x="\nCBT Visit Date", y="Anhedonia Score\n") + 
+  labs(title="Anhedonia symptoms\n", x="\nCBT Visit Number", y="Anhedonia Score\n") + 
   ylim(0,43) + 
   scale_shape_manual(labels = c("Child"), values=c(5)) +
+  scale_x_continuous(breaks=seq(0, nrow(data), 1)) +
   theme_minimal() +
   guides(shape=guide_legend("Person reporting:"))
 
@@ -399,13 +403,14 @@ ARI (Affective Reactivity Index): 7 items rated 0-2, clinical cutoff = 2.
 
 data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
   gather(Measure, value, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="Irritability symptoms\n", x="\nCBT Visit Date", y="Irritability Score\n") +
+  labs(title="Irritability symptoms\n", x="\nCBT Visit Number", y="Irritability Score\n") +
   ylim(0,15) +
   scale_shape_manual(labels = c("Father", "Mother", "Child"), values=c(17, 16, 5)) +
+  scale_x_continuous(breaks=seq(0, nrow(data), 1)) +
   theme_minimal() +
   guides(shape=guide_legend("Person reporting:"))
 
@@ -442,17 +447,18 @@ LSAS (Liebowitz Social Anxiety Scale): 24 items rated 0-3, clinical cutoff = 30.
 #   theme_minimal() +
 #   guides(color=guide_legend("Person reporting:")) 
 
-data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
-  gather(Measure, value, s_lsas_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Date4, y=value, group=Measure), na.rm = TRUE) +
+data %>% filter(!is.na(s_lsas_tot) | !is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
+  gather(Measure, value, s_lsas_tot, s_lsasad_tot) %>%
+  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
-  labs(title="Social anxiety symptoms\n", x="\nCBT Visit Date", y="Social Anxiety Score\n") + 
+  labs(title="Social anxiety symptoms\n", x="\nCBT Visit Number", y="Social Anxiety Score\n") + 
   ylim(0,150) + 
-  scale_shape_manual(labels = c("Child"), values=c(5)) +
+  scale_shape_manual(labels = c("Adult", "Adolescent"), values=c(17, 16)) +
+  scale_x_continuous(breaks=seq(0, nrow(data), 1)) +
   theme_minimal() +
-  guides(shape=guide_legend("Person reporting:"))
+  guides(shape=guide_legend("LSAS Type:"))
 
 ```
 
@@ -460,7 +466,8 @@ data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Date) %>% 
+data$s_lsas_tot <- coalesce(data$s_lsas_tot, data$s_lsasad_tot)
+data %>% filter(!is.na(s_lsas_tot)) %>% filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Date) %>% 
   select(Clinical_Visit_Date4, Clinical_Visit_Number, s_lsas_tot) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 

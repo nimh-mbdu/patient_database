@@ -16,3 +16,4 @@ Reports/*.Rapp.history
 Reports/*.xlsx
 Reports/*.DS_Store
 *.pdf
+Apps/

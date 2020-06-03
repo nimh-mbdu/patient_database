@@ -788,6 +788,67 @@
     select(-measurement_TDiff_abs)
   
 #####
+# lsas adolescent:
+  
+  s_lsasad_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_lsasad_')) %>% 
+    distinct(., .keep_all = TRUE)
+  
+  s_lsasad_subset_sdq[,5:ncol(s_lsasad_subset_sdq)] <- sapply(s_lsasad_subset_sdq[,5:ncol(s_lsasad_subset_sdq)], as.numeric) 
+  
+  s_lsasad_subset_sdq$no_columns <- s_lsasad_subset_sdq %>% select(matches('s_lsasad_')) %>% ncol() %>% as.numeric()
+  s_lsasad_subset_sdq$NA_count <- s_lsasad_subset_sdq %>% select(matches('s_lsasad_')) %>% apply(., 1, count_na)
+  s_lsasad_subset_sdq$diff <- c(s_lsasad_subset_sdq$no_columns - s_lsasad_subset_sdq$NA_count)
+  s_lsasad_subset_sdq <- s_lsasad_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  
+  s_lsasad_subset_sdq$s_lsasad_tot <- s_lsasad_subset_sdq %>% select(matches('s_lsasad_')) %>% rowSums(na.rm=TRUE)
+  
+  lsas_performance <- c("_2_|_3_|_5_|_7_|_10_|_11_|_13_|_14_|_15_|_16_|_21_|_24_")
+  s_lsasad_subset_sdq$s_lsasad_perform_fear_tot <- s_lsasad_subset_sdq %>% select(matches('_fear')) %>% select(matches(lsas_performance)) %>% rowSums(na.rm=TRUE)
+  s_lsasad_subset_sdq$s_lsasad_perform_avoid_tot <- s_lsasad_subset_sdq %>% select(matches('_avoid')) %>% select(matches(lsas_performance))  %>% rowSums(na.rm=TRUE)
+  lsas_social <- c("_1_|_4_|_6_|_8_|_9_|_12_|_17_|_18_|_19_|_20_|_22_|_23_")
+  s_lsasad_subset_sdq$s_lsasad_social_fear_tot <- s_lsasad_subset_sdq %>% select(matches('_fear')) %>% select(matches(lsas_social)) %>% rowSums(na.rm=TRUE)
+  s_lsasad_subset_sdq$s_lsasad_social_avoid_tot <- s_lsasad_subset_sdq %>% select(matches('_avoid')) %>% select(matches(lsas_social)) %>% rowSums(na.rm=TRUE)
+  
+  s_lsasad_subset_sdq$s_lsasad_complete <- s_lsasad_subset_sdq %>% select(matches('s_lsasad_')) %>% complete.cases(.)
+  s_lsasad_subset_sdq$s_lsasad_complete[s_lsasad_subset_sdq$s_lsasad_complete=="FALSE"] <- "0"
+  s_lsasad_subset_sdq$s_lsasad_complete[s_lsasad_subset_sdq$s_lsasad_complete=="TRUE"] <- "1"
+  
+  s_lsasad_subset_sdq$s_lsasad_date <- s_lsasad_subset_sdq$Overall_date
+  s_lsasad_subset_sdq <- s_lsasad_subset_sdq %>% select(-Overall_date)
+
+  s_lsasad_subset_clinical <- merge.default(clinical_DB_date, s_lsasad_subset_sdq, all=TRUE) %>% rename(s_lsasad_source = source) %>% 
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_lsasad_source, matches('s_lsasad_'))
+  s_lsasad_subset_clinical$s_lsasad_TDiff <- as.numeric(difftime(s_lsasad_subset_clinical$Clinical_Visit_Date, s_lsasad_subset_clinical$s_lsasad_date, tz="", units = "days"))
+  s_lsasad_subset_clinical <- s_lsasad_subset_clinical %>% 
+    mutate(measurement_TDiff_abs=abs(s_lsasad_TDiff)) %>% 
+    group_by(Initials, Clinical_Visit_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Clinical_Visit_Date, measurement_TDiff_abs) %>% 
+    slice(1) %>%
+    ungroup() %>% 
+    group_by(Initials, s_lsasad_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, s_lsasad_date, measurement_TDiff_abs) %>% 
+    slice(1) %>%
+    ungroup() %>% 
+    filter(measurement_TDiff_abs<=60) %>% 
+    select(-measurement_TDiff_abs)
+  
+  s_lsasad_subset_task <- merge.default(task_DB_date, s_lsasad_subset_sdq, all=TRUE) %>% rename(s_lsasad_source = source) %>% 
+    select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Task_Name, Task_Date, s_lsasad_source, matches('s_lsasad_'))
+  s_lsasad_subset_task$s_lsasad_TDiff <- as.numeric(difftime(s_lsasad_subset_task$Task_Date, s_lsasad_subset_task$s_lsasad_date, tz="", units = "days"))
+  s_lsasad_subset_task <- s_lsasad_subset_task %>% 
+    mutate(measurement_TDiff_abs=abs(s_lsasad_TDiff)) %>% 
+    group_by(Initials, Task_Name, Task_Date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
+    slice(1) %>%
+    ungroup() %>% 
+    group_by(Initials, Task_Name, s_lsasad_date) %>% 
+    arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, s_lsasad_date, measurement_TDiff_abs) %>% 
+    slice(1) %>%
+    ungroup() %>% 
+    filter(measurement_TDiff_abs<=60) %>% 
+    select(-measurement_TDiff_abs)
+  
+#####
 # shaps
   
   s_shaps_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_shaps_')) %>% 
@@ -3690,10 +3751,10 @@ rm(tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, sdq_w_names, sdq_dates, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, task_DB, task_DB_date, 
    how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, sibling,
-   parent, child, p, c, q, incorrect, correct, old_ksads_checklist, old_mdd_form, dummy, imputed_mfqs, file_save_check, task_sets, measure_name_date, measure_name_tot,
+   parent, child, p, c, q, incorrect, correct, dummy, file_save_check, task_sets, measure_name_date, measure_name_tot,
    file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent,
    ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, c_medsclin_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, c_medsclin_combined,
    not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task,
-   task_DB_date_before_covid, task_DB_date_since_covid, prev_behav_database, prev_db_combined, mmi_recovery_not_tracked, CBT_report_preint, 
+   task_DB_date_before_covid, task_DB_date_since_covid, prev_behav_database, prev_db_combined, CBT_report_preint, 
    mfq_change_s, mfq_change_p)
-rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download, SDQ_Data_dateadded_fixed, SDQ_Data_dateadded_missing, SDQ_Data_dateadded_uk, SDQ_Data_dateadded_usa)
+rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download) # SDQ_Data_dateadded_fixed, SDQ_Data_dateadded_missing, SDQ_Data_dateadded_uk, SDQ_Data_dateadded_usa
