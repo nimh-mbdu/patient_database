@@ -248,8 +248,7 @@
   common_identifiers_child_sib <- master_IRTA_latest %>% select(FIRST_NAME, LAST_NAME, Initials, PLUSID, IRTA_tracker, Sibling_Init, Sibling_Type) %>% 
     group_by(FIRST_NAME, LAST_NAME) %>% fill(Initials:Sibling_Type, .direction = "down") %>% fill(Initials:Sibling_Type, .direction = "up") %>% ungroup() %>% 
     group_by(Initials) %>% fill(PLUSID:Sibling_Type, .direction = "down") %>% fill(PLUSID:Sibling_Type, .direction = "up") %>% ungroup() %>% 
-    filter(!is.na(Sibling_Init) | !is.na(Sibling_Type)) %>% filter(Sibling_Type=="1") %>% filter(IRTA_tracker!="REMOVED") %>% distinct(., .keep_all = TRUE) %>% 
-    select(PLUSID, Initials, Sibling_Init)
+    filter(!is.na(Sibling_Init) | !is.na(Sibling_Type)) %>% distinct(., .keep_all = TRUE) %>% select(PLUSID, Initials, Sibling_Init)
   
   #****** CTDB parent name prep
 

@@ -132,6 +132,7 @@ psychometric_data_i <- MATCH_tracker %>% filter(Initials %in% inpatient_list) %>
          s_chocir_symptom_tot, s_chocir_impairment_tot)
 psychometric_data_i[,7:ncol(psychometric_data_i)] <- sapply(psychometric_data_i[,7:ncol(psychometric_data_i)], as.numeric)
 psychometric_data_i[,7:ncol(psychometric_data_i)] <- sapply(psychometric_data_i[,7:ncol(psychometric_data_i)], round, 0)
+psychometric_data_i$s_lsasad_tot <- coalesce(psychometric_data_i$s_lsasad_tot, psychometric_data_i$s_lsas_tot)
 
 # clinical database - outpatient 
 psychometric_data_o <- CBT_report %>% filter(Initials %in% outpatient_list) %>% 
@@ -139,6 +140,7 @@ psychometric_data_o <- CBT_report %>% filter(Initials %in% outpatient_list) %>%
          s_mfq1w_tot, s_ari1w_tot, s_scared_tot, s_shaps_tot, s_lsas_tot, s_lsasad_tot)
 psychometric_data_o[,7:ncol(psychometric_data_o)] <- sapply(psychometric_data_o[,7:ncol(psychometric_data_o)], as.numeric)
 psychometric_data_o[,7:ncol(psychometric_data_o)] <- sapply(psychometric_data_o[,7:ncol(psychometric_data_o)], round, 0)
+psychometric_data_o$s_lsasad_tot <- coalesce(psychometric_data_o$s_lsasad_tot, psychometric_data_o$s_lsas_tot)
 
 # variation of autofit formula for table optimization ---------------------
 
@@ -174,13 +176,13 @@ for(i in seq(nrow(current_inpatients))) {
 
   cat("  \nQuestionnaire totals:")
   questionnaire_data <- flextable(temp_psych, col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date3", "s_mfq1w_tot", 
-      "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", "s_lsas_tot", "s_lsasad_tot", "c_cybocs_ob_tot", "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot", 
+      "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", "s_lsasad_tot", "c_cybocs_ob_tot", "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot", 
       "s_chocir_symptom_tot", "s_chocir_impairment_tot")) %>% 
     set_header_labels(., Clinical_Visit_Number="Week",  Clinical_Visit_Date3="Date", s_mfq1w_tot="MFQ", s_ari1w_tot="ARI",
-       s_scared_tot="SCARED", s_shaps_tot="SHAPS", s_lsas_tot="LSAS", s_lsasad_tot="LSAS:A", c_cybocs_ob_tot="CYBOCS:O", c_cybocs_com_tot="CYBOCS:C", 
+       s_scared_tot="SCARED", s_shaps_tot="SHAPS", s_lsasad_tot="LSAS:A", c_cybocs_ob_tot="CYBOCS:O", c_cybocs_com_tot="CYBOCS:C", 
        c_ygtss_severity_tot="YGTSS:S", c_ygtss_tot="YGTSS:T", s_chocir_symptom_tot="CHOCIR:S", s_chocir_impairment_tot="CHOCIR:I") %>% 
     colformat_num(j = c("Clinical_Visit_Number", "Clinical_Visit_Date3", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", 
-       "s_lsas_tot", "s_lsasad_tot", "c_cybocs_ob_tot", "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot", "s_chocir_symptom_tot",
+       "s_lsasad_tot", "c_cybocs_ob_tot", "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot", "s_chocir_symptom_tot",
        "s_chocir_impairment_tot"), digits = 0, na_str = "") %>% 
     fontsize(., size=10, part="all") %>% align(., align = "left", part="all") %>%
     FitFlextableToPage3(.)
@@ -213,11 +215,11 @@ for(i in seq(nrow(current_outpatients))) {
 
   cat("  \nQuestionnaire totals:")
   questionnaire_data <- flextable(temp_psych, col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date3", "s_mfq1w_tot", 
-      "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", "s_lsas_tot", "s_lsasad_tot")) %>% 
+      "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", "s_lsasad_tot")) %>% 
     set_header_labels(., Clinical_Visit_Number="Week",  Clinical_Visit_Date3="Date", s_mfq1w_tot="MFQ", s_ari1w_tot="ARI",
-       s_scared_tot="SCARED", s_shaps_tot="SHAPS", s_lsas_tot="LSAS", s_lsasad_tot="LSAS:A") %>% 
+       s_scared_tot="SCARED", s_shaps_tot="SHAPS", s_lsasad_tot="LSAS:A") %>% 
     colformat_num(j = c("Clinical_Visit_Number", "Clinical_Visit_Date3", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot",
-      "s_shaps_tot", "s_lsas_tot", "s_lsasad_tot"), digits = 0, na_str = "") %>% 
+      "s_shaps_tot", "s_lsasad_tot"), digits = 0, na_str = "") %>% 
     fontsize(., size=10, part="all") %>% align(., align = "left", part="all") %>%
     FitFlextableToPage3(.)
   cat(knit_print(questionnaire_data))

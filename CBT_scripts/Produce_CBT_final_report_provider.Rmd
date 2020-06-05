@@ -399,18 +399,19 @@ LSAS (Liebowitz Social Anxiety Scale): 24 items rated 0-3, clinical cutoff = 30.
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_lsas_tot) | !is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
-  gather(Measure, value, s_lsas_tot, s_lsasad_tot) %>%
+data$s_lsasad_tot <- coalesce(data$s_lsasad_tot, data$s_lsas_tot)
+data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
+  gather(Measure, value, s_lsasad_tot) %>%
   ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
   labs(title="Social anxiety symptoms\n", x="\nCBT Visit Number", y="Social Anxiety Score\n") + 
   ylim(0,150) + 
-  scale_shape_manual(labels = c("Adult", "Adolescent"), values=c(17, 16)) +
+  scale_shape_manual(labels = c("Child"), values=c(5)) +
   scale_x_continuous(breaks=seq(0, nrow(data), 1)) +
   theme_minimal() +
-  guides(shape=guide_legend("LSAS Type:"))
+  guides(shape=guide_legend("Person reporting:"))
 
 ```
 
@@ -418,9 +419,8 @@ data %>% filter(!is.na(s_lsas_tot) | !is.na(s_lsasad_tot)) %>% filter(Clinical_V
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data$s_lsas_tot <- coalesce(data$s_lsas_tot, data$s_lsasad_tot)
-data %>% filter(!is.na(s_lsas_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Date) %>% 
-  select(Clinical_Visit_Date4, Clinical_Visit_Number, s_lsas_tot) %>%
+data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Date) %>% 
+  select(Clinical_Visit_Date4, Clinical_Visit_Number, s_lsasad_tot) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```

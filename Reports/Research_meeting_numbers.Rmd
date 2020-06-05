@@ -996,7 +996,7 @@ Numbers as of last SDQ+ pull (`r Psychometrics_date`).
 eligible <- master_IRTA_latest %>% select(Initials, Clinical_Visit_Date, Participant_Type, IRTA_tracker, Eligible, Protocol) %>% 
   group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% fill(Participant_Type:Protocol, .direction = "down") %>% 
   slice(n()) %>% ungroup() %>% filter(str_detect(Protocol, "0037")) %>% filter(!str_detect(Protocol, "SCREENING")) %>% 
-  filter(IRTA_tracker != "REMOVED") %>% filter(Eligible != "4" & Eligible !="7" & Eligible !="3") %>% 
+  filter(IRTA_tracker != "REMOVED") %>% filter(Eligible != "4" & Eligible !="7" & Eligible !="3" & Eligible !="2") %>% 
   filter(!str_detect(Participant_Type, "Fox")) %>% select(Initials, IRTA_tracker)
 eligible <- Psychometrics_treatment %>% select(Initials, c_ksadsdx_primary_dx, c_ksadsdx_date) %>% group_by(Initials) %>% 
   arrange(Initials, c_ksadsdx_date) %>% slice(n()) %>% ungroup() %>% select(-c_ksadsdx_date) %>% left_join(eligible, ., all = TRUE)
