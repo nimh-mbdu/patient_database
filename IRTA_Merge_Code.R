@@ -561,7 +561,7 @@ MID_missing_combined[of_interest] <- lapply(MID_missing_combined[of_interest], n
 
 ##### list of MEG from QC tracker 
 
-MEG_tasks <- c("MEG_MMI", "Booster", "RL_GNG")
+MEG_tasks <- c("MEG_MMI", "Booster", "MEG_RL")
 
 for(i in seq_along(MEG_tasks)) {
   iter <- as.numeric(i)

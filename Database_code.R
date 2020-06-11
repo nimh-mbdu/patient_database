@@ -3686,6 +3686,7 @@ if (weekdays(as.Date(todays_date_formatted))=="Wednesday") {
   historical_check_all_combined <- historical_check_all_combined %>% select(-matches("reason_"))
   
   historical_check_all_combined %>% write_xlsx(paste0(database_location, "Backup/MASTER_DATABASE_BEHAVIOURAL_CHANGE_", todays_date_formatted, ".xlsx"))
+  rm(prev_behav_database, prev_db_combined, prev_db_file, prev_db_file_time, measure_name_date, measure_name_tot)
   
 } else {
   print("Historical task database change report not produced - only produced on Wednesdays")
@@ -3743,17 +3744,16 @@ rm(list=ls(pattern="na_names_"))
 rm(list=ls(pattern="parent_"))
 rm(list=ls(pattern="historical"))
 rm(list=ls(pattern="temp"))
-rm(tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, prev_db_file, prev_db_file_time, numeric_variables,
+rm(tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, numeric_variables,
    measure_name, panic_subscale, sep_subscale, social_subscale, gad_subscale, school_subscale, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d,
    fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report, fill_in,
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, date_variabes,
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, sdq_w_names, sdq_dates, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, task_DB, task_DB_date, 
    how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, sibling,
-   parent, child, p, c, q, incorrect, correct, dummy, file_save_check, task_sets, measure_name_date, measure_name_tot,
+   parent, child, p, c, q, incorrect, correct, dummy, file_save_check, task_sets, 
    file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent,
    ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, c_medsclin_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, c_medsclin_combined,
    not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task,
-   task_DB_date_before_covid, task_DB_date_since_covid, prev_behav_database, prev_db_combined, CBT_report_preint, 
-   mfq_change_s, mfq_change_p)
+   task_DB_date_before_covid, task_DB_date_since_covid, CBT_report_preint, mfq_change_s, mfq_change_p)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download) # SDQ_Data_dateadded_fixed, SDQ_Data_dateadded_missing, SDQ_Data_dateadded_uk, SDQ_Data_dateadded_usa

@@ -96,10 +96,16 @@ f_name <- paste(substring(f_name, 1, 1), tolower(substring(f_name, 2)), sep = ""
 l_name <- paste(substring(l_name, 1, 1), tolower(substring(l_name, 2)), sep = "", collapse = " ")
 
 # parent name
-p_f_name <- head(data$FIRST_NAME_P1,1,)
+# 1
+p_f_name <- head(data$FIRST_NAME_P1,1)
 p_l_name <- head(data$LAST_NAME_P1,1)
 p_f_name <- paste(substring(p_f_name, 1, 1), tolower(substring(p_f_name, 2)), sep = "", collapse = " ")
 p_l_name <- paste(substring(p_l_name, 1, 1), tolower(substring(p_l_name, 2)), sep = "", collapse = " ")
+# 2
+p_f_name2 <- head(data$FIRST_NAME_P2,1)
+p_l_name2 <- head(data$LAST_NAME_P2,1)
+p_f_name2 <- paste(substring(p_f_name2, 1, 1), tolower(substring(p_f_name2, 2)), sep = "", collapse = " ")
+p_l_name2 <- paste(substring(p_l_name2, 1, 1), tolower(substring(p_l_name2, 2)), sep = "", collapse = " ")
 
 # treatment related 
 start <- data %>% arrange(Clinical_Visit_Number) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
