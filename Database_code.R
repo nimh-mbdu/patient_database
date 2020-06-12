@@ -973,7 +973,8 @@
   diagnosis_subset_sdq[fix_var[14]] <- lapply(diagnosis_subset_sdq[fix_var[14]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
   diagnosis_subset_sdq[fix_var[15]] <- lapply(diagnosis_subset_sdq[fix_var[15]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
   diagnosis_subset_sdq[fix_var[16]] <- lapply(diagnosis_subset_sdq[fix_var[16]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
-  diagnosis_subset_sdq[fix_var[19]] <- lapply(diagnosis_subset_sdq[fix_var[19]], FUN = function(x) recode(x, "0"="face-to-face assessment", "1"="phone assessment", .missing = "face-to-face assessment"))
+  diagnosis_subset_sdq[fix_var[19]] <- lapply(diagnosis_subset_sdq[fix_var[19]], FUN = function(x) recode(x, "0"="face-to-face assessment", "1"="phone assessment", 
+    "2"="videoconference", .missing = "face-to-face assessment"))
   
   # fill_names <- diagnosis_subset_sdq %>% select(-Initials, -c_ksadsdx_date) %>% colnames()
   # diagnosis_subset_sdq <- diagnosis_subset_sdq %>% group_by(Initials, c_ksadsdx_date) %>% fill(., names(fill_names), .direction = c("down")) %>%

@@ -78,8 +78,8 @@ participant_identifiers_combined <- merge.default(master_IRTA_identifiers, maste
   merge.default(., master_old_screen_identifiers, all=TRUE)
 fill_names <- participant_identifiers_combined %>% select(-Initials) %>% colnames()
 participant_identifiers_combined <- participant_identifiers_combined %>% group_by(Initials) %>% 
-  fill(., names(fill_names), .direction = c("down")) %>% 
-  fill(., names(fill_names), .direction = c("up")) %>% 
+  fill(., fill_names, .direction = c("down")) %>% 
+  fill(., fill_names, .direction = c("up")) %>% 
   arrange(Initials, Source) %>% filter(1:n() == 1) %>% ungroup()
 
 # finish the split below
@@ -116,8 +116,8 @@ fill_names <- dawba_combined %>% select(-sid) %>% colnames()
 dawba_combined[fill_names] <- lapply(dawba_combined[fill_names], na_if, "")
 dawba_combined <- dawba_combined %>% 
   group_by(sid) %>%
-  fill(., names(fill_names), .direction = "down") %>%
-  fill(., names(fill_names), .direction = "up") %>%
+  fill(., fill_names, .direction = "down") %>%
+  fill(., fill_names, .direction = "up") %>%
   ungroup() %>%
   distinct(., .keep_all = TRUE)
 
@@ -279,8 +279,8 @@ all_bdd_combined <- merge.default(s_bdd_combined, p_bdd_combined, all=TRUE)
 fill_names <- all_bdd_combined %>% select(-DAWBA_ID) %>% colnames()
 all_bdd_combined[fill_names] <- lapply(all_bdd_combined[fill_names], na_if, "")
 all_bdd_combined <- all_bdd_combined %>% group_by(DAWBA_ID) %>% 
-  fill(., names(fill_names), .direction = "down") %>%
-  fill(., names(fill_names), .direction = "up") %>%
+  fill(., fill_names, .direction = "down") %>%
+  fill(., fill_names, .direction = "up") %>%
   distinct(., .keep_all = TRUE) %>% ungroup()
 
 dawba_w_names <- merge.default(dawba_w_names, all_bdd_combined, all=TRUE) 
@@ -288,8 +288,8 @@ fill_names <- dawba_w_names %>% select(-DAWBA_ID, -matches("date"), -matches("Da
 dawba_w_names[fill_names] <- lapply(dawba_w_names[fill_names], na_if, "")
 fill_names <- dawba_w_names %>% select(-DAWBA_ID) %>% colnames()
 dawba_w_names <- dawba_w_names %>% group_by(DAWBA_ID) %>% 
-  fill(., names(fill_names), .direction = "down") %>%
-  fill(., names(fill_names), .direction = "up") %>%
+  fill(., fill_names, .direction = "down") %>%
+  fill(., fill_names, .direction = "up") %>%
   arrange(DAWBA_ID, desc(dawba_logins)) %>% slice(1) %>% 
   ungroup()
 
