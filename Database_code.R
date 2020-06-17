@@ -131,14 +131,6 @@
   # setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name))
   
   CTDB_Data_Download$Overall_date <- as.Date(CTDB_Data_Download$Overall_date, tz="", "%Y-%m-%d")
-  
-  #****** Imputed data
-  
-  imported_imputed_mfqs <- read.csv(paste0(database_location, 'other_data_never_delete/IMPUTED_MFQ_NEVER_DELETE.csv')) %>% mutate(source = "IMPUTED")
-  imported_imputed_mfqs$s_mfq_date <- as.Date(imported_imputed_mfqs$s_mfq_date, tz="", "%m/%d/%y")
-  imported_imputed_mfqs$Overall_date <- imported_imputed_mfqs$s_mfq_date
-  
-  CTDB_Data_Download <- merge.default(CTDB_Data_Download, imported_imputed_mfqs, all=TRUE)
   CTDB_Data_Download <- CTDB_Data_Download %>% select(ctdb_columns$new_name) %>% arrange(FIRST_NAME, LAST_NAME, Overall_date) 
   
   # Fixing names of some participants
@@ -209,25 +201,35 @@
   manual_sets <- mget(manual_sets)
   manual_combined <- reduce(manual_sets, full_join)
   fill_names <- manual_combined %>% select(-Initials, -Overall_date) %>% colnames()
-  manual_combined <- manual_combined %>% 
-    group_by(Initials, Overall_date) %>% 
-    fill(., fill_names, .direction = "down") %>%
-    fill(., fill_names, .direction = "up") %>%
-    ungroup() %>% 
-    distinct(., .keep_all = TRUE)
+  manual_combined <- manual_combined %>% group_by(Initials, Overall_date) %>% 
+    fill(., fill_names, .direction = "down") %>% fill(., fill_names, .direction = "up") %>%
+    ungroup() %>% distinct(., .keep_all = TRUE) %>% mutate(source = "MANUAL")
   
   date_variables <- manual_combined %>% select(matches("_date")) %>% select(-Overall_date) %>% colnames()
   manual_combined$Overall_date <- as.Date(manual_combined$Overall_date)
   manual_combined[date_variables] <- lapply(manual_combined[date_variables], as.Date, "%d-%m-%Y")
+  
+  # Imputed MFQ data
+  
+  imported_imputed_mfqs <- read_excel(paste0(database_location, 'other_data_never_delete/IMPUTED_MFQ_NEVER_DELETE.xlsx')) %>% mutate(source = "IMPUTED") %>% 
+    select(-s_mfq_date, -p_mfq_date)
+  imported_imputed_mfqs$Overall_date <- as.Date(imported_imputed_mfqs$Overall_date)
+  manual_combined <- merge.default(manual_combined, imported_imputed_mfqs, all=TRUE)
+  
+  # Daily MFQ
   
   manual_daily_mfq <- read_excel(paste0(database_location, "other_data_never_delete/inpatient_daily_mfq_manual_entry_2020-03-03.xlsx")) %>% 
     mutate_all(as.character) %>% mutate(source = "MANUAL") 
   manual_daily_mfq$s_mfq1d_date <- as.Date(manual_daily_mfq$s_mfq1d_date)
   manual_daily_mfq$s_mfq1d_time <- as.ITime(manual_daily_mfq$s_mfq1d_time)
   
+  # DAWBA suicide manual entry 
+  
   manual_dawba_suicide <- read_excel(paste0(database_location, "other_data_never_delete/dawba_suicide_manual_entry_2020-03-16.xlsx")) %>% 
-    mutate_all(as.character) %>% rename(date_temp="s_suicide_date")
+    mutate_all(as.character) %>% rename(date_temp="s_suicide_date") %>% mutate(source = "MANUAL")
   manual_dawba_suicide$date_temp <- as.Date(manual_dawba_suicide$date_temp)
+  
+  # Tic disorder measure
 
   manual_ygtss <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "YGTSS Tics", skip=2) %>% 
     select(-starts_with("x"), -Entry_date) %>% rename(c_ygtss_date = "Measure_date") %>% mutate_all(as.character) %>% mutate(c_ygtss_source = "MANUAL") 
@@ -306,11 +308,11 @@
   
   #****** 
   
-  manual_db_w_names <- left_join(common_identifiers_child, manual_combined, all=TRUE) %>% 
-    mutate(source = "MANUAL") %>% filter(!is.na(Overall_date))
+  manual_db_w_names <- merge.default(common_identifiers_child, manual_combined, all=TRUE) %>% group_by(Initials) %>% 
+    fill(., PLUSID, SDAN, FIRST_NAME, LAST_NAME, .direction = "down") %>% fill(., PLUSID, SDAN, FIRST_NAME, LAST_NAME, .direction = "up") %>% 
+    ungroup() %>% filter(!is.na(Overall_date))
   
-  manual_suicide_w_names <- left_join(common_identifiers_child, manual_dawba_suicide, all=TRUE) %>% 
-    mutate(source = "MANUAL") %>% filter(!is.na(date_temp))
+  manual_suicide_w_names <- left_join(common_identifiers_child, manual_dawba_suicide, all=TRUE) %>% filter(!is.na(date_temp))
   
   #******   
   
@@ -390,7 +392,7 @@
     } else if (measure_name=="p_ari6m_") {measure_temp_sdq <- measure_temp_sdq %>% mutate(temptotal=(temptotal-p_ari6m_7_impairment))
     } else {measure_temp_sdq <- measure_temp_sdq}  
     
-    measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% complete.cases(.)
+    measure_temp_sdq$tempcomplete <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(-matches("_parent")) %>% complete.cases(.)
     measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="FALSE"] <- "0"
     measure_temp_sdq$tempcomplete[measure_temp_sdq$tempcomplete=="TRUE"] <- "1"
 
@@ -3375,7 +3377,7 @@ if (file_save_check_combined$date_diff[1]==0) {
   s_mfq1d_final %>% write_xlsx(paste0(inpatient_location,"MASTER_DATABASE_daily_MFQ_updated.xlsx"))
 }
 
-#### CRISIS sub-dataset for IRTAs
+#### CRISIS sub-dataset 
 fill_names <- c("SDAN", "PLUSID", "Participant_Type2", "IRTA_tracker", "c_ksadsdx_primary_dx", "c_ksadsdx_dx_detailed")
 measures_expected <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "easures")) %>% filter(Task_Date > "2020-03-17") %>% 
   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, Task_Name, Task_Date) %>% mutate(Review_status = 0)
@@ -3506,9 +3508,11 @@ prev_crisis_file_time <- file.mtime(paste0(database_location, "COVID19/", prev_c
 prev_crisis_combined <- tibble(File=c(prev_crisis_file), Date=c(prev_crisis_file_time))
 prev_crisis_combined$date_diff <- as.numeric(difftime(todays_date_formatted, prev_crisis_combined$Date, tz="", units = "days"))
 prev_crisis_combined <- prev_crisis_combined %>% arrange(date_diff) %>% filter(date_diff>0) %>% slice(1)
-prev_crisis_database <- read_excel(paste0(database_location, "COVID19/", prev_crisis_combined[1])) %>% mutate(source1="OLD")
-hist_check <- measures_dataset_tminus2_long %>% mutate(source2="NEW") %>% merge.default(., prev_crisis_database, all=TRUE) %>% 
-  filter(is.na(source1) | is.na(source2)) %>% filter(!is.na(source2)) %>% select(Initials, Clinical_Visit_Date) %>% distinct(., .keep_all = TRUE) %>% mutate(New_info="Yes")
+prev_crisis_database <- read_excel(paste0(database_location, "COVID19/", prev_crisis_combined[1])) %>% 
+  select(Initials, Clinical_Visit_Date, matches("_tot"), matches("_date"), -Task_Date) %>% mutate(source1="OLD")
+hist_check <- measures_dataset_tminus2_long %>% select(Initials, Clinical_Visit_Date, matches("_tot"), matches("_date"), -Task_Date) %>% 
+  mutate(source2="NEW") %>% merge.default(., prev_crisis_database, all=TRUE) %>% filter(is.na(source1) | is.na(source2)) %>% 
+  filter(!is.na(source2)) %>% select(Initials, Clinical_Visit_Date) %>% distinct(., .keep_all = TRUE) %>% mutate(New_info="Yes")
 measures_dataset_tminus2_long <- left_join(measures_dataset_tminus2_long, hist_check)
 
 # final reorder
