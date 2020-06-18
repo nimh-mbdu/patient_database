@@ -53,6 +53,8 @@ for(u in seq_along(current_IRTAs_full)) {
   
 }
 
+# Jerry's tracker here 
+# string-mbd/Jerry's Folder/JM_Patient_List.xlsx
 # temp_current_screens <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/REMOVED_Patient_List.xlsx"), sheet = "Current_Screens") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
 rm(temp_current_screens)
 

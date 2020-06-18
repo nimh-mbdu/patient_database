@@ -188,7 +188,7 @@ if (Clinician=="Kathryn") {
 
 ***
 
-#### Treatment Summary: Behavioral Activation for Adolescent Depression
+#### Treatment Summary: Cognitive Behavioral Therapy for Adolescent Depression
 
 ##### DATE: `r todays_date`
 
@@ -202,7 +202,7 @@ Dear `r provider`,
 
 Your patient, `r f_name` `r l_name` (DOB: `r datebirth`), has completed a `r weeks_treat`-week course of manualized, evidence-based cognitive behavioral therapy in our outpatient mental health study. The study is being conducted by the Mood, Brain and Development Unit at the National Institute of Mental Health (NIMH).  This letter is the summary of your patient’s course of treatment and treatment response in this program.
 
-Treatment Summary: Between `r start` and `r end`, `r f_name` completed `r weeks_treat` sessions of Behavioral Activation, which included weekly individual patient sessions, parent coaching sessions, and between-session assignments (“homework”). The goal of the program is to help the adolescent stop the cycle of depression by identifying triggers related to sad feelings or loss of motivation, learn skills and strategies to overcome depression, and set goals to make life more fulfilling through guided activity. Additionally, parents learn new ways to communicate and support the adolescent. 
+Treatment Summary: Between `r start` and `r end`, `r f_name` completed `r weeks_treat` sessions of CBT, which included weekly individual patient sessions, parent coaching sessions, and between-session assignments (“homework”). The goal of the program is to help the adolescent stop the cycle of depression by identifying triggers related to sad feelings or loss of motivation, learn skills and strategies to overcome depression, and set goals to make life more fulfilling through guided activity. Additionally, parents learn new ways to communicate and support the adolescent. 
 
 Please see below for a summary of `r f_name`’s diagnoses, medications, clinical impressions and weekly self-report scores through treatment. 
 
@@ -241,9 +241,8 @@ National Institutes of Health (NIH),
 Bethesda, MD  
 Tel: `r clinician_contact`  
 
-Kathryn DeLonga, Psy.D,
-Licensed Clinical Psychologist, 
-Director of Psychological Treatment,
+Chana Engel, CRNP,
+Outpatient Treatment Coordinator,
 Mood Brain & Development Unit, NIH
 
 Kenneth E. Towbin, MD,
@@ -448,7 +447,7 @@ data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>%
   geom_text(aes(label=value), hjust=0, vjust=-1) +
   labs(title="Depression symptoms\n", x="\nCBT Visit Number", y="CDRS Total\n") + 
   ylim(0,125) + 
-  scale_shape_manual(labels = c("Consensus"), values=c(5)) +
+  scale_shape_manual(labels = c("Clinician"), values=c(5)) +
   scale_x_continuous(breaks=seq(0, nrow(data), 1)) +
   theme_minimal() +
   guides(shape=guide_legend("Person reporting:"))

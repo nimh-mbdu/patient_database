@@ -108,9 +108,9 @@ p_f_name2 <- paste(substring(p_f_name2, 1, 1), tolower(substring(p_f_name2, 2)),
 p_l_name2 <- paste(substring(p_l_name2, 1, 1), tolower(substring(p_l_name2, 2)), sep = "", collapse = " ")
 
 # treatment related 
-start <- data %>% arrange(Clinical_Visit_Number) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
-end <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
-weeks_treat  <- data %>% arrange(Clinical_Visit_Number) %>% slice(n()) %>% select(Clinical_Visit_Number) %>% pull()
+start <- data %>% arrange(Clinical_Visit_Date) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
+end <- data %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
+weeks_treat  <- data %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Clinical_Visit_Number) %>% pull()
 
 provider <- head(data$Primary_clinician,1)
 # provider <- c("INSERT COMMUNITY PROVIDER")
@@ -189,7 +189,7 @@ if (Clinician=="Kathryn") {
 
 ***
 
-#### Treatment Summary: Behavioral Activation for Adolescent Depression
+#### Treatment Summary: Cognitive Behavioral Therapy for Adolescent Depression
 
 ##### DATE: `r todays_date`
 
@@ -208,7 +208,7 @@ Finished: `r end`
 
 Dear `r f_name`,  
 
-Congratulations on successfully completing the `r weeks_treat`-session course of Behavioral Activation with the Mood Brain & Development Unit at the National Institute of Mental Health! Through your hard work and effort you have helped to advance the brain science that will help other teenagers in the future. Thank you!  
+Congratulations on successfully completing the `r weeks_treat`-session course of Cognitive Behavioral Therapy (CBT) with the Mood Brain & Development Unit at the National Institute of Mental Health! Through your hard work and effort you have helped to advance the brain science that will help other teenagers in the future. Thank you!  
 
 During these weeks you have also practiced new skills and worked hard to make some important changes. You have learned how to identify and talk about your feelings and to communicate your needs and reach out for support. You have identified behaviors that lead to a downward/depressive spiral and alternative behaviors that help to improve your mood in both the short and long term, including:  
 
@@ -227,49 +227,5 @@ National Institute of Mental Health,
 National Institutes of Health,  
 Bethesda, MD  
 Tel: `r clinician_contact`  
-
-***
-
-#### Some useful tools to practice: 
-
-***
-
-![](`r paste0(CBT_location, "images/BAstrategy1.png")`)
-
-
-***
-
-
-![](`r paste0(CBT_location, "images/BAstrategy2.png")`)
-
-
-***
-
-
-![](`r paste0(CBT_location, "images/BAstrategy3.png")`)
-
-
-***
-
-
-![](`r paste0(CBT_location, "images/BAstrategy4.png")`)
-
-
-***
-
-
-![](`r paste0(CBT_location, "images/BAstrategy5.png")`)
-
-
-***
-
-
-![](`r paste0(CBT_location, "images/BAstrategy6.png")`)
-
-
-***
-
-
-![](`r paste0(CBT_location, "images/BAstrategy7.png")`)
 
 

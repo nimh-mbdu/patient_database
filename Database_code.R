@@ -2788,7 +2788,7 @@
   
 # Measures where no scoring is necessary ----------------------------------
   
-  variables_no_scoring <- c('c_family_hist_', 'p_demo_eval_', 'p_demo_screen_', 'c_blood_', 's_menstruation_', 
+  variables_no_scoring <- c('c_family_hist_', 'p_demo_screen_background_', 'p_demo_screen_', 'c_blood_', 's_menstruation_', 
                             's_middebrief_', 's_mar_', 's_rsdebrief_', 's_mmidebrief_', 's_medsscan_', 's_after_ba_', 
                             's_before_ba_', 's_srsors_', 'c_inpatient_ratings_', 'c_cgas_', 'c_cgi_', 's_fua_', 'p_fua_', 
                             'ksads_', 'p_dawba_bdd_', 's_dawba_bdd_', 's_medsctdb_', 'c_family_interview_', 's_suicide_')
@@ -2808,13 +2808,18 @@
         distinct(., .keep_all = TRUE)
       measure_temp <- merge.default(measure_temp, common_identifiers_child_sib, all=TRUE) %>% 
         select(PLUSID, Initials, Sibling_Init, source, matches(measure_name))
+    } else if (measure_name=="p_demo_screen_") {
+      measure_temp <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
+        select(-matches('p_demo_screen_background_'))
+        filter(!is.na(Overall_date)) %>% 
+        distinct(., .keep_all = TRUE)
     } else {
       measure_temp <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
         filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
     }
 
-    if (measure_name=="p_demo_eval_" | measure_name=="s_menstruation_" | measure_name=="s_middebrief_" | measure_name=="s_mar_" |
+    if (measure_name=="p_demo_screen_background_" | measure_name=="s_menstruation_" | measure_name=="s_middebrief_" | measure_name=="s_mar_" |
         measure_name=="s_fua_" | measure_name=="p_fua_" | measure_name=="s_suicide_") {
       print("creating date variable for measure")
       measure_temp$date_temp <- measure_temp$Overall_date
@@ -2882,10 +2887,10 @@
       measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
     }  
       
-    if (measure_name=="p_demo_eval_"){
-      measure_temp$p_demo_eval_6_race <- gsub("while", "white", measure_temp$p_demo_eval_6_race)
+    if (measure_name=="p_demo_screen_background_"){
+      measure_temp$p_demo_screen_background_6_race <- gsub("while", "white", measure_temp$p_demo_screen_background_6_race)
       measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
-        rename(date_temp="Overall_date") %>% filter(!is.na(p_demo_eval_6_race) | !is.na(p_demo_eval_7_hispanic))
+        rename(date_temp="Overall_date") %>% filter(!is.na(p_demo_screen_background_6_race) | !is.na(p_demo_screen_background_7_hispanic))
       measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
     } else if (measure_name=="s_suicide_"){
       measure_temp <- merge.default(measure_temp, manual_suicide_w_names, all=TRUE) %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
@@ -2931,13 +2936,13 @@
         select(PLUSID, Initials, date_temp, source, matches(measure_name), tempcomplete)
     }
     
-    if (measure_name=="p_demo_eval_"){
+    if (measure_name=="p_demo_screen_background_"){
       fill_names <- measure_temp %>% select(-Initials) %>% colnames()
       measure_temp <- measure_temp %>% group_by(Initials) %>% arrange(Initials, desc(source)) %>%
         fill(., fill_names, .direction = "down") %>% fill(., fill_names, .direction = "up") %>% slice(1) %>% ungroup()
     }
     
-    if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_interview_" | measure_name=="ksads_") {
+    if (measure_name=="p_demo_screen_background_" | measure_name=="p_demo_screen_" | measure_name=="c_family_interview_" | measure_name=="ksads_") {
       
       measure_name2 <- gsub("_", "", measure_name, fixed=TRUE)
       na_names_temp <- measure_temp %>% select(matches(measure_name)) %>% select(-matches("_date")) %>% colnames()
@@ -2983,7 +2988,7 @@
       names(measure_temp_task)[names(measure_temp_task) == "measure_temp_source"] <- (paste0(measure_name, "source"))
       assign(paste0(measure_name, "subset_task"), measure_temp_task)
       
-    } else if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
+    } else if (measure_name=="p_demo_screen_background_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
                measure_name=="ksads_") {
       
       print("creating tasks subset")
@@ -3085,7 +3090,7 @@
       names(measure_temp_clinical)[names(measure_temp_clinical) == "measure_temp_source"] <- (paste0(measure_name, "source"))
       assign(paste0(measure_name, "subset_clinical"), measure_temp_clinical)
       
-    } else if (measure_name=="p_demo_eval_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
+    } else if (measure_name=="p_demo_screen_background_" | measure_name=="p_demo_screen_" | measure_name=="c_family_hist_" |
       measure_name=="ksads_" | measure_name=="c_family_interview_") {
       
       print("creating clinical subset")
@@ -3173,7 +3178,7 @@ Psychometrics_treatment <- Psychometrics_treatment %>%
   fill(., fill_names, .direction = "up") %>%
   ungroup() %>%
   group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
-  fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
+  fill(., matches("p_demo_screen_background_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
        matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
   ungroup() %>% 
   distinct(., .keep_all = TRUE)
@@ -3567,7 +3572,7 @@ Psychometrics_behav <- Psychometrics_behav %>%
   fill(., fill_names, .direction = c("up")) %>%
   ungroup() %>%
   group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
-  fill(., matches("p_demo_eval_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
+  fill(., matches("p_demo_screen_background_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
        matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
   ungroup() %>%
   distinct(., .keep_all = TRUE)
