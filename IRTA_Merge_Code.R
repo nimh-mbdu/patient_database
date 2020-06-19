@@ -54,7 +54,9 @@ for(u in seq_along(current_IRTAs_full)) {
 }
 
 # Jerry's tracker here 
-# string-mbd/Jerry's Folder/JM_Patient_List.xlsx
+JM_current_screens <- read_excel(paste0(string, "/Jerry's Folder/JM_Patient_List.xlsx"), sheet = "Current_Screens") %>% 
+  mutate_all(as.character) %>% mutate(IRTA_tracker="JM")
+
 # temp_current_screens <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/REMOVED_Patient_List.xlsx"), sheet = "Current_Screens") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
 rm(temp_current_screens)
 
@@ -79,6 +81,10 @@ for(o in seq_along(current_IRTAs_full)) {
 }
 
 temp_old_screens <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/REMOVED_Patient_List.xlsx"), sheet = "Unsuccessful_Screens") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
+
+# Jerry's tracker here 
+JM_old_screens <- read_excel(paste0(string, "/Jerry's Folder/JM_Patient_List.xlsx"), sheet = "Unsuccessful_Screens") %>% 
+  mutate_all(as.character) %>% mutate(IRTA_tracker="JM")
 
 # merge & tidy up
 irta_old_screen_sets <- ls(pattern="_old_screens")

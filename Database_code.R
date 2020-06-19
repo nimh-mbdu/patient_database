@@ -2810,8 +2810,7 @@
         select(PLUSID, Initials, Sibling_Init, source, matches(measure_name))
     } else if (measure_name=="p_demo_screen_") {
       measure_temp <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
-        select(-matches('p_demo_screen_background_'))
-        filter(!is.na(Overall_date)) %>% 
+        select(-matches('p_demo_screen_background_')) %>% filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
     } else {
       measure_temp <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
@@ -2888,9 +2887,9 @@
     }  
       
     if (measure_name=="p_demo_screen_background_"){
-      measure_temp$p_demo_screen_background_6_race <- gsub("while", "white", measure_temp$p_demo_screen_background_6_race)
+      measure_temp$p_demo_screen_background_race <- gsub("while", "white", measure_temp$p_demo_screen_background_race)
       measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
-        rename(date_temp="Overall_date") %>% filter(!is.na(p_demo_screen_background_6_race) | !is.na(p_demo_screen_background_7_hispanic))
+        rename(date_temp="Overall_date") %>% filter(!is.na(p_demo_screen_background_race) | !is.na(p_demo_screen_background_hispanic))
       measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
     } else if (measure_name=="s_suicide_"){
       measure_temp <- merge.default(measure_temp, manual_suicide_w_names, all=TRUE) %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
@@ -3184,7 +3183,7 @@ Psychometrics_treatment <- Psychometrics_treatment %>%
   distinct(., .keep_all = TRUE)
 
 na_names_combined <- c(na_names_dx, na_names_iq, na_names_tanner, na_names_handedness, na_names_cfamilyinterview,
-                       na_names_pdemoeval, na_names_pdemoscreen, na_names_ksads)
+                       na_names_pdemoscreenbackground, na_names_pdemoscreen, na_names_ksads)
 Psychometrics_treatment[na_names_combined] <- lapply(Psychometrics_treatment[na_names_combined], na_if, "999")
 
 ############# CBT subset
@@ -3578,7 +3577,7 @@ Psychometrics_behav <- Psychometrics_behav %>%
   distinct(., .keep_all = TRUE)
 
 na_names_combined <- c(na_names_dx, na_names_iq, na_names_tanner, na_names_handedness,
-                       na_names_pdemoeval, na_names_pdemoscreen, na_names_ksads)
+                       na_names_pdemoscreenbackground, na_names_pdemoscreen, na_names_ksads)
 Psychometrics_behav[na_names_combined] <- lapply(Psychometrics_behav[na_names_combined], na_if, "999")
 
 # exporting
