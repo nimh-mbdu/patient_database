@@ -211,10 +211,25 @@
   
   # Imputed MFQ data
   
-  imported_imputed_mfqs <- read_excel(paste0(database_location, 'other_data_never_delete/IMPUTED_MFQ_NEVER_DELETE.xlsx')) %>% mutate(source = "IMPUTED") %>% 
-    select(-s_mfq_date, -p_mfq_date)
+  imported_imputed_mfqs <- read_excel(paste0(database_location, 'other_data_never_delete/imputed_mfq_06172020.xlsx')) %>% 
+    mutate(source = "IMPUTED") %>% select(-s_mfq_date, -p_mfq_date)
+  imported_imputed_scareds <- read_excel(paste0(database_location, 'other_data_never_delete/imputed_scared_07022020.xlsx')) %>% 
+    mutate(source = "IMPUTED") %>% select(-s_scared_date, -p_scared_date, -s_scared_source, -p_scared_source)
+  imported_imputed_aris <- read_excel(paste0(database_location, 'other_data_never_delete/imputed_ari_07022020.xlsx')) %>% 
+    mutate(source = "IMPUTED") %>% select(-s_ari1w_date, -p_ari1w_date, -s_ari1w_source, -p_ari1w_source)
+  imported_imputed_shaps <- read_excel(paste0(database_location, 'other_data_never_delete/imputed_shaps_07022020.xlsx')) %>% 
+    mutate(source = "IMPUTED") %>% select(-s_shaps_date, -s_shaps_source)
+  imported_imputed_lsas <- read_excel(paste0(database_location, 'other_data_never_delete/imputed_lsas_07022020.xlsx')) %>% 
+    mutate(source = "IMPUTED") %>% select(-s_lsas_date, -s_lsas_source)
+  
   imported_imputed_mfqs$Overall_date <- as.Date(imported_imputed_mfqs$Overall_date)
-  manual_combined <- merge.default(manual_combined, imported_imputed_mfqs, all=TRUE)
+  imported_imputed_scareds$Overall_date <- as.Date(imported_imputed_scareds$Overall_date)
+  imported_imputed_aris$Overall_date <- as.Date(imported_imputed_aris$Overall_date)
+  imported_imputed_shaps$Overall_date <- as.Date(imported_imputed_shaps$Overall_date)
+  imported_imputed_lsas$Overall_date <- as.Date(imported_imputed_lsas$Overall_date)
+  
+  manual_combined <- merge.default(manual_combined, imported_imputed_mfqs, all=TRUE) %>% merge.default(., imported_imputed_scareds, all=TRUE) %>% 
+    merge.default(., imported_imputed_aris, all=TRUE) %>% merge.default(., imported_imputed_shaps, all=TRUE) %>% merge.default(., imported_imputed_lsas, all=TRUE)
   
   # Daily MFQ
   

@@ -12,7 +12,7 @@ if (computer=="pc") {
   sdan1 = 'Y:/'
 } else if (computer=="mac") {
   string = '/Volumes/string-mbd/'
-  sdan1 = '/Volumes/sdan1/'
+  sdan1 = '/Volumes/SDAN1/'
 } else { # if using a PC and your drives aren't mounted as specified above, enter what letter your drives are mounted under here... 
   string = 'W:/'
   sdan1 = 'Y:/'
