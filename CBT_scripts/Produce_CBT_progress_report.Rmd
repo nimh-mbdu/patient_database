@@ -145,12 +145,12 @@ if (head(data$SEX,1)=="FEMALE") {
 
 # Setting Clinician ------------------------------------------------------------
 
-if (Clinician=="Kathryn") {
-  treating_clinician = "Kathryn DeLonga"
-  clinician_cred = "Psy.D"
-  clinician_position = "Licensed Clinical Psychologist, Director of Psychological Treatment"
+if (Clinician=="Brenda") {
+  treating_clinician = "Brenda Richesson"
+  clinician_cred = "LCSW-C"
+  clinician_position = "Treating Clinician"
   clinician_location = "Mood Brain & Development Unit"
-  clinician_contact = "301-827-1168"
+  clinician_contact = "301-204-9673"
 } else if (Clinician=="Ken") {
   treating_clinician = "Kenneth E. Towbin"
   clinician_cred = "MD"
@@ -291,7 +291,7 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_mfq1w_tot, p_mfq1w_tot, p_mfq1w_parent) %>%
   mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_mfq1w_tot = replace_na(p_mfq1w_tot, " ")) %>% 
-  mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% 
+  mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
@@ -337,7 +337,8 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_scared_tot, p_scared_tot, p_scared_parent) %>%
-  mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_scared_tot = replace_na(p_scared_tot, " ")) %>% mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>%
+  mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_scared_tot = replace_na(p_scared_tot, " ")) %>% 
+  mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
@@ -383,6 +384,7 @@ data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %
 
 data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%  arrange(Clinical_Visit_Date) %>% 
   select(Clinical_Visit_Date4, Clinical_Visit_Number, s_shaps_tot) %>%
+  mutate(s_shaps_tot = replace_na(s_shaps_tot, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```
@@ -428,7 +430,8 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 
 data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_ari1w_tot, p_ari1w_tot, p_ari1w_parent) %>%
-  mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_ari1w_tot = replace_na(p_ari1w_tot, " ")) %>% mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>%
+  mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_ari1w_tot = replace_na(p_ari1w_tot, " ")) %>% 
+  mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
@@ -475,6 +478,7 @@ data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %
 
 data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Date) %>% 
   select(Clinical_Visit_Date4, Clinical_Visit_Number, s_lsasad_tot) %>%
+  mutate(s_lsasad_tot = replace_na(s_lsasad_tot, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```

@@ -107,8 +107,8 @@ p_f_name2 <- paste(substring(p_f_name2, 1, 1), tolower(substring(p_f_name2, 2)),
 p_l_name2 <- paste(substring(p_l_name2, 1, 1), tolower(substring(p_l_name2, 2)), sep = "", collapse = " ")
 
 # treatment related 
-start <- data %>% arrange(Clinical_Visit_Date) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
-end <- data %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d")
+start <- data %>% arrange(Clinical_Visit_Date) %>% slice(1) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d-%Y")
+end <- data %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Clinical_Visit_Date) %>% pull() %>% as.Date() %>% format(., "%B-%d-%Y")
 weeks_treat  <- data %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Clinical_Visit_Number) %>% pull()
 
 provider <- head(data$Primary_clinician,1)
@@ -140,16 +140,20 @@ comorbid3 <- paste(comorbid2, collapse=', ')
 
 if (head(data$SEX,1)=="FEMALE") {
   pronoun <- c("her")
-} else {pronoun <- c("his")}
+  pronoun2 <- c("her")
+} else {
+  pronoun <- c("his")
+  pronoun2 <- c("him")
+  }
 
 # Setting Clinician ------------------------------------------------------------
 
-if (Clinician=="Kathryn") {
-  treating_clinician = "Kathryn DeLonga"
-  clinician_cred = "Psy.D"
-  clinician_position = "Licensed Clinical Psychologist, Director of Psychological Treatment"
+if (Clinician=="Brenda") {
+  treating_clinician = "Brenda Richesson"
+  clinician_cred = "LCSW-C"
+  clinician_position = "Treating Clinician"
   clinician_location = "Mood Brain & Development Unit"
-  clinician_contact = "301-827-1168"
+  clinician_contact = "301-204-9673"
 } else if (Clinician=="Ken") {
   treating_clinician = "Kenneth E. Towbin"
   clinician_cred = "MD"
@@ -194,15 +198,17 @@ if (Clinician=="Kathryn") {
 
 ***
 
-**Regarding patient:** `r f_name` `r l_name`; `r age` year old `r gender`. 
+**Regarding patient:** `r f_name` `r l_name`. 
 
 ***
 
 Dear `r provider`,  
 
-Your patient, `r f_name` `r l_name` (DOB: `r datebirth`), has completed a `r weeks_treat`-week course of manualized, evidence-based cognitive behavioral therapy in our outpatient mental health study. The study is being conducted by the Mood, Brain and Development Unit at the National Institute of Mental Health (NIMH).  This letter is the summary of your patient’s course of treatment and treatment response in this program.
+This letter summarizes `r f_name` `r l_name`'s (DOB: `r datebirth`) course of treatment response in our outpatient treatment program. `r f_name` completed a `r weeks_treat`-week course of manualized, evidence-based outpatient cognitive behavioral therapy which was part of a study conducted by the Mood, Brain and Development Unit at the National Institute of Mental Health (NIMH). 
 
-Treatment Summary: Between `r start` and `r end`, `r f_name` completed `r weeks_treat` sessions of CBT, which included weekly individual patient sessions, parent coaching sessions, and between-session assignments (“homework”). The goal of the program is to help the adolescent stop the cycle of depression by identifying triggers related to sad feelings or loss of motivation, learn skills and strategies to overcome depression, and set goals to make life more fulfilling through guided activity. Additionally, parents learn new ways to communicate and support the adolescent. 
+Treatment Summary: 
+
+Between `r start` and `r end`, `r f_name` completed `r weeks_treat` sessions of CBT, which included weekly individual patient sessions, parent coaching sessions, and between-session assignments (“homework”). We used a manualized modular approach (MATCH-ADTC) for our treatment. The goal of the program is to help the adolescent stop the cycle of depression by identifying triggers related to sad feelings or loss of motivation, learn skills and strategies to overcome depression, and set goals to make life more fulfilling through guided activity. This modular approach also allows for flexibility to address anxiety when it is comorbid with depression. `r f_name` worked to create a hierarchy of anxiety-provoking situations, and systematically worked on exposures to these situations with a goal of reduction in anxiety symptoms over time. Additionally, `r f_name`’s parents learned new ways to communicate with and support `r pronoun2`.
 
 Please see below for a summary of `r f_name`’s diagnoses, medications, clinical impressions and weekly self-report scores through treatment. 
 
@@ -217,6 +223,14 @@ Please see below for a summary of `r f_name`’s diagnoses, medications, clinica
 **Medical:** 
 
 *INSERT*
+
+**Impressions:**
+
+Sessions were conducted via video-conference, in accordance with the guidance regarding novel coronavirus-19 for patient care at the NIH. 
+
+Over the course of his treatment, Leo and his parents, `r p_f_name` `r p_l_name` and `r p_f_name2` `r p_l_name2`, ...*INSERT*
+
+At the end of treatment, `r f_name` and `pronoun` parents reported that he had more ability to ...*INSERT*
 
 Recommendations: 
 
@@ -257,13 +271,13 @@ CC': `r p_f_name` `r p_l_name` & `r p_f_name2` `r p_l_name2`; parents.
 
 ***
 
-#### Patient self-report score summary
+**Patient self-report score summary** 
 
 During `r pronoun` treatment, we monitored `r f_name`'s symptoms through weekly self-report questionnaires, each summarized below. 
 
 *** 
 
-##### Depressive symptoms
+*Depressive symptoms*
 
 MFQ (Mood & Feelings Questionnaire): 13 items rated 0-2, clinical cutoff score = 12.
 
@@ -290,14 +304,15 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 
 data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_mfq1w_tot, p_mfq1w_tot, p_mfq1w_parent) %>%
-  mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_mfq1w_tot = replace_na(p_mfq1w_tot, " ")) %>% mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% 
+  mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_mfq1w_tot = replace_na(p_mfq1w_tot, " ")) %>% 
+  mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
 
 ***
 
-##### General anxiety symptoms 
+*General anxiety symptoms*
 
 SCARED (Self-Report for Anxiety Related Emotional Disorders): 41 items rated 0-2, clinical cutoff = 25.
 
@@ -324,14 +339,15 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 
 data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_scared_tot, p_scared_tot, p_scared_parent) %>%
-  mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_scared_tot = replace_na(p_scared_tot, " ")) %>% mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>%
+  mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_scared_tot = replace_na(p_scared_tot, " ")) %>% 
+  mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
 
 ***
 
-##### Anhedonia symptoms 
+*Anhedonia symptoms*
 
 SHAPS (Snaith-Hamilton Pleasure Scale): 14 items rated 0-3, higher scores reflecting less pleasure.
 
@@ -358,13 +374,14 @@ data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %
 
 data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%  arrange(Clinical_Visit_Date) %>% 
   select(Clinical_Visit_Date4, Clinical_Visit_Number, s_shaps_tot) %>%
+  mutate(s_shaps_tot = replace_na(s_shaps_tot, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```
 
 ***
 
-##### Irritability symptoms 
+*Irritability symptoms* 
 
 ARI (Affective Reactivity Index): 7 items rated 0-2, clinical cutoff = 2.
 
@@ -391,14 +408,15 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 
 data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_ari1w_tot, p_ari1w_tot, p_ari1w_parent) %>%
-  mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_ari1w_tot = replace_na(p_ari1w_tot, " ")) %>% mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>%
+  mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_ari1w_tot = replace_na(p_ari1w_tot, " ")) %>% 
+  mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
 
 ***
 
-##### Social anxiety symptoms 
+*Social anxiety symptoms*
 
 LSAS (Liebowitz Social Anxiety Scale): 24 items rated 0-3, clinical cutoff = 30.
 
@@ -426,15 +444,14 @@ data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %
 
 data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Date) %>% 
   select(Clinical_Visit_Date4, Clinical_Visit_Number, s_lsasad_tot) %>%
+  mutate(s_lsasad_tot = replace_na(s_lsasad_tot, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```
 
 ***
 
-#### Clinician-administered measure of depression:
-
-##### Parent and child consensus on depression symptoms 
+*Clinician-administered measure of depression:*
 
 CDRS (Children’s Depression Rating Scale): 20 items. This is a semi-structured interview of youth depression that is scored by clinician consensus between parent and child’s independent responses. A raw score of 40 or greater is an indicator of depressive symptomatology.
 
@@ -459,6 +476,7 @@ data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>%
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(c_cdrs_tot)) %>% arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, c_cdrs_tot) %>% 
+  mutate(c_cdrs_tot = replace_na(c_cdrs_tot, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Clinician reporting on child"))
 
 ```

@@ -145,12 +145,12 @@ if (head(data$SEX,1)=="FEMALE") {
 
 # Setting Clinician ------------------------------------------------------------
 
-if (Clinician=="Kathryn") {
-  treating_clinician = "Kathryn DeLonga"
-  clinician_cred = "Psy.D"
-  clinician_position = "Licensed Clinical Psychologist, Director of Psychological Treatment"
+if (Clinician=="Brenda") {
+  treating_clinician = "Brenda Richesson"
+  clinician_cred = "LCSW-C"
+  clinician_position = "Treating Clinician"
   clinician_location = "Mood Brain & Development Unit"
-  clinician_contact = "301-827-1168"
+  clinician_contact = "301-204-9673"
 } else if (Clinician=="Ken") {
   treating_clinician = "Kenneth E. Towbin"
   clinician_cred = "MD"
