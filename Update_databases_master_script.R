@@ -95,9 +95,11 @@ max_MMI <- c(to_change$max_MMI)
 max_MEG <- c(to_change$max_MEG)
 
 # crisis recruitment related
-child_contacted <- c(to_change$child_contacted)
-parent_contacted <- c(to_change$parent_contacted)
-parent_agreed <- c(to_change$parent_agreed)
+# child_contacted <- c(to_change$child_contacted)
+# parent_contacted <- c(to_change$parent_contacted)
+# parent_agreed <- c(to_change$parent_agreed)
+child_agreed <- 166
+parent_agreed <- 126
 
 # database related - update with names of latest pulls (without file extension)
 latest_ctdb_pull <- c(to_change$latest_ctdb_pull)
