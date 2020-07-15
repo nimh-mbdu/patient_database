@@ -460,6 +460,31 @@ screens_current_table %>% arrange(Participant_Type2) %>% filter(time==1 & Partic
 
 ***
 
+##### Current screens already in our screening database:
+
+Check `r paste0(IRTA_tracker_location,"QCing/Screens_already_in_DB_", todays_date_formatted, ".xlsx")` for full details of duplicate participants. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+suppressWarnings(source(paste0(scripts, 'Reports/check_referrals.R')))
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+if (nrow(all_repeats)=="0") {
+  all_repeats <- rbind(all_repeats, tibble(Initials=c("No current screens found in old screening database"), 
+    IRTA_tracker=c(NA), IRTA_screen=c(NA)))
+  }
+
+all_repeats %>% select(Initials, IRTA_tracker, IRTA_screen) %>% 
+  kable(., col.names = c("Initials", "Appeared in", "Also currently screening by")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
 ##### Ready to review at clinical meeting (i.e. both parent and child have completed the DAWBA): 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
