@@ -9,27 +9,32 @@
 	Update_databases_master_script.R
 2. Scripts to merge patient trackers into a master patient list: 
 	IRTA_Merge_Code.R
-	Schedule_script_functions.R 
+	Other_functions/Schedule_script_functions.R 
 3. Script to create clinical, behavioural and treatment databases using information from the master patient tracker, CTDB and SDQ: 
 	Database_code.R
 4. Script to create DAWBA database & generate lists for deleting old data from server: 
 	DAWBA_database_and_deletions.R
 5. Scripts to generate weekly numbers for clinical meeting: 
-	Research_meeting_numbers.Rmd
-	Referrals_summary.R
+	Reports/Research_meeting_numbers.Rmd
+	Other_functions/Referrals_summary.R
+	Other_functions/check_referrals.R
+
 6. Script to generate eval and screening summaries for clinical meeting: 
-	Clinician_sheet.Rmd
+	Reports/Clinician_sheet.Rmd
 7. Scripts to generate CBT reports: 
-	Produce_CBT_final_report.Rmd
-	Produce_CBT_final_report_provider.Rmd
-	Produce_CBT_progress_report.Rmd
+	CBT_scripts/Produce_CBT_final_report.Rmd
+	CBT_scripts/Produce_CBT_final_report_provider.Rmd
+	CBT_scripts/Produce_CBT_progress_report.Rmd
 8. Scripts to generate inpatient summary: 
-	Inpatient_summary.Rmd
-	Inpatient_end_of_treatment_graphs.R
+	Reports/Inpatient_summary.Rmd
+	Reports/Inpatient_end_of_treatment_graphs.R
 9. Script to generate clinician supervision summary: 
-	All_treatment_summary.Rmd
-10. NEW: COVID19 related research database generation: 
-	crisis_dataset_description.Rmd
+	Reports/All_treatment_summary.Rmd
+10. COVID19 related research database generation: 
+	Reports/crisis_dataset_description.Rmd
+11. Other: 
+	Other_functions/Crisis_distribution.R
+	Other_functions/followup_counts.R
 
 ---
 ## Manual: 

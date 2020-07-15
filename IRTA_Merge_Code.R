@@ -203,7 +203,7 @@ master_IRTA_oldest_screens_latest <- master_IRTA_old_screens_reordered %>% selec
 
 ####################Chris's here..... 
 
-suppressWarnings(source(paste0(scripts,"Schedule_script_functions.R")))
+suppressWarnings(source(paste0(scripts,"Other_functions/Schedule_script_functions.R")))
 master_IRTA_latest$Next_FU_date <- as.Date(NA,origin = "1899-12-30")
 master_IRTA_latest$Next_FU_notes <- NA
 for (row in c(1:nrow(master_IRTA_latest))) {
