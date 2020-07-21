@@ -372,34 +372,43 @@ Overview: all participants still in active screening
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
 ######## Dummy table
-screens_dummy <- tibble(Participant_Type2=c("HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, 
-                        "HV", "MDD", "UNSURE", "Total", NA), Screening_Successful=c("0","0","0","0","0", "1","1","1","1","1", "Total","Total","Total",
-                        "Total","Total", NA,NA,NA,NA,NA), Freq=c("0")) %>% mutate(Screening_Successful=as.character(Screening_Successful), Freq=as.numeric(Freq))
+screens_dummy <- tibble(Participant_Type2=c("HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, 
+  "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, 
+  "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA, 
+  "HV", "MDD", "UNSURE", "Total", NA, "HV", "MDD", "UNSURE", "Total", NA), 
+  Eligible=c("0","0","0","0","0", "1","1","1","1","1", "2","2","2","2","2", "3","3","3","3","3", "4","4","4","4","4", 
+    "5","5","5","5","5", "6","6","6","6","6", "7","7","7","7","7", "Total","Total","Total","Total","Total", 
+    NA,NA,NA,NA,NA), Freq=c("0")) %>% mutate(Eligible=as.character(Eligible), Freq=as.numeric(Freq))
 ######## Real table
 screens <- master_IRTA_screens_latest %>% filter(!is.na(Screening_Start_Date))
-screens_table1 <- ctable(screens$Participant_Type2, screens$Screening_initial_contact_successful, 
+screens_table1 <- ctable(screens$Participant_Type2, screens$Eligible, 
                   useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
   rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.screens.Participant_Type2") %>% 
-  rename(Screening_Successful = "cross_table.screens.Screening_initial_contact_successful") %>% select(-matches("proportions"))
+  rename(Eligible = "cross_table.screens.Eligible") %>% select(-matches("proportions"))
 screens_table1 <- na_if(screens_table1, "<NA>")
 
 ######## Combined table
 screens_table1 <- merge.default(screens_table1, screens_dummy, all=TRUE) %>%
- group_by(Participant_Type2, Screening_Successful) %>% arrange(desc(Freq)) %>% slice(1) %>% ungroup() %>% mutate(Screening_Successful=as.character(Screening_Successful))
-screens_table1$Screening_Successful <- replace_na(screens_table1$Screening_Successful, "Missing")
+ group_by(Participant_Type2, Eligible) %>% arrange(desc(Freq)) %>% slice(1) %>% ungroup() %>% mutate(Eligible=as.character(Eligible))
+screens_table1$Eligible <- replace_na(screens_table1$Eligible, "Missing")
 
 ######## Table to print
-screens_table2 <- pivot_wider(screens_table1, id_cols = "Participant_Type2", names_from = "Screening_Successful", values_from = "Freq") %>% 
-  rename(Unsuccessful="0") %>%   rename(Successful="1")
+screens_table2 <- pivot_wider(screens_table1, id_cols = "Eligible", names_from = "Participant_Type2", values_from = "Freq") %>% 
+  arrange(Eligible)
+screens_table2$Eligible <- recode(screens_table2$Eligible, "0"="Include: fully eligible", "1"="Include: can’t scan (braces, etc.)",
+  "2"="On hold: contact again after specified amount of time", "3"="On hold: low priority", 
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted", "5"="Excluded: does not meet criteria", 
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="Patient (or parent) withdrew", .missing = NULL)
 screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], replace_na, "0")
 screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], as.numeric)
 
-screens_table2 <- screens_table2 %>% mutate(Unsuccessful_Percent = ((Unsuccessful/Total) * 100)) %>% mutate(Unsuccessful_Percent = round(Unsuccessful_Percent, 2)) %>% 
-  mutate(Successful_Percent = ((Successful/Total) * 100)) %>% mutate(Successful_Percent = round(Successful_Percent, 2)) %>% 
-  mutate(Missing_Percent = ((Missing/Total) * 100)) %>% mutate(Missing_Percent = round(Missing_Percent, 2)) %>% 
-  select(Participant_Type2, Successful, Successful_Percent, Unsuccessful, Unsuccessful_Percent, Missing, Missing_Percent, Total)
-screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], replace_na, "0")
-screens_table2$Participant_Type2 <- gsub("Total", "TOTAL", screens_table2$Participant_Type2)
+# screens_table2 <- screens_table2 %>% mutate(Unsuccessful_Percent = ((Unsuccessful/Total) * 100)) %>% mutate(Unsuccessful_Percent = round(Unsuccessful_Percent, 2)) %>% 
+#   mutate(Successful_Percent = ((Successful/Total) * 100)) %>% mutate(Successful_Percent = round(Successful_Percent, 2)) %>% 
+#   mutate(Missing_Percent = ((Missing/Total) * 100)) %>% mutate(Missing_Percent = round(Missing_Percent, 2)) %>% 
+#   select(Participant_Type2, Successful, Successful_Percent, Unsuccessful, Unsuccessful_Percent, Missing, Missing_Percent, Total)
+# screens_table2[,2:ncol(screens_table2)] <- lapply(screens_table2[,2:ncol(screens_table2)], replace_na, "0")
+# screens_table2$Participant_Type2 <- gsub("Total", "TOTAL", screens_table2$Participant_Type2)
 
 ######## Variables to remove
 rm(screens_dummy, screens_table1)
@@ -408,8 +417,11 @@ rm(screens_dummy, screens_table1)
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-screens_table2 %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%", "Contact Unsuccessful", "%", 
-                                          "Contact not recorded", "%", "Total")) %>% 
+# screens_table2 %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%", "Contact Unsuccessful", "%", 
+#                                           "Contact not recorded", "%", "Total")) %>% 
+#   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+screens_table2 %>% kable(., col.names = c("Eligibility", "HV", "MDD",  "UNSURE", "Total", "NA")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
