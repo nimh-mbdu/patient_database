@@ -107,8 +107,8 @@ latest_dawba_pull <- c(to_change$latest_dawba_pull)
 latest_sdq_pull <- c(to_change$latest_sdq_pull)
 
 # check list of current IRTAs is correct
-current_IRTAs_full <- c("Lisa Gorham", "Kate Haynes", "Chris Camp")
-current_IRTAs_init <- c("LG", "KH", "CC")
+current_IRTAs_full <- c("Lisa Gorham", "Chris Camp")
+current_IRTAs_init <- c("LG", "CC")
 
 # functions ---------------------------------------------------------------
 

@@ -164,12 +164,37 @@ screening_phone_long <- pivot_longer(screening_phone, cols=c("Child_Phone_Number
   select(IRTA_tracker, Initials, Contact_num) %>% filter(!is.na(Contact_num)) %>% mutate(row_id = row_number())
 
 screening_phone_temp_a <- str_split_fixed(screening_phone_long$Contact_num, pattern = c(";"), n=Inf) %>% as.data.frame() %>% mutate(row_id = row_number())
-screening_phone_temp_b <- str_split_fixed(screening_phone_temp_a$V1, pattern = c(":"), n=Inf) %>% as.data.frame() %>% mutate(row_id = row_number())
-screening_phone_temp_c <- str_split_fixed(screening_phone_temp_a$V2, pattern = c(":"), n=Inf) %>%
-  as.data.frame() %>% mutate(row_id = row_number()) %>% rename(V3 = "V1") %>% rename(V4 = "V2")
-screening_phone_combined <- merge.default(screening_phone_long, screening_phone_temp_b, all = TRUE) %>% 
-  merge.default(., screening_phone_temp_c, all = TRUE) %>% select(-Contact_num)
-screening_phone_long2 <- pivot_longer(screening_phone_combined, cols=c("V1", "V2", "V3", "V4"), names_to = "type", values_to = "Contact_num") 
+screening_phone_temp_b <- str_split_fixed(screening_phone_temp_a$V1, pattern = c(":"), n=Inf) %>% as.data.frame() %>% mutate(row_id = row_number()) %>% 
+  mutate_all(as.character)
+
+possibleError <- tryCatch(
+  str_split_fixed(screening_phone_temp_a$V2, pattern = c(":"), n=Inf) %>% as.data.frame() %>% mutate(row_id = row_number()),
+ error=function(e) e)
+if(inherits(possibleError, "error")) {
+  print("no second phone number")
+} else {
+  screening_phone_temp_c <- str_split_fixed(screening_phone_temp_a$V2, pattern = c(":"), n=Inf) %>% as.data.frame() %>% mutate(row_id = row_number()) %>% 
+    mutate_all(as.character)
+}
+
+if(exists("screening_phone_temp_c") == TRUE) {
+
+  possibleError2 <- tryCatch(
+    screening_phone_temp_c %>% select(V2),
+    error=function(e) e)
+  if(inherits(possibleError2, "error")) {
+    screening_phone_temp_c <- screening_phone_temp_c %>% rename(V3 = "V1")
+  } else {
+    screening_phone_temp_c <- screening_phone_temp_c %>% rename(V3 = "V1") %>% rename(V4 = "V2")
+  }
+  screening_phone_combined <- merge.default(screening_phone_long, screening_phone_temp_b, all = TRUE) %>% 
+    merge.default(., screening_phone_temp_c, all = TRUE) %>% select(-Contact_num)
+  
+} else {
+  screening_phone_combined <- merge.default(screening_phone_long, screening_phone_temp_b, all = TRUE) %>% select(-Contact_num)
+}
+
+screening_phone_long2 <- pivot_longer(screening_phone_combined, cols=c(matches("V")), names_to = "type", values_to = "Contact_num") 
 screening_phone_long2$Contact_num <- gsub(" ", "", screening_phone_long2$Contact_num)
 screening_phone_long2$Contact_num  <- na_if(screening_phone_long2$Contact_num , "")
 screening_phone_long2 <- screening_phone_long2 %>% select(IRTA_tracker, Initials, Contact_num) %>% filter(str_detect(Contact_num, "-")) %>% 
@@ -183,9 +208,26 @@ screening_email_long <- pivot_longer(screening_email, cols=c("Child_Email", "Ref
 screening_email_long$Contact_email <- tolower(screening_email_long$Contact_email)
 screening_email_temp <- str_split_fixed(screening_email_long$Contact_email, pattern = c(";"), n=Inf) %>% as.data.frame() %>% mutate(row_id = row_number())
 screening_email_combined <- merge.default(screening_email_long, screening_email_temp, all = TRUE) %>% select(-Contact_email)
-screening_email_long2 <- pivot_longer(screening_email_combined, cols=c("V1", "V2"), names_to = "type", values_to = "Contact_email") %>% 
-  select(IRTA_tracker, Initials, Contact_email) %>% distinct(., .keep_all = TRUE) %>% filter(str_detect(Contact_email, "@")) %>% 
-  rename(IRTA_screen = "IRTA_tracker") %>% distinct(., .keep_all = TRUE) %>% mutate(source2 = "screening")
+
+# possibleError <- tryCatch(
+#   error=function(e) e)
+# if(inherits(possibleError, "error")) {
+# }
+
+possibleError3 <- tryCatch(
+  screening_email_long2 <- pivot_longer(screening_email_combined, cols=c("V1", "V2"), names_to = "type", values_to = "Contact_email") %>% 
+    select(IRTA_tracker, Initials, Contact_email) %>% distinct(., .keep_all = TRUE) %>% filter(str_detect(Contact_email, "@")) %>% 
+    rename(IRTA_screen = "IRTA_tracker") %>% distinct(., .keep_all = TRUE) %>% mutate(source2 = "screening"),
+  error=function(e) e)
+if(inherits(possibleError3, "error")) {
+  screening_email_long2 <- screening_email_combined %>% rename(Contact_email = "V1") %>% 
+    select(IRTA_tracker, Initials, Contact_email) %>% distinct(., .keep_all = TRUE) %>% filter(str_detect(Contact_email, "@")) %>% 
+    rename(IRTA_screen = "IRTA_tracker") %>% distinct(., .keep_all = TRUE) %>% mutate(source2 = "screening")
+} else {
+  screening_email_long2 <- pivot_longer(screening_email_combined, cols=c("V1", "V2"), names_to = "type", values_to = "Contact_email") %>% 
+    select(IRTA_tracker, Initials, Contact_email) %>% distinct(., .keep_all = TRUE) %>% filter(str_detect(Contact_email, "@")) %>% 
+    rename(IRTA_screen = "IRTA_tracker") %>% distinct(., .keep_all = TRUE) %>% mutate(source2 = "screening")
+}
 screening_email_long2$Contact_email <- gsub(" ", "", screening_email_long2$Contact_email)
 
 # screening address 

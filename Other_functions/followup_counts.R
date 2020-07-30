@@ -25,6 +25,8 @@ suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(kableExtra))
 
 computer = "pc"
+today = "2020-07-28"
+irta = "CC"
 
 if (computer=="pc") {
   string = 'W:/'
@@ -45,7 +47,7 @@ to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.
 max_tasks <- c(to_change$max_tasks)
 # todays_date_formatted <- c(to_change$todays_date_formatted)
 # todays_date_formatted <- as.Date(todays_date_formatted)
-todays_date_formatted <- as.Date("2020-06-29")
+todays_date_formatted <- as.Date(today)
 last_week_date_formatted <- todays_date_formatted - as.difftime(7, unit="days")
 
 
@@ -124,7 +126,7 @@ baseline_keep <- baseline_keep %>% mutate(expt_FU_date = (c_ksadsdx_date + 365))
 baseline_keep$expt_FU_date_TDiff <- as.numeric(difftime(baseline_keep$expt_FU_date, todays_date_formatted, tz="", units = "days"))
 
 #### Georgia's divisions
-baseline_keep <- baseline_keep %>% filter(IRTA_tracker == "CC") %>% mutate(status = 
+baseline_keep <- baseline_keep %>% filter(IRTA_tracker == irta) %>% mutate(status = 
                                             ifelse((expt_FU_date_TDiff < -30), 1, # more than one month overdue 
                                                    ifelse((expt_FU_date_TDiff >= -30 & expt_FU_date_TDiff < 0), 2, # less than one month overdue
                                                           ifelse((expt_FU_date_TDiff >= 0 & expt_FU_date_TDiff < 31), 3, # due within the next month
@@ -146,13 +148,14 @@ baseline_keep <- baseline_keep %>% mutate(status =
                                                                                ifelse((expt_FU_date_TDiff >= 275), 6, #due in >9 months
                                                                                       0)))))))
 
+#Output tables
 
-more_one_month_overdue <- baseline_keep %>% filter(status == 1)
-less_one_month_overdue <- baseline_keep %>% filter(status == 2)
-next_month <- baseline_keep %>% filter(status  == 3)
-next_two_months <- baseline_keep %>% filter(status == 4)
-next_eight_months <- baseline_keep %>% filter(status == 5)
-more_than_nine_months <- baseline_keep %>% filter(status == 6)
+A_more_one_month_overdue <- baseline_keep %>% filter(status == 1)
+A_less_one_month_overdue <- baseline_keep %>% filter(status == 2)
+A_next_month <- baseline_keep %>% filter(status  == 3)
+A_next_two_months <- baseline_keep %>% filter(status == 4)
+A_next_eight_months <- baseline_keep %>% filter(status == 5)
+A_more_than_nine_months <- baseline_keep %>% filter(status == 6)
 to_graph <- baseline_keep %>% filter(expt_FU_date_TDiff > 0 & expt_FU_date_TDiff < 93)
 
 
@@ -165,38 +168,3 @@ ggplot(data = to_graph, aes(Clinical_Visit_Date)) +
   labs(x = "Date",
        y = "Followups",
        title = "Followups Due")
-
-temp1 <- ctable(baseline_keep$status, baseline_keep$Participant_Type2, useNA = "no",
-                prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
-  rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.baseline_keep.Participant_Type2") %>%
-  rename(Status = "cross_table.baseline_keep.status") %>% select(-proportions.Total)
-
-temp2 <- pivot_wider(temp1, id_cols = "Status", names_from = "Participant_Type2", values_from = "Freq") %>% 
-  mutate(HV_percent = (HV/(HV+MDD)*100)) %>% mutate(MDD_percent = (MDD/(HV+MDD)*100)) %>% 
-  mutate(HV_percent = round(HV_percent, 2), MDD_percent = round(MDD_percent, 2))
-MDD_6_months <- temp2 %>% filter(Status == "2" | Status == "3" | Status == "4") %>% select(MDD) %>% colSums() %>% as.numeric()
-HV_6_months <- temp2 %>% filter(Status == "2" | Status == "3" | Status == "4") %>% select(HV) %>% colSums() %>% as.numeric()
-
-rest_temp <- tibble(Status=c(1, 2, 3, 4, 5, 6), Descrip=c("more than one month overdue", "less than one month overdue", "due <1 month, i.e. by:", 
-                                                          "due >1 month & <6 months, i.e. by:", "due >6 months & <9 months, i.e. by:", "due >9 months by:"))
-date_temp <- c((todays_date_formatted + 30), (todays_date_formatted + 190), (todays_date_formatted + 274), (todays_date_formatted + 365)) %>% 
-  as_tibble() %>% rename(Date = value) %>% mutate(Status=c(3, 4, 5, 6))
-descrip_table <- merge.default(rest_temp, date_temp, all=TRUE)
-
-temp3 <- merge.default(temp2, descrip_table, all=TRUE) %>%
-  select(Descrip, Date, MDD, MDD_percent, HV, HV_percent, Total)
-temp3$Descrip <- replace_na(temp3$Descrip, "Total")
-
-overdue <- baseline_keep %>% filter(status==1) %>% select(Initials, IRTA_tracker, Participant_Type2, Eligible, expt_FU_date_TDiff) %>% filter(Initials!="ANHY")
-overdue$Eligible <- recode(overdue$Eligible, "0"="Include: fully eligible", "1"="Include: can't scan (braces, etc.)", 
-                           "2"="On hold: contact again after specified amount of time", "3"="On hold: low priority", "11"="Completed treatment", .missing = NULL)
-
-temp1a_scanner <- ctable(baseline_keep$status, baseline_keep$Scanner, useNA = "no",
-                         prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
-  rename(Freq = "cross_table.Freq") %>% rename(Scanner = "cross_table.baseline_keep.Scanner") %>%
-  rename(Status = "cross_table.baseline_keep.status") %>% select(-proportions.Total)
-six_months_3TA <- temp1a_scanner %>% filter(Status == "2" | Status == "3" | Status == "4") %>% filter(Scanner=="3TA") %>% select(Freq) %>% colSums() %>% as.numeric()
-six_months_3TC <- temp1a_scanner %>% filter(Status == "2" | Status == "3" | Status == "4") %>% filter(Scanner=="3TC") %>% select(Freq) %>% colSums() %>% as.numeric()
-
-rm(baseline, baseline_removed, removed_initials, FU_completed, baseline_keep, temp1, temp2, rest_temp, date_temp, descrip_table, 
-   MDD_one_year, MDD_two_year, HV_one_year, HV_two_year, temp1a_scanner)

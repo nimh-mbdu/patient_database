@@ -2578,8 +2578,8 @@
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date, -mmi_recovery_date)
     }
     
-    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
-    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% select(matches(measure_name)) %>% apply(., 1, count_na)
+    measure_temp_sdq$no_columns <- measure_temp_sdq %>% select(matches(measure_name)) %>% ncol() %>% as.numeric()
+    measure_temp_sdq$NA_count <- measure_temp_sdq %>% select(matches(measure_name)) %>% apply(., 1, count_na)
     measure_temp_sdq$diff <- c(measure_temp_sdq$no_columns - measure_temp_sdq$NA_count)
     measure_temp_sdq <- measure_temp_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
     
