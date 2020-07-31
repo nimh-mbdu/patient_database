@@ -77,9 +77,9 @@ if (exists("MMI_recovery_combined2")==FALSE) {
 }
 
 # crisis recruitment related
-child_contacted <- c(to_change$child_contacted)
-parent_contacted <- c(to_change$parent_contacted)
-parent_agreed <- c(to_change$parent_agreed)
+# child_contacted <- c(to_change$child_contacted)
+# parent_contacted <- c(to_change$parent_contacted)
+# parent_agreed <- c(to_change$parent_agreed)
 
 ```
 
@@ -770,7 +770,7 @@ ggplot() +
 
 rm(list=ls(pattern="child_completed_"))
 rm(list=ls(pattern="parent_completed_"))
-rm(parent_contacted, child_contacted, parent_agreed, child_agreed, all_table, crisis_table, measures_combined_long, 
+rm(parent_agreed, child_agreed, all_table, crisis_table, measures_combined_long, 
   pscared_tminus2_long, pmfq_tminus2_long, smfq_tminus2_long, scared_group_means_t, scared_group_means, scared_subset, 
   scaredshort_subset2, scared_subset1, mfq_group_means_t, mfq_group_means, mfq_subset, mfq_subset1, mfq_subset2, 
   crisis_group_means_t, crisis_group_means, crisis_subset, crisis_subset1, crisis_subset2, crisis_subset3, crisis_subset4, crisis_subset5)

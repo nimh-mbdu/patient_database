@@ -119,7 +119,7 @@ if (exists("master_IRTA_latest")==FALSE) {
         master_IRTA_latest[date_variabes] <- lapply(master_IRTA_latest[date_variabes], as.Date)
         rm(i, date_variabes, irta_master_file, irta_master_file_time, irta_master_combined)
 } else {
-    print("master task tracker already imported")
+    print("master IRTA tracker already imported")
 }
 
 if (exists("master_IRTA_oldest_screens_latest")==FALSE) {
