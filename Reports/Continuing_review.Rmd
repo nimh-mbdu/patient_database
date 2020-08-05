@@ -1,5 +1,5 @@
 ---
-title: "Continuing_review"
+title: "Continuing review"
 author: "Georgia O'Calllaghan"
 output: html_document
 ---
@@ -28,7 +28,8 @@ setwd(database_location)
 # Set output file for script results
 # output_location <- '~/Desktop/ContinuingReviewOutput.txt' # change to be where you want output to go
 
-last_CR <- as.Date("2019-08-01")
+last_CR <- as.Date("2019-07-31")
+cut_off <- as.Date("2020-07-31")
 
 # loading packages --------------------------------------------------------
 
@@ -40,6 +41,7 @@ library(tidyr)
 library(stringr)
 library(kableExtra)
 library(summarytools)
+library(stats)
 
 # loading data ------------------------------------------------------------
 
@@ -101,17 +103,90 @@ if (exists("Psychometrics_treatment")==FALSE) {
 
 # Combining screening data  --------------------------------------------
 
-econsent_0037_latest <- master_IRTA_screens_latest %>% select(Initials, FIRST_NAME, LAST_NAME, PLUSID, IRTA_tracker, Participant_Type2, SEX, 
-    Eligible, Eligibility_notes, Referral_Date, Screening_Start_Date, Parent_e_consented, Parent2_e_consented, Child_e_assented, 
-    DAWBA_completed, Parent_DAWBA_completed, Child_DAWBA_completed) %>% mutate(screen_type = "ongoing")
+eval_being_scheduled_1 <- master_IRTA_screens_latest %>% 
+  select(Initials, FIRST_NAME, LAST_NAME, PLUSID, IRTA_tracker, Participant_Type2, 
+    Parent_Name, FIRST_NAME_P1, LAST_NAME_P1, Referral_Informant_Name, SEX, 
+    Eligible, Eligibility_notes, Referral_Date, Screening_Start_Date, Parent_e_consented, Child_e_assented, 
+    DAWBA_completed, Parent_DAWBA_completed, Child_DAWBA_completed) 
+eval_being_scheduled_2 <- master_IRTA_latest %>% filter(is.na(Protocol)) %>% filter(IRTA_tracker != "REMOVED") %>% 
+  select(Initials, FIRST_NAME, LAST_NAME, PLUSID, IRTA_tracker, Participant_Type2, 
+    Parent_Name, FIRST_NAME_P1, LAST_NAME_P1, Referral_Informant_Name, SEX, 
+    Eligible, Eligibility_notes, Referral_Date, Screening_Start_Date, Parent_e_consented, Child_e_assented, 
+    DAWBA_completed, Parent_DAWBA_completed, Child_DAWBA_completed)
+eval_being_scheduled <- merge.default(eval_being_scheduled_1, eval_being_scheduled_2, all=TRUE) %>% mutate(status="screened, awaiting eval")
 
-econsent_0037_old <- master_IRTA_oldest_screens_latest %>% select(Initials, FIRST_NAME, LAST_NAME, PLUSID, IRTA_tracker, Participant_Type2, SEX, 
-  Eligible, Eligibility_notes, Referral_Date, Screening_Start_Date, Parent_e_consented, Parent2_e_consented, Child_e_assented, 
-  DAWBA_completed, Parent_DAWBA_completed, Child_DAWBA_completed) %>% mutate(screen_type = "old")
+screened_no_eval_1 <- master_IRTA_oldest_screens_latest %>% 
+  select(Initials, FIRST_NAME, LAST_NAME, PLUSID, IRTA_tracker, Participant_Type2, 
+    Parent_Name, FIRST_NAME_P1, LAST_NAME_P1, Referral_Informant_Name, SEX, 
+    Eligible, Eligibility_notes, Referral_Date, Screening_Start_Date, Parent_e_consented, Child_e_assented, 
+    DAWBA_completed, Parent_DAWBA_completed, Child_DAWBA_completed)
+screened_no_eval_2 <- master_IRTA_latest %>% filter(is.na(Protocol)) %>% filter(IRTA_tracker == "REMOVED") %>% 
+  select(Initials, FIRST_NAME, LAST_NAME, PLUSID, IRTA_tracker, Participant_Type2, 
+    Parent_Name, FIRST_NAME_P1, LAST_NAME_P1, Referral_Informant_Name, SEX, 
+    Eligible, Eligibility_notes, Referral_Date, Screening_Start_Date, Parent_e_consented, Child_e_assented, 
+    DAWBA_completed, Parent_DAWBA_completed, Child_DAWBA_completed)
+screened_no_eval <- merge.default(screened_no_eval_1, screened_no_eval_2, all=TRUE) %>% mutate(status="screened, no eval occured")
 
-econsent_0037_combined <- merge.default(econsent_0037_latest, econsent_0037_old, all = TRUE)
+econsent_0037_combined <- merge.default(eval_being_scheduled, screened_no_eval, all=TRUE)
 econsent_0037_combined$Overall_date <- coalesce(econsent_0037_combined$Referral_Date, econsent_0037_combined$Screening_Start_Date) %>% as.Date()
-econsent_0037_combined <- econsent_0037_combined %>% filter(!is.na(Overall_date))
+
+econsent_0037_combined$Parent_DAWBA_completed <- coalesce(econsent_0037_combined$Parent_DAWBA_completed, econsent_0037_combined$DAWBA_completed)
+econsent_0037_combined$Child_DAWBA_completed <- coalesce(econsent_0037_combined$Child_DAWBA_completed, econsent_0037_combined$DAWBA_completed)
+
+econsent_0037_combined$Parent_temp <- paste(econsent_0037_combined$FIRST_NAME_P1, econsent_0037_combined$LAST_NAME_P1, sep=" ")
+econsent_0037_combined$Parent_temp <- na_if(econsent_0037_combined$Parent_temp, "NA NA")
+econsent_0037_combined$Parent_Name_combined <- coalesce(econsent_0037_combined$Parent_temp, econsent_0037_combined$Parent_Name) %>% 
+  coalesce(., econsent_0037_combined$Referral_Informant_Name)
+econsent_0037_combined$Parent_Name_combined <- toupper(econsent_0037_combined$Parent_Name_combined)
+
+econsent_0037_combined <- econsent_0037_combined %>% select(-Parent_Name, -FIRST_NAME_P1, -LAST_NAME_P1, -Referral_Informant_Name, -Parent_temp, -DAWBA_completed) %>% 
+  distinct(., .keep_all = TRUE) 
+fill_in <- c("Parent_e_consented", "Child_e_assented", "Parent_DAWBA_completed", "Child_DAWBA_completed")
+econsent_0037_combined[fill_in] <- lapply(econsent_0037_combined[fill_in], replace_na, "0")
+econsent_0037_combined <- econsent_0037_combined %>% 
+  mutate(In_0037_screening = (as.numeric(Parent_e_consented) + as.numeric(Child_e_assented) + as.numeric(Parent_DAWBA_completed) + as.numeric(Child_DAWBA_completed))) %>% 
+  filter(In_0037_screening==4)
+econsent_0037_combined <- left_join(econsent_0037_combined, demo)
+
+econsent_0037_past_year <- econsent_0037_combined %>% filter(Overall_date > last_CR) %>% filter(Overall_date <= cut_off)
+
+# Evals  --------------------------------------------
+
+# first time they signed into 0037
+
+protocol_0037_first <- master_IRTA_latest %>% filter(str_detect(Protocol, "0037")) %>% group_by(Initials) %>% 
+  slice(1) %>% ungroup() %>% select(Initials, FIRST_NAME, LAST_NAME, PLUSID, IRTA_tracker, Participant_Type2, SEX, 
+    Eligible, Eligibility_notes, Clinical_Visit_Type, Clinical_Visit_Date, Consent_Date, Protocol, 
+    Referral_Date, Screening_Start_Date, Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed) %>% 
+  mutate(status = NA) %>% mutate(In_0037_screening=4)
+
+protocol_0037_first$status[str_detect(protocol_0037_first$Protocol, 'SCREENING')] <- 'Screening'
+protocol_0037_first$status[str_detect(protocol_0037_first$Protocol, 'Screening')] <- 'Screening'
+protocol_0037_first$status[is.na(protocol_0037_first$status)] <- 'Characterization'
+protocol_0037_first[fill_in] <- lapply(protocol_0037_first[fill_in], replace_na, "1")
+
+protocol_0037_first$Overall_date <- coalesce(protocol_0037_first$Clinical_Visit_Date, protocol_0037_first$Screening_Start_Date) %>% 
+  coalesce(., protocol_0037_first$Referral_Date) %>% as.Date()
+protocol_0037_first <- left_join(protocol_0037_first, demo)
+
+eval_visit_last_year <- protocol_0037_first %>% filter(Overall_date > last_CR) %>% filter(Overall_date <= cut_off)
+
+# current status as of latest visit
+
+protocol_0037_latest <- master_IRTA_latest %>% filter(str_detect(Protocol, "0037")) %>% group_by(Initials) %>% 
+  slice(n()) %>% ungroup() %>% select(Initials, FIRST_NAME, LAST_NAME, PLUSID, IRTA_tracker, Participant_Type2, SEX, 
+    Eligible, Eligibility_notes, Clinical_Visit_Type, Clinical_Visit_Date, Consent_Date, Protocol, 
+    Referral_Date, Screening_Start_Date, Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed) %>% 
+  mutate(status = NA) %>% mutate(In_0037_screening=4)
+
+protocol_0037_latest$status[str_detect(protocol_0037_latest$Protocol, 'SCREENING')] <- 'Screening'
+protocol_0037_latest$status[str_detect(protocol_0037_latest$Protocol, 'Screening')] <- 'Screening'
+protocol_0037_latest$status[is.na(protocol_0037_latest$status)] <- 'Characterization'
+protocol_0037_latest[fill_in] <- lapply(protocol_0037_latest[fill_in], replace_na, "1")
+
+protocol_0037_latest$Overall_date <- coalesce(protocol_0037_latest$Clinical_Visit_Date, protocol_0037_latest$Screening_Start_Date) %>% 
+  coalesce(., protocol_0037_latest$Referral_Date) %>% as.Date()
+protocol_0037_latest <- left_join(protocol_0037_latest, demo)
 
 ```
 
@@ -119,249 +194,23 @@ Today's date: `r Sys.Date()`
 
 *** 
 
-##### In the past year:
-
-Period since, `r last_CR`
+##### Completed screening but no eval occured/eval pending:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-######################## had eval
-# first time they signed into 0037
+######## Completed e-screening documents but never came for evaluation + those currently waiting on an eval
 
-protocol_0037_first <- master_IRTA_latest %>% filter(str_detect(Protocol, "0037")) %>% group_by(Initials) %>% 
-  slice(1) %>% ungroup() %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Participant_Type2, SEX, 
-    Eligible, Eligibility_notes, 
-    Clinical_Visit_Type, Clinical_Visit_Date, 
-    Consent_Date, Protocol, 
-    Referral_Date, Screening_Start_Date, 
-    Parent_e_consented, Parent2_e_consented, Child_e_assented, 
-    DAWBA_completed, Parent_DAWBA_completed, Child_DAWBA_completed) %>% 
-  filter(Participant_Type2=="MDD" | Participant_Type2=="HV") %>% mutate(Protocol_Type = NA)
+# lifetime 
 
-protocol_0037_first$Protocol_Type[str_detect(protocol_0037_first$Protocol, 'SCREENING')] <- 'Screening'
-protocol_0037_first$Protocol_Type[str_detect(protocol_0037_first$Protocol, 'Screening')] <- 'Screening'
-protocol_0037_first$Protocol_Type[is.na(protocol_0037_first$Protocol_Type)] <- 'Characterization'
-fill_in <- c("Parent_e_consented", "Parent2_e_consented", "Child_e_assented", "DAWBA_completed", "Parent_DAWBA_completed", "Child_DAWBA_completed")
-protocol_0037_first[fill_in] <- lapply(protocol_0037_first[fill_in], replace_na, "1")
-
-protocol_0037_first$Overall_date <- coalesce(protocol_0037_first$Clinical_Visit_Date, protocol_0037_first$Screening_Start_Date) %>% 
-  coalesce(., protocol_0037_first$Referral_Date) %>% as.Date()
-protocol_0037_first <- left_join(protocol_0037_first, demo)
-protocol_0037_past_year <- protocol_0037_first %>% filter(Overall_date >= last_CR)
-
-######################## screening only
-
-econsent_0037_past_year <- econsent_0037_combined %>% filter(Overall_date >= last_CR)
-
-# The data we need  --------------------------------------------
-
-######## Participants in the past year (evals)
-
-protocol_table <- ctable(protocol_0037_past_year$Participant_Type2, protocol_0037_past_year$Protocol_Type, 
+screened_no_eval <- ctable(econsent_0037_combined$status, econsent_0037_combined$Eligible, 
                   useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.protocol_0037_past_year.Participant_Type2") %>% 
-  rename(Protocol = "cross_table.protocol_0037_past_year.Protocol_Type") %>% 
-  select(Participant_Type2, Protocol, Freq)
-eval_visit <- reshape(protocol_table, idvar = "Participant_Type2", timevar = "Protocol", direction = "wide") %>% mutate_all(as.character)
-eval_visit <- na_if(eval_visit,  "<NA>")
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Eligible = "cross_table.econsent_0037_combined.Eligible") %>% 
+  rename(status = "cross_table.econsent_0037_combined.status") %>% 
+  select(Eligible, status, Freq)
+screened_no_eval_overall <- reshape(screened_no_eval, idvar = "Eligible", timevar = "status", direction = "wide") %>% mutate_all(as.character)
+screened_no_eval_overall <- na_if(screened_no_eval_overall,  "<NA>")
 
-protocol_table_gender <- ctable(protocol_0037_past_year$Protocol_Type, protocol_0037_past_year$SEX, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(SEX = "cross_table.protocol_0037_past_year.SEX") %>% 
-  rename(Protocol = "cross_table.protocol_0037_past_year.Protocol_Type") %>% select(Protocol, SEX, Freq)
-eval_visit_gender <- reshape(protocol_table_gender, idvar = "SEX", timevar = "Protocol", direction = "wide") %>% mutate_all(as.character)
-eval_visit_gender <- na_if(eval_visit_gender,  "<NA>")
-
-protocol_table_race <- ctable(protocol_0037_past_year$Protocol_Type, protocol_0037_past_year$p_demo_screen_background_race, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Race = "cross_table.protocol_0037_past_year.p_demo_screen_background_race") %>% 
-  rename(Protocol = "cross_table.protocol_0037_past_year.Protocol_Type") %>% select(Protocol, Race, Freq)
-eval_visit_race <- reshape(protocol_table_race, idvar = "Race", timevar = "Protocol", direction = "wide") %>% mutate_all(as.character)
-eval_visit_race <- na_if(eval_visit_race,  "<NA>")
-eval_visit_race$Race <- toupper(eval_visit_race$Race)
-
-protocol_table_hisp <- ctable(protocol_0037_past_year$Protocol_Type, protocol_0037_past_year$p_demo_screen_background_hispanic, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Hispanic = "cross_table.protocol_0037_past_year.p_demo_screen_background_hispanic") %>% 
-  rename(Protocol = "cross_table.protocol_0037_past_year.Protocol_Type") %>% select(Protocol, Hispanic, Freq)
-eval_visit_hisp <- reshape(protocol_table_hisp, idvar = "Hispanic", timevar = "Protocol", direction = "wide") %>% mutate_all(as.character)
-eval_visit_hisp <- na_if(eval_visit_hisp,  "<NA>")
-eval_visit_hisp$Hispanic <- toupper(eval_visit_hisp$Hispanic)
-
-######## Participants in the past year (screens)
-
-all_screens_past_year <- merge.default(protocol_0037_past_year, econsent_0037_past_year, all = TRUE)
-all_screens_past_year <- all_screens_past_year %>% mutate(Parent_screen = (as.numeric(Parent_e_consented) + as.numeric(Parent_DAWBA_completed)), 
-  Child_screen = (as.numeric(Child_e_assented) + as.numeric(Child_DAWBA_completed)))
-all_screens_past_year$Participant_Type2 <- replace_na(all_screens_past_year$Participant_Type2, "UNSURE")
-
-screening_table_child <- ctable(all_screens_past_year$Participant_Type2, all_screens_past_year$Child_screen, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Child_screen = "cross_table.all_screens_past_year.Child_screen") %>% 
-  rename(Participant_Type2 = "cross_table.all_screens_past_year.Participant_Type2") %>% 
-  select(Participant_Type2, Child_screen, Freq)
-screening_child <- reshape(screening_table_child, idvar = "Participant_Type2", timevar = "Child_screen", direction = "wide") %>% mutate_all(as.character)
-screening_child <- na_if(screening_child,  "<NA>")
-
-screening_table_parent <- ctable(all_screens_past_year$Participant_Type2, all_screens_past_year$Parent_screen, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Parent_screen = "cross_table.all_screens_past_year.Parent_screen") %>% 
-  rename(Participant_Type2 = "cross_table.all_screens_past_year.Participant_Type2") %>% 
-  select(Participant_Type2, Parent_screen, Freq)
-screening_parent <- reshape(screening_table_parent, idvar = "Participant_Type2", timevar = "Parent_screen", direction = "wide") %>% mutate_all(as.character)
-screening_parent <- na_if(screening_parent,  "<NA>")
-
-```
-
-***
-
-#### Screening
-
-Child screening status
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-screening_child %>% 
-  kable(., col.names = c("Diagnosis", "Did not e-assent*", "E-assented only", "E-assented + completed DAWBA", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-*Did not e-assent = referral that did not actually begin our screening process, for whatever reason (unresponsive, etc.)
-
-Parent screening status
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-screening_parent %>% 
-  kable(., col.names = c("Diagnosis", "Did not e-consent*", "E-consented only", "E-assented + completed DAWBA", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-*Did not e-consent = referral that did not actually begin our screening process, for whatever reason (unresponsive, etc.)
-
-***
-
-#### Evaluations
-
-Had in person (or virtual) evaluation visit
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-eval_visit %>% 
-  kable(., col.names = c("Diagnosis", "Signed into Characterization", "Signed Screening Consents Only", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-Sex/gender breakdown of these participants: 
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-eval_visit_gender %>% 
-  kable(., col.names = c("Sex", "Signed into Characterization", "Signed Screening Consents Only", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-Race/ethnicity breakdown of these participants: 
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-eval_visit_race %>% 
-  kable(., col.names = c("Race/ethnicity", "Signed into Characterization", "Signed Screening Consents Only", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-Are they of Hispanic/Latino origin: 
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-eval_visit_hisp %>% 
-  kable(., col.names = c("Hispanic/Latino", "Signed into Characterization", "Signed Screening Consents Only", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-***
-
-##### Overall:
-
-Since beginning of protocol 
-
-```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
-
-######################## had eval
-# latest visit
-
-protocol_0037_latest <- master_IRTA_latest %>% filter(str_detect(Protocol, "0037")) %>% group_by(Initials) %>% 
-  slice(n()) %>% ungroup() %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Participant_Type2, SEX, 
-    Eligible, Eligibility_notes, 
-    Clinical_Visit_Type, Clinical_Visit_Date, 
-    Consent_Date, Protocol, 
-    Referral_Date, Screening_Start_Date, 
-    Parent_e_consented, Parent2_e_consented, Child_e_assented, 
-    DAWBA_completed, Parent_DAWBA_completed, Child_DAWBA_completed) %>% 
-  filter(Participant_Type2=="MDD" | Participant_Type2=="HV") %>% mutate(Protocol_Type = NA)
-
-protocol_0037_latest$Protocol_Type[str_detect(protocol_0037_latest$Protocol, 'SCREENING')] <- 'Screening'
-protocol_0037_latest$Protocol_Type[str_detect(protocol_0037_latest$Protocol, 'Screening')] <- 'Screening'
-protocol_0037_latest$Protocol_Type[is.na(protocol_0037_latest$Protocol_Type)] <- 'Characterization'
-fill_in <- c("Parent_e_consented", "Parent2_e_consented", "Child_e_assented", "DAWBA_completed", "Parent_DAWBA_completed", "Child_DAWBA_completed")
-protocol_0037_latest[fill_in] <- lapply(protocol_0037_latest[fill_in], replace_na, "1")
-
-protocol_0037_latest$Overall_date <- coalesce(protocol_0037_latest$Clinical_Visit_Date, protocol_0037_latest$Screening_Start_Date) %>% 
-  coalesce(., protocol_0037_latest$Referral_Date) %>% as.Date()
-protocol_0037_latest <- left_join(protocol_0037_latest, demo)
-
-# The data we need  --------------------------------------------
-
-######## Participants in the past year (evals)
-
-protocol_table_overall <- ctable(protocol_0037_latest$Participant_Type2, protocol_0037_latest$Protocol_Type, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.protocol_0037_latest.Participant_Type2") %>% 
-  rename(Protocol = "cross_table.protocol_0037_latest.Protocol_Type") %>% 
-  select(Participant_Type2, Protocol, Freq)
-eval_visit_overall <- reshape(protocol_table_overall, idvar = "Participant_Type2", timevar = "Protocol", direction = "wide") %>% mutate_all(as.character)
-eval_visit_overall <- na_if(eval_visit_overall,  "<NA>")
-
-protocol_table_gender_overall <- ctable(protocol_0037_latest$Protocol_Type, protocol_0037_latest$SEX, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(SEX = "cross_table.protocol_0037_latest.SEX") %>% 
-  rename(Protocol = "cross_table.protocol_0037_latest.Protocol_Type") %>% select(Protocol, SEX, Freq)
-eval_visit_gender_overall <- reshape(protocol_table_gender_overall, idvar = "SEX", timevar = "Protocol", direction = "wide") %>% mutate_all(as.character)
-eval_visit_gender_overall <- na_if(eval_visit_gender_overall,  "<NA>")
-
-protocol_table_race_overall <- ctable(protocol_0037_latest$Protocol_Type, protocol_0037_latest$p_demo_screen_background_race, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Race = "cross_table.protocol_0037_latest.p_demo_screen_background_race") %>% 
-  rename(Protocol = "cross_table.protocol_0037_latest.Protocol_Type") %>% select(Protocol, Race, Freq)
-eval_visit_race_overall <- reshape(protocol_table_race_overall, idvar = "Race", timevar = "Protocol", direction = "wide") %>% mutate_all(as.character)
-eval_visit_race_overall <- na_if(eval_visit_race_overall,  "<NA>")
-eval_visit_race_overall$Race <- toupper(eval_visit_race_overall$Race)
-
-protocol_table_hisp_overall <- ctable(protocol_0037_latest$Protocol_Type, protocol_0037_latest$p_demo_screen_background_hispanic, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Hispanic = "cross_table.protocol_0037_latest.p_demo_screen_background_hispanic") %>% 
-  rename(Protocol = "cross_table.protocol_0037_latest.Protocol_Type") %>% select(Protocol, Hispanic, Freq)
-eval_visit_hisp_overall <- reshape(protocol_table_hisp_overall, idvar = "Hispanic", timevar = "Protocol", direction = "wide") %>% mutate_all(as.character)
-eval_visit_hisp_overall <- na_if(eval_visit_hisp_overall,  "<NA>")
-eval_visit_hisp_overall$Hispanic <- toupper(eval_visit_hisp_overall$Hispanic)
-
-######## Current eligibility of all enrolled 
-
-current_eligibility <- protocol_0037_latest %>% filter(Protocol_Type=="Characterization") 
-current_eligibility_table <- ctable(current_eligibility$Participant_Type2, current_eligibility$Eligible, 
-  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
-  rename(Freq = "cross_table.Freq") %>% rename(Eligible = "cross_table.current_eligibility.Eligible") %>% 
-  rename(Participant_Type2 = "cross_table.current_eligibility.Participant_Type2") %>% select(Participant_Type2, Eligible, Freq)
-current_eligibility_table2 <- reshape(current_eligibility_table, idvar = "Eligible", timevar = "Participant_Type2", direction = "wide") %>% 
-  cbind(., order=c(1, 2, 11, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13)) %>% arrange(order) %>% select(-order) %>% mutate_all(as.character)
-
-current_eligibility_table2$Eligible <- recode(current_eligibility_table2$Eligible, 
+screened_no_eval_overall$Eligible <- recode(screened_no_eval_overall$Eligible, 
   "0"="Include", 
   "1"="Include: can’t scan (braces, etc.)", 
   "2"="On hold: contact again after specified amount of time", 
@@ -375,113 +224,283 @@ current_eligibility_table2$Eligible <- recode(current_eligibility_table2$Eligibl
   "10"="Excluded after commencing treatment: clinician decision", 
   "Total"="Total", .missing = NULL)
 
-######## Participants in the past year (screens)
+# since last CR
 
-all_screens <- merge.default(protocol_0037_latest, econsent_0037_combined, all = TRUE)
-all_screens <- all_screens %>% mutate(Parent_screen = (as.numeric(Parent_e_consented) + as.numeric(Parent_DAWBA_completed)), 
-  Child_screen = (as.numeric(Child_e_assented) + as.numeric(Child_DAWBA_completed)))
-all_screens$Participant_Type2 <- replace_na(all_screens$Participant_Type2, "UNSURE")
+screened_no_eval_past_year <- econsent_0037_past_year %>% filter(status=="screened, no eval occured") %>% filter(Overall_date <= cut_off) %>% 
+  group_by(Eligible) %>% summarise(Eligible_n=n()) 
+sum <- screened_no_eval_past_year %>% select(Eligible_n) %>% colSums()
+total <- tibble(Eligible = c("Total"), Eligible_n = c(sum))
+screened_no_eval_past_year <- rbind(screened_no_eval_past_year, total)
+rm(total, sum)
 
-screening_table_child_overall <- ctable(all_screens$Participant_Type2, all_screens$Child_screen, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Child_screen = "cross_table.all_screens.Child_screen") %>% 
-  rename(Participant_Type2 = "cross_table.all_screens.Participant_Type2") %>% 
-  select(Participant_Type2, Child_screen, Freq)
-screening_child_overall <- reshape(screening_table_child_overall, idvar = "Participant_Type2", timevar = "Child_screen", direction = "wide") %>% 
-  mutate_all(as.character)
-screening_child_overall <- na_if(screening_child_overall,  "<NA>")
+screened_no_eval_past_year$Eligible <- recode(screened_no_eval_past_year$Eligible, 
+  "0"="Include", 
+  "1"="Include: can’t scan (braces, etc.)", 
+  "2"="On hold: contact again after specified amount of time", 
+  "3"="On hold: low priority", 
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted", 
+  "5"="Excluded: does not meet criteria",
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="Did not or withdrew assent/consent", 
+  "8"="Ruled as ineligible for treatment during baseline assessment",
+  "9"="Patient (or parent) withdrew from treatment", 
+  "10"="Excluded after commencing treatment: clinician decision", 
+  "Total"="Total", .missing = NULL)
 
-screening_table_parent_overall <- ctable(all_screens$Participant_Type2, all_screens$Parent_screen, 
-                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
-  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Parent_screen = "cross_table.all_screens.Parent_screen") %>% 
-  rename(Participant_Type2 = "cross_table.all_screens.Participant_Type2") %>% 
-  select(Participant_Type2, Parent_screen, Freq)
-screening_parent_overall <- reshape(screening_table_parent_overall, idvar = "Participant_Type2", timevar = "Parent_screen", direction = "wide") %>% 
-  mutate_all(as.character)
-screening_parent_overall <- na_if(screening_parent_overall,  "<NA>")
+```
+
+Lifetime: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+screened_no_eval_overall %>% select(-`Freq.<NA>`) %>% 
+  kable(., col.names = c("Status", "Completed screening, awaiting eval", "Completed screening, never came in for eval", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Period since `r last_CR`:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+screened_no_eval_past_year %>% 
+  kable(., col.names = c("Status", "Completed screening, never came in for eval")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
 ***
 
-#### Screening
+#### Completed face-to-face screening:
 
-Child screening status
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+######## Signed screening consents only, not characterization 
 
-screening_child_overall %>% 
-  kable(., col.names = c("Diagnosis", "Did not e-assent*", "E-assented only", "E-assented + completed DAWBA", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+# lifetime 
+
+eval_visit_overall <- protocol_0037_first %>% filter(status=="Screening") %>% filter(Overall_date <= cut_off) %>% 
+  group_by(Eligible) %>% summarise(Eligible_n=n()) 
+sum <- eval_visit_overall %>% select(Eligible_n) %>% colSums()
+total <- tibble(Eligible = c("Total"), Eligible_n = sum)
+eval_visit_overall <- rbind(eval_visit_overall, total)
+rm(total, sum)
+
+eval_visit_overall$Eligible <- recode(eval_visit_overall$Eligible, 
+  "0"="Include", 
+  "1"="Include: can’t scan (braces, etc.)", 
+  "2"="On hold: contact again after specified amount of time", 
+  "3"="On hold: low priority", 
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted", 
+  "5"="Excluded: does not meet criteria",
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="Did not or withdrew assent/consent", 
+  "8"="Ruled as ineligible for treatment during baseline assessment",
+  "9"="Patient (or parent) withdrew from treatment", 
+  "10"="Excluded after commencing treatment: clinician decision", 
+  "Total"="Total", .missing = NULL)
+
+# since last CR
+
+eval_visit_last_year_screen <- eval_visit_last_year %>% filter(status=="Screening") %>% group_by(Eligible) %>%
+  summarise(Eligible_n=n()) 
+sum <- eval_visit_last_year_screen %>% select(Eligible_n) %>% colSums()
+total <- tibble(Eligible = c("Total"), Eligible_n = c(sum))
+eval_visit_last_year_screen <- rbind(eval_visit_last_year_screen, total)
+rm(total, sum)
+
+eval_visit_last_year_screen$Eligible <- recode(eval_visit_last_year_screen$Eligible, 
+  "0"="Include", 
+  "1"="Include: can’t scan (braces, etc.)", 
+  "2"="On hold: contact again after specified amount of time", 
+  "3"="On hold: low priority", 
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted", 
+  "5"="Excluded: does not meet criteria",
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="Did not or withdrew assent/consent", 
+  "8"="Ruled as ineligible for treatment during baseline assessment",
+  "9"="Patient (or parent) withdrew from treatment", 
+  "10"="Excluded after commencing treatment: clinician decision", 
+  "Total"="Total", .missing = NULL)
+
+######## Current eligibility of all enrolled 
+
+protocol_0037_table <- protocol_0037_latest %>% filter(status=="Characterization") %>% 
+  group_by(Eligible) %>% summarise(Eligible_n=n())
+sum <- protocol_0037_table %>% select(Eligible_n) %>% colSums()
+total <- tibble(Eligible = c("Total"), Eligible_n = c(sum))
+protocol_0037_table <- rbind(protocol_0037_table, total) %>%
+  cbind(., order=c(1, 2, 11, 3, 4, 5, 6, 7, 8, 9, 10, 12)) %>% arrange(order) %>% select(-order) %>% mutate_all(as.character)
+rm(total, sum)
+
+protocol_0037_table$Eligible <- recode(protocol_0037_table$Eligible,
+  "0"="Include",
+  "1"="Include: can’t scan (braces, etc.)",
+  "2"="On hold: contact again after specified amount of time",
+  "3"="On hold: low priority",
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted",
+  "5"="Excluded: does not meet criteria",
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="Did not or withdrew assent/consent",
+  "8"="Ruled as ineligible for treatment during baseline assessment",
+  "9"="Patient (or parent) withdrew from treatment",
+  "10"="Excluded after commencing treatment: clinician decision",
+  "11"="Completed treatment",
+  "Total"="Total", .missing = NULL)
+
+tot_withdrew <- protocol_0037_latest %>% filter(status=="Characterization") %>% filter(Eligible == 4 | Eligible == 5 | Eligible == 6 | 
+    Eligible == 7  | Eligible == 9  | Eligible == 10) %>% nrow()
+
+# past year
+
+eval_visit_last_year_table <- eval_visit_last_year %>% filter(status=="Characterization") %>%
+  group_by(Eligible) %>% summarise(Eligible_n=n()) 
+sum <- eval_visit_last_year_table %>% select(Eligible_n) %>% colSums()
+total <- tibble(Eligible = c("Total"), Eligible_n = c(sum))
+eval_visit_last_year_table <- rbind(eval_visit_last_year_table, total)
+rm(total, sum)
+
+eval_visit_last_year_table$Eligible <- recode(eval_visit_last_year_table$Eligible,
+  "0"="Include",
+  "1"="Include: can’t scan (braces, etc.)",
+  "2"="On hold: contact again after specified amount of time",
+  "3"="On hold: low priority",
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted",
+  "5"="Excluded: does not meet criteria",
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="Did not or withdrew assent/consent",
+  "8"="Ruled as ineligible for treatment during baseline assessment",
+  "9"="Patient (or parent) withdrew from treatment",
+  "10"="Excluded after commencing treatment: clinician decision",
+  "11"="Completed treatment",
+  "Total"="Total", .missing = NULL)
 
 ```
-
-*Did not e-assent = referral that did not actually begin our screening process, for whatever reason (unresponsive, etc.)
-
-Parent screening status
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-screening_parent_overall %>% 
-  kable(., col.names = c("Diagnosis", "Did not e-consent*", "E-consented only", "E-assented + completed DAWBA", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-*Did not e-consent = referral that did not actually begin our screening process, for whatever reason (unresponsive, etc.)
 
 ***
 
-#### Evaluations
+##### But did not sign into characterization on the day:
 
-Had in person (or virtual) evaluation visit
+I.e. signed 0037 in-person screening consents only. 
+
+Lifetime: 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 eval_visit_overall %>% 
-  kable(., col.names = c("Diagnosis", "Signed into Characterization", "Signed Screening Consents Only", "Information Missing", "Total")) %>% 
+  kable(., col.names = c("Status", "Signed Screening Consents Only")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
-Sex/gender breakdown of these participants: 
+Past year: 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-eval_visit_gender_overall %>% 
-  kable(., col.names = c("Sex", "Signed into Characterization", "Signed Screening Consents Only", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-Race/ethnicity breakdown of these participants: 
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-eval_visit_race_overall %>% 
-  kable(., col.names = c("Race/ethnicity", "Signed into Characterization", "Signed Screening Consents Only", "Information Missing", "Total")) %>% 
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
-
-```
-
-Are they of Hispanic/Latino origin: 
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-eval_visit_hisp_overall %>% 
-  kable(., col.names = c("Hispanic/Latino", "Signed into Characterization", "Signed Screening Consents Only", "Information Missing", "Total")) %>% 
+eval_visit_last_year_screen %>% 
+  kable(., col.names = c("Status", "Signed Screening Consents Only")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
 ***
 
-Current eligibility status in characterization
+#### Enrolled in characterization
+
+Update on current eligiblity status of everyone who ever signed full characterization consents: 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-current_eligibility_table2 %>% select(-`Freq.<NA>`) %>% 
-  kable(., col.names = c("Enrollment status", "HV", "MDD", "Total")) %>%
+protocol_0037_table %>% 
+  kable(., col.names = c("Status", "Signed into Characterization")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+**Resulting in `r tot_withdrew` excluded/withdrawn in total.**
+
+
+New people signed into characterization in the past year (since `r last_CR`): 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+eval_visit_last_year_table %>% 
+  kable(., col.names = c("Status", "Signed into Characterization")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+#### Overall protocol enrollment 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+characterization_total <- protocol_0037_first %>% filter(status == "Characterization") %>% nrow() 
+other_in_person_screen <- protocol_0037_first %>% filter(status == "Screening") %>% nrow() 
+eval_total <- characterization_total + other_in_person_screen
+online_screen_no_eval <- econsent_0037_combined %>% filter(status == "screened, no eval occured") %>% nrow() 
+overall_total <- eval_total + online_screen_no_eval
+overall_protocol_table <- tibble(Description = c("Completed Online Documents, Never Came In-Person", "Face-to-face Screening", "Enrolled in 0037 Characterization", 
+  "Total"), Number = c(online_screen_no_eval, eval_total, characterization_total, overall_total))
+
+everything_combined <- econsent_0037_combined %>% filter(status == "screened, no eval occured") %>% merge.default(protocol_0037_first, ., all=TRUE)
+demographics <- table(everything_combined$SEX, everything_combined$p_demo_screen_background_race,
+  everything_combined$p_demo_screen_background_hispanic, useNA = "always") %>% as.data.frame() %>% mutate_all(as.character)
+demographics[,1:3] <- lapply(demographics[,1:3], replace_na, "Unknown")
+demographics2 <- reshape(demographics, idvar = c("Var2", "Var3"), timevar = "Var1", direction = "wide") %>% mutate_all(as.character)
+demographics2[,1:2] <- lapply(demographics2[,1:2], toupper)
+
+protocol_table_dx_overall <- ctable(everything_combined$Eligible, everything_combined$Participant_Type2, 
+                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
+  rename(Freq = "cross_table.Freq") %>% rename(Diagnosis = "cross_table.everything_combined.Participant_Type2") %>% 
+  rename(Eligible = "cross_table.everything_combined.Eligible") %>% select(Diagnosis, Eligible, Freq)
+protocol_table_dx_overall2 <- reshape(protocol_table_dx_overall, idvar = "Eligible", timevar = "Diagnosis", direction = "wide") %>% mutate_all(as.character)
+protocol_table_dx_overall2 <- na_if(protocol_table_dx_overall2,  "<NA>")
+protocol_table_dx_overall2$Unknown <- protocol_table_dx_overall2 %>% select(`Freq.UNSURE`, `Freq.<NA>`) %>% mutate_all(as.numeric) %>% rowSums()
+protocol_table_dx_overall2 <- protocol_table_dx_overall2 %>% select(Eligible:`Freq.MDD`, Unknown, `Freq.Total`)
+
+protocol_table_dx_overall2$Eligible <- recode(protocol_table_dx_overall2$Eligible,
+  "0"="Include",
+  "1"="Include: can’t scan (braces, etc.)",
+  "2"="On hold: contact again after specified amount of time",
+  "3"="On hold: low priority",
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted",
+  "5"="Excluded: does not meet criteria",
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="Did not or withdrew assent/consent",
+  "8"="Ruled as ineligible for treatment during baseline assessment",
+  "9"="Patient (or parent) withdrew from treatment",
+  "10"="Excluded after commencing treatment: clinician decision",
+  "11"="Completed treatment",
+  "Total"="Total", .missing = NULL)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+overall_protocol_table %>%
+  kable(., col.names = c("Description", "Number")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Dx breakdown of total sample (`r overall_total`, as reported in the table above): 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+protocol_table_dx_overall2 %>%
+  kable(., col.names = c("Status", "Anxious", "HV", "MDD", "Unknown", "Total")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Gender, race & ethnicity breakdown of total sample (`r overall_total`, as reported in the table above): 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+demographics2 %>%
+  kable(., col.names = c("Race", "Hispanic/Latino", "Female", "Non-binary", "Male", "Missing")) %>%
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
