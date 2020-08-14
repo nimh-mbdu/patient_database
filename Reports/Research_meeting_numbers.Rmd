@@ -529,7 +529,8 @@ Scheduling:
 
 ######## Dummy table
 scheduling_dummy <- tibble(Participant_Type2=c("HV", "MDD", "HV", "MDD", "HV", "MDD", "HV", "MDD", "Total", NA, "Total", NA, "Total", NA, "Total", NA), 
-  Eligible=c("0", "0", "1", "1", "2", "2", "3", "3", "0", "0", "1", "1", "2", "2", "3", "3"), Freq=c("0")) %>% mutate(Eligible=as.character(Eligible), Freq=as.numeric(Freq))
+  Eligible=c("0", "0", "1", "1", "2", "2", "3", "3", "0", "0", "1", "1", "2", "2", "3", "3"), Freq=c("0")) %>% 
+  mutate(Eligible=as.character(Eligible), Freq=as.numeric(Freq))
 
 ######## Real table
 scheduling <- master_IRTA_latest %>% filter(IRTA_tracker!="REMOVED") %>% 
@@ -577,14 +578,23 @@ Scheduled:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-scheduled <- master_IRTA_latest %>% filter(IRTA_tracker!="REMOVED") %>% 
+scheduled_JM <- master_IRTA_screens_latest %>% filter(IRTA_tracker=="JM") %>% select(Initials, SDAN, IRTA_tracker, Participant_Type2, 
+  Eligible, Clinical_Visit_Type, Clinical_Visit_Date, Scheduling_status, Protocol) %>% 
+  filter(Clinical_Visit_Date>todays_date_formatted)
+scheduled_other <- master_IRTA_latest %>% filter(IRTA_tracker!="REMOVED") %>% 
   select(Initials, SDAN, IRTA_tracker, Participant_Type2, Eligible, Clinical_Visit_Type, Clinical_Visit_Date, Scheduling_status, 
          Protocol) %>% group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% slice(1) %>% ungroup() %>% 
   filter(Clinical_Visit_Date>todays_date_formatted)
 
+scheduled <- merge.default(scheduled_other, scheduled_JM, all = TRUE)
+
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+if (nrow(scheduled)=="0") {
+  scheduled <- rbind(scheduled, tibble(Initials=c("No participants scheduled"), Participant_Type2=c(NA), Clinical_Visit_Date=c(NA)))
+  }
 
 scheduled %>% arrange(Clinical_Visit_Date) %>% select(Initials, Participant_Type2, Clinical_Visit_Date) %>% 
   kable(., col.names = c("Initials", "Diagnosis", "Visit Date")) %>% 
@@ -599,16 +609,15 @@ scheduled %>% arrange(Clinical_Visit_Date) %>% select(Initials, Participant_Type
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
 protocol_0037 <- master_IRTA_latest %>% filter(str_detect(Protocol, "0037")) %>% group_by(Initials) %>% 
-  slice(1) %>% ungroup() %>% select(Initials, IRTA_tracker, Participant_Type2, Eligible, Eligibility_notes, Clinical_Visit_Type,
-                                    Clinical_Visit_Date, Consent_Date, Protocol) %>% 
-  filter(Participant_Type2=="MDD" | Participant_Type2=="HV")
+  slice(n()) %>% ungroup() %>% select(Initials, IRTA_tracker, Participant_Type2, Eligible, Eligibility_notes, Clinical_Visit_Type,
+                                    Clinical_Visit_Date, Consent_Date, Protocol) 
 
 protocol_0037$Protocol_Type[str_detect(protocol_0037$Protocol, 'SCREENING')] <- 'Screening'
 protocol_0037$Protocol_Type[str_detect(protocol_0037$Protocol, 'Screening')] <- 'Screening'
 protocol_0037$Protocol_Type[is.na(protocol_0037$Protocol_Type)] <- 'Characterization'
 
 protocol_table <- ctable(protocol_0037$Participant_Type2, protocol_0037$Protocol_Type, 
-                  useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
+                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
   as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.protocol_0037.Participant_Type2") %>% 
   rename(Protocol = "cross_table.protocol_0037.Protocol_Type") %>% 
   select(-proportions.Total)
@@ -620,9 +629,43 @@ protocol_table2 <- reshape(protocol_table, idvar = "Participant_Type2", timevar 
   mutate(Screening_Percent = round(Screening_Percent, 2)) %>%
   select(Participant_Type2, Freq.Characterization, Characterization_Percent, Freq.Screening, Screening_Percent, Freq.Total)
 
-rm(protocol_0037, protocol_table)
+######## Current eligibility of all enrolled 
+
+protocol_0037_characterization <- protocol_0037 %>% filter(Protocol_Type=="Characterization") 
+protocol_0037_characterization_table <- ctable(protocol_0037_characterization$Eligible, protocol_0037_characterization$Participant_Type2, 
+                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% 
+  as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Participant_Type2 = "cross_table.protocol_0037_characterization.Participant_Type2") %>% 
+  rename(Eligible = "cross_table.protocol_0037_characterization.Eligible") %>% 
+  select(-matches("proportions")) 
+protocol_0037_characterization_table2 <- reshape(protocol_0037_characterization_table, idvar = "Eligible", timevar = "Participant_Type2", direction = "wide") %>% 
+  mutate_all(as.character)
+protocol_0037_characterization_table2 <- na_if(protocol_0037_characterization_table2,  "<NA>")
+order <- tibble(Order=c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14), Eligible=c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", NA, "Total"))
+protocol_0037_characterization_table3 <- left_join(protocol_0037_characterization_table2, order) %>% arrange(Order) %>% select(-Order)
+
+protocol_0037_characterization_table3$Eligible <- recode(protocol_0037_characterization_table3$Eligible,
+  "0"="1a. Include",
+  "1"="1b. Include: can’t scan (braces, etc.)",
+  "2"="2a. On hold: contact again after specified amount of time",
+  "3"="2b. On hold: low priority",
+  "4"="3a. Excluded: cannot be reached or scheduled, all contact options exhausted",
+  "5"="3b. Excluded: does not meet criteria",
+  "6"="3c. Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="4. Withdrawn: did not or withdrew assent/consent",
+  "8"="Treatment status 1: ruled as ineligible for treatment during baseline assessment",
+  "9"="Treatment status 2: patient (or parent) withdrew from treatment",
+  "10"="Treatment status 3: excluded after commencing treatment: clinician decision",
+  "11"="Treatment status 4: completed treatment",
+  "Total"="Total", .missing = NULL)
+
+tot_withdrew <- protocol_0037_characterization %>% filter(Eligible == 4 | Eligible == 5 | Eligible == 6 | 
+    Eligible == 7  | Eligible == 9  | Eligible == 10) %>% nrow()
+
+rm(protocol_0037, protocol_table, protocol_0037_characterization, protocol_0037_characterization_table, protocol_0037_characterization_table2)
     
 ```
+
+All eval visits:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -631,6 +674,17 @@ protocol_table2 %>% kable(., col.names = c("Diagnosis", "Signed into Characteriz
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
+
+Current status of everyone who signed full characterization consents: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+protocol_0037_characterization_table3 %>% kable(., col.names = c("Eligible", "Anxious", "HV", "MDD", "Dx Missing", "Total")) %>% 
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+Resulting in **`r tot_withdrew`** excluded/withdrawn in total.
 
 ##### Longitudinal clinical follow up
 

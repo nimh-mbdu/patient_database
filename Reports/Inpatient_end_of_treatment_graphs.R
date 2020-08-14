@@ -1,11 +1,11 @@
 
 # to change before running script -----------------------------------------
 
-inpatient_initials <- c("KABR")
+inpatient_initials <- c("KINI")
 
-computer = 'pc' # set this to either 'mac' or 'pc' or 'other' 
+computer = 'mac' # set this to either 'mac' or 'pc' or 'other' 
 
-todays_date_formatted <- as.Date("2020-03-09") 
+todays_date_formatted <- as.Date("2020-08-14") 
 
 # packages ----------------------------------------------------------------
 
@@ -44,12 +44,14 @@ if (exists("MATCH_tracker")==FALSE) {
 
 MATCH_tracker$Clinical_Visit_Date2 <- format(MATCH_tracker$Clinical_Visit_Date, "%b-%d")
 MATCH_tracker$Clinical_Visit_Date3 <- format(MATCH_tracker$Clinical_Visit_Date, "%B-%d-%Y")
+MATCH_tracker$Clinical_Visit_Date4 <- factor(MATCH_tracker$Clinical_Visit_Number, levels=MATCH_tracker$Clinical_Visit_Number, labels=MATCH_tracker$Clinical_Visit_Date2)
 
 temp_data <- MATCH_tracker %>% filter(Initials==inpatient_initials) %>% 
-  select(Initials, Clinical_Visit_Date, Clinical_Visit_Date2, Clinical_Visit_Date3, Clinical_Visit_Type, Clinical_Visit_Number, 
-         s_mfq1w_tot, s_ari1w_tot, s_scared_tot, s_shaps_tot, s_lsas_tot) %>% ungroup()
+  select(Initials, Clinical_Visit_Date, Clinical_Visit_Date2, Clinical_Visit_Date3, Clinical_Visit_Date4, Clinical_Visit_Type, Clinical_Visit_Number, 
+         s_mfq1w_tot, s_ari1w_tot, s_scared_tot, s_shaps_tot, s_lsas_tot, s_lsasad_tot) %>% ungroup()
 temp_data[,7:ncol(temp_data)] <- sapply(temp_data[,7:ncol(temp_data)], as.numeric)
 temp_data[,7:ncol(temp_data)] <- sapply(temp_data[,7:ncol(temp_data)], round, 0)
+temp_data$s_lsasad_tot <- coalesce(temp_data$s_lsasad_tot, temp_data$s_lsas_tot)
 
 out_file <- paste0(inpatient_summary_location, "end_of_treatment_graphs/", inpatient_initials)
 
@@ -70,7 +72,7 @@ mfq_graph <- temp_data %>% ggplot(aes(x = Clinical_Visit_Date, y = s_mfq1w_tot))
   geom_text(aes(label=s_mfq1w_tot), hjust=0, vjust=-1.5, size=4) + ylim(0,27) + theme_classic() +
   ggtitle("Depressive symptoms\n") + ylab("MFQ total\n") + xlab("\nDate (MM-DD)\n")
 
-ggsave(filename = paste0("MFQ_graph_", inpatient_initials, ".png"), plot = mfq_graph, width=5, height=5)
+ggsave(filename = paste0("MFQ_graph_", inpatient_initials, ".png"), plot = mfq_graph, width=18, height=5)
 
 # SCARED
 
@@ -80,15 +82,15 @@ scared_graph <- temp_data %>% ggplot(aes(x = Clinical_Visit_Date, y = s_scared_t
   geom_text(aes(label=s_scared_tot), hjust=0, vjust=-1.5, size=4) + ylim(0,83) + theme_classic() +
   ggtitle("General anxiety symptoms\n") + ylab("SCARED total\n") + xlab("\nDate (MM-DD)\n")
 
-ggsave(filename = paste0("SCARED_graph_", inpatient_initials, ".png"), plot = scared_graph, width=5, height=5)
+ggsave(filename = paste0("SCARED_graph_", inpatient_initials, ".png"), plot = scared_graph, width=18, height=5)
 
 # LSAS  
 
-lsas_graph <- temp_data %>% ggplot(aes(x = Clinical_Visit_Date, y = s_lsas_tot)) +
+lsas_graph <- temp_data %>% ggplot(aes(x = Clinical_Visit_Date, y = s_lsasad_tot)) +
   geom_point(size=2) + geom_line(size=0.25) +
   scale_x_date(date_break = "2 weeks", date_labels = "%m/%d") +
-  geom_text(aes(label=s_lsas_tot), hjust=0, vjust=-1.5, size=4) + ylim(0,150) + theme_classic() +
+  geom_text(aes(label=s_lsasad_tot), hjust=0, vjust=-1.5, size=4) + ylim(0,150) + theme_classic() +
   ggtitle("Social anxiety symptoms\n") + ylab("LSAS total\n") + xlab("\nDate (MM-DD)\n")
 
-ggsave(filename = paste0("LSAS_graph_", inpatient_initials, ".png"), plot = lsas_graph, width=5, height=5)
+ggsave(filename = paste0("LSAS_graph_", inpatient_initials, ".png"), plot = lsas_graph, width=18, height=5)
 

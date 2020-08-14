@@ -6,7 +6,7 @@ output: html_document
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-rm(list = ls()) # command to clear all variables from R environment
+# rm(list = ls()) # command to clear all variables from R environment
 
 computer = 'mac' # set this to either 'mac' or 'pc' or 'other'
 if (computer=="pc") {
@@ -92,13 +92,15 @@ if (exists("Psychometrics_treatment")==FALSE) {
   master_database_combined <- tibble(File=c(master_database_file), Date=c(master_database_file_time)) %>% 
     arrange(desc(Date)) %>% slice(1)
   Psychometrics_treatment <- read_excel(paste0(database_location, master_database_combined[1]))
-  demo <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, IRTA_tracker, p_demo_screen_background_race, p_demo_screen_background_hispanic) %>% 
-    distinct(., .keep_all = TRUE) %>% filter(!is.na(p_demo_screen_background_race) | !is.na(p_demo_screen_background_hispanic))
+  demo <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Clinical_Visit_Date, p_demo_screen_background_race, p_demo_screen_background_hispanic, 
+    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, c_ksadsdx_lifetime_mdd, c_ksadsdx_eligibility, c_ksadsdx_visit_type) %>%
+    group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% slice(n()) %>% ungroup() %>% select(-Clinical_Visit_Date)
   rm(master_database_file, master_database_file_time, master_database_combined)
 } else {
   print("clinical database info already imported")
-  demo <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, IRTA_tracker, p_demo_screen_background_race, p_demo_screen_background_hispanic) %>% 
-    distinct(., .keep_all = TRUE) %>% filter(!is.na(p_demo_screen_background_race) | !is.na(p_demo_screen_background_hispanic))
+  demo <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Clinical_Visit_Date, p_demo_screen_background_race, p_demo_screen_background_hispanic, 
+    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, c_ksadsdx_lifetime_mdd, c_ksadsdx_eligibility, c_ksadsdx_visit_type) %>%
+    group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% slice(n()) %>% ungroup() %>% select(-Clinical_Visit_Date)
 }
 
 # Combining screening data  --------------------------------------------
@@ -192,9 +194,11 @@ protocol_0037_latest <- left_join(protocol_0037_latest, demo)
 
 Today's date: `r Sys.Date()`
 
+Continuing review period: `r last_CR` - `r cut_off`
+
 *** 
 
-##### Completed screening but no eval occured/eval pending:
+## Completed screening but no eval occured/eval pending:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
@@ -249,7 +253,7 @@ screened_no_eval_past_year$Eligible <- recode(screened_no_eval_past_year$Eligibl
 
 ```
 
-Lifetime: 
+#### Lifetime: 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -259,7 +263,7 @@ screened_no_eval_overall %>% select(-`Freq.<NA>`) %>%
 
 ```
 
-Period since `r last_CR`:
+#### Past year
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -271,7 +275,7 @@ screened_no_eval_past_year %>%
 
 ***
 
-#### Completed face-to-face screening:
+## Completed face-to-face screening (eval):
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
@@ -379,11 +383,11 @@ eval_visit_last_year_table$Eligible <- recode(eval_visit_last_year_table$Eligibl
 
 ***
 
-##### But did not sign into characterization on the day:
+#### In-person screening only
 
-I.e. signed 0037 in-person screening consents only. 
+Did not sign into characterization on the day: signed 0037 in-person screening consents only. 
 
-Lifetime: 
+#### Lifetime: 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -393,7 +397,7 @@ eval_visit_overall %>%
 
 ```
 
-Past year: 
+#### Past year: 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
@@ -407,6 +411,10 @@ eval_visit_last_year_screen %>%
 
 #### Enrolled in characterization
 
+Meaning they came for an eval & then signed full characterization consents.
+
+#### Lifetime
+
 Update on current eligiblity status of everyone who ever signed full characterization consents: 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -417,8 +425,9 @@ protocol_0037_table %>%
 
 ```
 
-**Resulting in `r tot_withdrew` excluded/withdrawn in total.**
+Resulting in **`r tot_withdrew`** excluded/withdrawn in total.
 
+#### Past year
 
 New people signed into characterization in the past year (since `r last_CR`): 
 
@@ -432,7 +441,7 @@ eval_visit_last_year_table %>%
 
 ***
 
-#### Overall protocol enrollment 
+## Overall protocol enrollment 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
@@ -444,7 +453,10 @@ overall_total <- eval_total + online_screen_no_eval
 overall_protocol_table <- tibble(Description = c("Completed Online Documents, Never Came In-Person", "Face-to-face Screening", "Enrolled in 0037 Characterization", 
   "Total"), Number = c(online_screen_no_eval, eval_total, characterization_total, overall_total))
 
+# overall: 
+
 everything_combined <- econsent_0037_combined %>% filter(status == "screened, no eval occured") %>% merge.default(protocol_0037_first, ., all=TRUE)
+
 demographics <- table(everything_combined$SEX, everything_combined$p_demo_screen_background_race,
   everything_combined$p_demo_screen_background_hispanic, useNA = "always") %>% as.data.frame() %>% mutate_all(as.character)
 demographics[,1:3] <- lapply(demographics[,1:3], replace_na, "Unknown")
@@ -475,6 +487,34 @@ protocol_table_dx_overall2$Eligible <- recode(protocol_table_dx_overall2$Eligibl
   "11"="Completed treatment",
   "Total"="Total", .missing = NULL)
 
+# last year: 
+
+everything_combined_past_year <- everything_combined %>% filter(Overall_date > last_CR) %>% filter(Overall_date <= cut_off)
+
+protocol_table_dx_past_year <- ctable(everything_combined_past_year$Eligible, everything_combined_past_year$Participant_Type2, 
+                  useNA = "always", prop="r", totals=FALSE, display.type=FALSE) %>% as.data.frame() %>% 
+  rename(Freq = "cross_table.Freq") %>% rename(Diagnosis = "cross_table.everything_combined_past_year.Participant_Type2") %>% 
+  rename(Eligible = "cross_table.everything_combined_past_year.Eligible") %>% select(Diagnosis, Eligible, Freq)
+protocol_table_dx_past_year2 <- reshape(protocol_table_dx_past_year, idvar = "Eligible", timevar = "Diagnosis", direction = "wide") %>% mutate_all(as.character)
+protocol_table_dx_past_year2 <- na_if(protocol_table_dx_past_year2,  "<NA>")
+# protocol_table_dx_past_year2$Unknown <- protocol_table_dx_past_year2 %>% select(`Freq.UNSURE`, `Freq.<NA>`) %>% mutate_all(as.numeric) %>% rowSums()
+# protocol_table_dx_past_year2 <- protocol_table_dx_past_year2 %>% select(Eligible:`Freq.MDD`, Unknown, `Freq.Total`)
+
+protocol_table_dx_past_year2$Eligible <- recode(protocol_table_dx_past_year2$Eligible,
+  "0"="Include",
+  "1"="Include: can’t scan (braces, etc.)",
+  "2"="On hold: contact again after specified amount of time",
+  "3"="On hold: low priority",
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted",
+  "5"="Excluded: does not meet criteria",
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
+  "7"="Did not or withdrew assent/consent",
+  "8"="Ruled as ineligible for treatment during baseline assessment",
+  "9"="Patient (or parent) withdrew from treatment",
+  "10"="Excluded after commencing treatment: clinician decision",
+  "11"="Completed treatment",
+  "Total"="Total", .missing = NULL)
+
 ```
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -485,6 +525,10 @@ overall_protocol_table %>%
 
 ```
 
+### Diagnosis 
+
+#### Lifetime
+
 Dx breakdown of total sample (`r overall_total`, as reported in the table above): 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -494,6 +538,22 @@ protocol_table_dx_overall2 %>%
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
+
+#### Past year
+
+Dx breakdown for all screens + evals in past year: 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+
+protocol_table_dx_past_year2 %>%
+  kable(., col.names = c("Status", "Anxious", "HV", "MDD", "Unknown", "Total")) %>%
+  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+
+```
+
+***
+
+### Other demographics 
 
 Gender, race & ethnicity breakdown of total sample (`r overall_total`, as reported in the table above): 
 

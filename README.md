@@ -18,7 +18,6 @@
 	Reports/Research_meeting_numbers.Rmd
 	Other_functions/Referrals_summary.R
 	Other_functions/check_referrals.R
-
 6. Script to generate eval and screening summaries for clinical meeting: 
 	Reports/Clinician_sheet.Rmd
 7. Scripts to generate CBT reports: 
@@ -30,11 +29,14 @@
 	Reports/Inpatient_end_of_treatment_graphs.R
 9. Script to generate clinician supervision summary: 
 	Reports/All_treatment_summary.Rmd
+10. Script to generate numbers for annual continuing review (CR) for IRB:
+	Reports/Continuing_review.Rmd
 10. COVID19 related research database generation: 
 	Reports/crisis_dataset_description.Rmd
-11. Other: 
 	Other_functions/Crisis_distribution.R
+11. Other: 
 	Other_functions/followup_counts.R
+
 
 ---
 ## Manual: 

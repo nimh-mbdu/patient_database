@@ -72,33 +72,7 @@
   SDQ_Data_Download_raw <- merge.default(SDQ_Data_Download_raw, imported_hyphen_issue, all=TRUE)
   
   SDQ_Data_Download_raw$Overall_date <- as.Date(SDQ_Data_Download_raw$modedate, "%Y-%m-%d")
-  
-  # SDQ_Data_Download_raw$Overall_date <- coalesce(as.Date(SDQ_Data_Download_raw$modedate, "%Y-%m-%d"), as.Date(SDQ_Data_Download_raw$dateadded, "%Y-%m-%d")) %>%
-  #   coalesce(., as.Date(SDQ_Data_Download_raw$maxdate, "%Y-%m-%d")) %>% 
-  #   coalesce(., as.Date(SDQ_Data_Download_raw$mindate, "%Y-%m-%d")) 
-  
-  # fix date conversion below, check format & specify 
-  
-  # SDQ_Data_dateadded_uk <- SDQ_Data_Download_raw %>% filter(str_detect(dateadded, "-"))
-  # SDQ_Data_dateadded_uk$dateadded <- gsub("0019", "2019", SDQ_Data_dateadded_uk$dateadded, fixed=TRUE)
-  # SDQ_Data_dateadded_uk$dateadded <- gsub("0018", "2018", SDQ_Data_dateadded_uk$dateadded, fixed=TRUE)
-  # SDQ_Data_dateadded_uk$dateadded <- gsub("82018", "2018", SDQ_Data_dateadded_uk$dateadded, fixed=TRUE)
-  # SDQ_Data_dateadded_uk$dateadded <- gsub("72018", "2018", SDQ_Data_dateadded_uk$dateadded, fixed=TRUE)
-  # SDQ_Data_dateadded_uk$dateadded <- as.Date(SDQ_Data_dateadded_uk$dateadded, "%Y-%m-%d")
-  # 
-  # SDQ_Data_dateadded_usa <- SDQ_Data_Download_raw %>% filter(str_detect(dateadded, "/"))
-  # SDQ_Data_dateadded_usa$dateadded <- as.Date(SDQ_Data_dateadded_usa$dateadded, "%m/%d/%Y")
-  # 
-  # SDQ_Data_dateadded_missing <- SDQ_Data_Download_raw %>% filter(is.na(dateadded) | (!str_detect(dateadded, "-") & !str_detect(dateadded, "/")))
-  # SDQ_Data_dateadded_missing$dateadded <- na_if(SDQ_Data_dateadded_missing$dateadded, "")
-  # SDQ_Data_dateadded_missing$dateadded <- as.Date(SDQ_Data_dateadded_missing$dateadded)
-  # 
-  # SDQ_Data_dateadded_fixed <- merge.default(SDQ_Data_dateadded_uk, SDQ_Data_dateadded_usa, all=TRUE) %>% merge.default(., SDQ_Data_dateadded_missing, all=TRUE)
-  # 
-  # SDQ_Data_dateadded_fixed$Overall_date <- coalesce(as.Date(SDQ_Data_dateadded_fixed$modedate, "%Y-%m-%d"), as.Date(SDQ_Data_dateadded_fixed$dateadded, "%Y-%m-%d")) %>%
-  #   coalesce(., as.Date(SDQ_Data_dateadded_fixed$Done, "%Y-%m-%d")) %>% coalesce(., as.Date(SDQ_Data_dateadded_fixed$maxdate, "%Y-%m-%d")) %>% 
-  #   coalesce(., as.Date(SDQ_Data_dateadded_fixed$mindate, "%Y-%m-%d")) 
-  
+
   # changing column names
 
   sdq_columns <- read_excel(paste0(database_location, "other_data_never_delete/sdq_column_names_and_descriptions.xlsx"))
@@ -122,7 +96,7 @@
 
   #****** CTDB = where data is stored for those not in 0037
   
-  CTDB_Data_Download <- read_excel(paste0(ctdb_pull, latest_ctdb_pull, ".xlsx"), sheet = 'Data_and_Scores', col_types = "text") %>% mutate(source = "CTDB")
+  CTDB_Data_Download <- read_excel(paste0(ctdb_pull, latest_ctdb_pull, ".xlsx"), sheet = 'Data_and_Scores') %>% mutate(source = "CTDB")
   
   # changing column names
   
@@ -202,6 +176,7 @@
   manual_combined <- reduce(manual_sets, full_join)
   fill_names <- manual_combined %>% select(-Initials, -Overall_date) %>% colnames()
   manual_combined <- manual_combined %>% group_by(Initials, Overall_date) %>% 
+    # fill(., all_of(fill_names), .direction = "down") %>% fill(., all_of(fill_names), .direction = "up") %>%
     fill(., fill_names, .direction = "down") %>% fill(., fill_names, .direction = "up") %>%
     ungroup() %>% distinct(., .keep_all = TRUE) %>% mutate(source = "MANUAL")
   
@@ -981,10 +956,15 @@
     distinct(., .keep_all = TRUE) %>% arrange(Initials, c_ksadsdx_date, source) %>%
     slice(1) %>% ungroup() %>% select(-Overall_date)
   
-  diagnosis_subset_sdq[fix_var[2]] <- lapply(diagnosis_subset_sdq[fix_var[2]], FUN = function(x) recode(x, "0"="baseline", "1"="12 month FU", "2"="24 month FU", "9"="Inpatient Treatment", "10"="Outpatient Treatment", .missing = NULL))
-  diagnosis_subset_sdq[fix_var[3]] <- lapply(diagnosis_subset_sdq[fix_var[3]], FUN = function(x) recode(x, "0"="Include", "1"="Include: can't scan", "5"="Excluded: does not meet criteria", "6"="Excluded: meets exclusionary criteria", "777"="Excluded: withdrew", .missing = NULL))
-  diagnosis_subset_sdq[fix_var[5]] <- lapply(diagnosis_subset_sdq[fix_var[5]], FUN = function(x) recode(x, "1"="MDD", "2"="Sub-MDD", "3"="Healthy", "4"="Anxious", "5"="DMDD", "6"="ADHD", "777"="EXCLUDED", .missing = NULL))
-  diagnosis_subset_sdq[fix_var[7]] <- lapply(diagnosis_subset_sdq[fix_var[7]], FUN = function(x) recode(x, "1"="Full_MDD", "2"="Sub_remit", "3"="Sub_hist", "4"="Sub_never", "5"="Remit_MDD", "6"="Hist_MDD", "7"="Remit_Sub", "8"="Hist_Sub", "9"="HV", "10"="Anxious", "11"="DMDD", "12"="Sub_DMDD", "13"="ADHD", "14"="Bipolar_I", "15"="Bipolar_II", "777"="EXCLUDED", .missing = NULL))
+  diagnosis_subset_sdq[fix_var[2]] <- lapply(diagnosis_subset_sdq[fix_var[2]], FUN = function(x) recode(x, "0"="baseline", "1"="12 month FU", "2"="24 month FU",
+    "3"="36 month FU", "4"="48 month FU", "9"="Inpatient Treatment", "10"="Outpatient Treatment", .missing = NULL))
+  diagnosis_subset_sdq[fix_var[3]] <- lapply(diagnosis_subset_sdq[fix_var[3]], FUN = function(x) recode(x, "0"="Include", "1"="Include: can't scan", 
+    "5"="Excluded: does not meet criteria", "6"="Excluded: meets exclusionary criteria", "777"="Excluded: withdrew", "7"="Excluded: withdrew", .missing = NULL))
+  diagnosis_subset_sdq[fix_var[5]] <- lapply(diagnosis_subset_sdq[fix_var[5]], FUN = function(x) recode(x, "1"="MDD", "2"="Sub-MDD", "3"="Healthy", "4"="Anxious", 
+    "5"="DMDD", "6"="ADHD", "777"="EXCLUDED", .missing = NULL))
+  diagnosis_subset_sdq[fix_var[7]] <- lapply(diagnosis_subset_sdq[fix_var[7]], FUN = function(x) recode(x, "1"="Full_MDD", "2"="Sub_remit", "3"="Sub_hist", 
+    "4"="Sub_never", "5"="Remit_MDD", "6"="Hist_MDD", "7"="Remit_Sub", "8"="Hist_Sub", "9"="HV", "10"="Anxious", "11"="DMDD", "12"="Sub_DMDD", "13"="ADHD", 
+    "14"="Bipolar_I", "15"="Bipolar_II", "777"="EXCLUDED", .missing = NULL))
   diagnosis_subset_sdq[fix_var[12]] <- lapply(diagnosis_subset_sdq[fix_var[12]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
   diagnosis_subset_sdq[fix_var[13]] <- lapply(diagnosis_subset_sdq[fix_var[13]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
   diagnosis_subset_sdq[fix_var[14]] <- lapply(diagnosis_subset_sdq[fix_var[14]], FUN = function(x) recode(x, "1"="yes", "2"="no", .missing = NULL))
@@ -2810,7 +2790,7 @@
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
-    # iter=19
+    # iter=14
     measure_name <- variables_no_scoring[iter]
     print(paste("************************LOOP = ", measure_name))
 
@@ -2822,7 +2802,7 @@
         filter(!is.na(Overall_date)) %>% 
         distinct(., .keep_all = TRUE)
       measure_temp <- merge.default(measure_temp, common_identifiers_child_sib, all=TRUE) %>% 
-        select(PLUSID, Initials, Sibling_Init, source, matches(measure_name))
+        select(PLUSID, Initials, Overall_date, Sibling_Init, source, matches(measure_name))
     } else if (measure_name=="p_demo_screen_") {
       measure_temp <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
         select(-matches('p_demo_screen_background_')) %>% filter(!is.na(Overall_date)) %>% 
@@ -3771,7 +3751,7 @@ rm(list=ls(pattern="temp"))
 rm(tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, numeric_variables,
    measure_name, panic_subscale, sep_subscale, social_subscale, gad_subscale, school_subscale, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d,
    fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report, fill_in,
-   c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, date_variabes,
+   c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, date_variables,
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, sdq_w_names, sdq_dates, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, task_DB, task_DB_date, 
    how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, sibling,
