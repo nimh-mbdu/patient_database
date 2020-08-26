@@ -83,8 +83,7 @@
   
   sdq_dates <- SDQ_Data_Download %>% select(matches("_date")) %>% select(-Overall_date) %>% colnames()
   SDQ_Data_Download[sdq_dates] <- lapply(SDQ_Data_Download[sdq_dates], as.Date, "%d-%m-%Y")
-  SDQ_Data_Download[SDQ_Data_Download==-2] <- NA
-  
+
   #****** old dx checklist & mdd form (from before these were combined on sdq & the mdd form removed)
   
   old_mdd_form <- read_excel(paste0(database_location, "other_data_never_delete/diagnosis_old_mdd_updated_comorbid.xlsx")) %>% 
@@ -2527,7 +2526,7 @@
   
   for(i in seq_along(crisis_measures)) {
     iter <- as.numeric(i)
-    # iter=1
+    # iter=2
     measure_name <- crisis_measures[iter]
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% rename(measure_temp_source = "source") %>% distinct(., .keep_all = TRUE) 
@@ -2538,12 +2537,18 @@
       measure_temp_sdq[,17] <- lapply(measure_temp_sdq[,17], na_if, "")
       measure_temp_sdq[,18:54] <- lapply(measure_temp_sdq[,18:54], as.numeric)
       measure_temp_sdq[,55:58] <- lapply(measure_temp_sdq[,55:58], na_if, "")
+      
+      # recoding items "32_sad" & "33_anhedonia" - reverse scoring to flip from 0, 1, 2, 3, 4 to 4, 3, 2, 1, 0
       measure_temp_sdq[,43:44] <- lapply(measure_temp_sdq[,43:44], FUN = function(x) recode(x, `4`=0, `3`=1, `2`=2, `1`=3, `0`=4, .missing = NULL))
+      
       measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     } else if (measure_name=="s_crisis_3m_" | measure_name=="p_crisis_3m_") {
       measure_temp_sdq[,5:20] <- lapply(measure_temp_sdq[,5:20], as.numeric)
-      measure_temp_sdq[,9:10] <- lapply(measure_temp_sdq[,9:10], FUN = function(x) recode(x, `4`=0, `3`=1, `2`=2, `1`=3, `0`=4, .missing = NULL))
+      
+      # recoding items "32_sad" & "33_anhedonia" - reverse scoring to flip from 0, 1, 2, 3, 4 to 4, 3, 2, 1, 0
+      measure_temp_sdq[,9:10] <- lapply(measure_temp_sdq[,9:10], FUN = function(x) recode(x, `4`=0, `3`=1, `2`=2, `1`=3, `0`=4, .missing = NULL)) 
+      
       measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     } else if (measure_name=="s_scaredshort_" | measure_name=="p_scaredshort_") {
@@ -3427,7 +3432,7 @@ measures_dataset_qc$QC_notes <- gsub("NA", "", measures_dataset_qc$QC_notes, fix
 smfq1w_tminus2_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Clinical_Visit_Date, s_mfq1w_tot, s_mfq_tot, s_mfq1w_date, s_mfq_date) %>% 
   filter(!is.na(s_mfq1w_tot) | !is.na(s_mfq_tot)) 
 smfq1w_tminus2_long$s_mfq1w_tot <- coalesce(smfq1w_tminus2_long$s_mfq1w_tot, smfq1w_tminus2_long$s_mfq_tot) %>% round(., digits = 0)
-smfq1w_tminus2_long$s_mfq1w_date <- coalesce(smfq1w_tminus2_long$s_mfq1w_date, smfq1w_tminus2_long$s_mfq_date) %>% round(., digits = 0)
+smfq1w_tminus2_long$s_mfq1w_date <- coalesce(smfq1w_tminus2_long$s_mfq1w_date, smfq1w_tminus2_long$s_mfq_date)
 smfq1w_tminus2_long <- smfq1w_tminus2_long %>% filter(s_mfq1w_date < "2020-03-17") %>% group_by(Initials) %>% 
   arrange(desc(s_mfq1w_date)) %>% slice(1:2) %>% ungroup() %>% select(-s_mfq_date, -s_mfq_tot) %>% distinct(., .keep_all = TRUE)
 
@@ -3703,8 +3708,8 @@ render(paste0(scripts, 'Reports/crisis_dataset_description.Rmd'),
        output_format = "html_document", output_file = 'CRISIS_completion_numbers', output_dir = paste0(database_location, 'COVID19/'))
 detach(package:kableExtra)
 
-crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.csv"))
-crisis_final %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.xlsx"))
+CRISIS_data_presentation_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_tminus1.csv"))
+CRISIS_data_presentation_final %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_tminus1.xlsx"))
 
 # checking saved properly
 file_save_check <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^CRISIS_subset_w_baseline.csv", all.files = FALSE,

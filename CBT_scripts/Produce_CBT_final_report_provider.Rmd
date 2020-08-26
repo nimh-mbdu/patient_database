@@ -71,7 +71,7 @@ date_variabes <- CBT_report %>% select(matches("_date"), matches("_Date")) %>% c
 date_variabes <- c(date_variabes, "DOB")
 CBT_report[date_variabes] <- lapply(CBT_report[date_variabes], as.Date) 
 
-numeric_variables <- CBT_report %>% select(matches("_tot"), Clinical_Visit_Number) %>% colnames() 
+numeric_variables <- CBT_report %>% select(matches("_tot")) %>% colnames() 
 CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], as.numeric)
 CBT_report[numeric_variables] <- lapply(CBT_report[numeric_variables], round)
 
@@ -283,9 +283,9 @@ MFQ (Mood & Feelings Questionnaire): 13 items rated 0-2, clinical cutoff score =
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
+data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>%
   gather(Measure, value, s_mfq1w_tot, p_f_mfq1w_tot, p_m_mfq1w_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=as.numeric(Clinical_Visit_Number), y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
@@ -302,10 +302,10 @@ data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_f_mfq1w_tot) | !is.na(p_m_mfq1w_t
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
+data %>% filter(!is.na(s_mfq1w_tot) | !is.na(p_mfq1w_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>% 
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_mfq1w_tot, p_mfq1w_tot, p_mfq1w_parent) %>%
   mutate(s_mfq1w_tot = replace_na(s_mfq1w_tot, " ")) %>% mutate(p_mfq1w_tot = replace_na(p_mfq1w_tot, " ")) %>% 
-  mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>%
+  mutate(p_mfq1w_parent = replace_na(p_mfq1w_parent, " ")) %>%
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
@@ -318,9 +318,9 @@ SCARED (Self-Report for Anxiety Related Emotional Disorders): 41 items rated 0-2
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
+data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scared_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>%
   gather(Measure, value, s_scared_tot, p_f_scared_tot, p_m_scared_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=as.numeric(Clinical_Visit_Number), y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
@@ -337,10 +337,10 @@ data %>% filter(!is.na(s_scared_tot) | !is.na(p_f_scared_tot) | !is.na(p_m_scare
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
+data %>% filter(!is.na(s_scared_tot) | !is.na(p_scared_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>%
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_scared_tot, p_scared_tot, p_scared_parent) %>%
   mutate(s_scared_tot = replace_na(s_scared_tot, " ")) %>% mutate(p_scared_tot = replace_na(p_scared_tot, " ")) %>% 
-  mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>%
+  mutate(p_scared_parent = replace_na(p_scared_parent, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
@@ -353,9 +353,9 @@ SHAPS (Snaith-Hamilton Pleasure Scale): 14 items rated 0-3, higher scores reflec
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>% 
+data %>% filter(!is.na(s_shaps_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>% 
   gather(Measure, value, s_shaps_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=as.numeric(Clinical_Visit_Number), y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
@@ -372,9 +372,9 @@ data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_shaps_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%  arrange(Clinical_Visit_Date) %>% 
+data %>% filter(!is.na(s_shaps_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>% arrange(Clinical_Visit_Date) %>% 
   select(Clinical_Visit_Date4, Clinical_Visit_Number, s_shaps_tot) %>%
-  mutate(s_shaps_tot = replace_na(s_shaps_tot, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
+  mutate(s_shaps_tot = replace_na(s_shaps_tot, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```
@@ -387,9 +387,9 @@ ARI (Affective Reactivity Index): 7 items rated 0-2, clinical cutoff = 2.
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot)) %>%  filter(Clinical_Visit_Number != '0') %>%
+data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>%
   gather(Measure, value, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=as.numeric(Clinical_Visit_Number), y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
@@ -406,10 +406,10 @@ data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_t
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>% filter(Clinical_Visit_Number != '0') %>%
+data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_ari1w_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>%
   arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, s_ari1w_tot, p_ari1w_tot, p_ari1w_parent) %>%
   mutate(s_ari1w_tot = replace_na(s_ari1w_tot, " ")) %>% mutate(p_ari1w_tot = replace_na(p_ari1w_tot, " ")) %>% 
-  mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>%
+  mutate(p_ari1w_parent = replace_na(p_ari1w_parent, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self", "Parent reporting on child", "Parent"))
 
 ```
@@ -423,9 +423,9 @@ LSAS (Liebowitz Social Anxiety Scale): 24 items rated 0-3, clinical cutoff = 30.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data$s_lsasad_tot <- coalesce(data$s_lsasad_tot, data$s_lsas_tot)
-data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %>% 
+data %>% filter(!is.na(s_lsasad_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>% 
   gather(Measure, value, s_lsasad_tot) %>%
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=as.numeric(Clinical_Visit_Number), y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
@@ -442,9 +442,9 @@ data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
-data %>% filter(!is.na(s_lsasad_tot)) %>% filter(Clinical_Visit_Number != '0') %>% arrange(Clinical_Visit_Date) %>% 
+data %>% filter(!is.na(s_lsasad_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>% arrange(Clinical_Visit_Date) %>% 
   select(Clinical_Visit_Date4, Clinical_Visit_Number, s_lsasad_tot) %>%
-  mutate(s_lsasad_tot = replace_na(s_lsasad_tot, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
+  mutate(s_lsasad_tot = replace_na(s_lsasad_tot, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Child reporting on self"))
 
 ```
@@ -458,7 +458,7 @@ CDRS (Children’s Depression Rating Scale): 20 items. This is a semi-structured
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>% 
-  ggplot(aes(x=Clinical_Visit_Number, y=value, group=Measure), na.rm = TRUE) +
+  ggplot(aes(x=as.numeric(Clinical_Visit_Number), y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
   geom_line() +
   geom_text(aes(label=value), hjust=0, vjust=-1) +
@@ -476,7 +476,7 @@ data %>% filter(!is.na(c_cdrs_tot)) %>% gather(Measure, value, c_cdrs_tot) %>%
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 data %>% filter(!is.na(c_cdrs_tot)) %>% arrange(Clinical_Visit_Date) %>% select(Clinical_Visit_Date4, Clinical_Visit_Number, c_cdrs_tot) %>% 
-  mutate(c_cdrs_tot = replace_na(c_cdrs_tot, " ")) %>% mutate(Clinical_Visit_Number = as.character(Clinical_Visit_Number)) %>% 
+  mutate(c_cdrs_tot = replace_na(c_cdrs_tot, " ")) %>% 
   kable(., col.names = c("Visit Date", "Visit Number", "Clinician reporting on child"))
 
 ```
