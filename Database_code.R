@@ -268,7 +268,7 @@
   # combining these 
   
   ctdb_w_plusid_parent <- merge.default(ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, all=TRUE) %>% 
-    select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, matches("_mfq"), matches("_ari"), matches("_scared"), matches("_medsctdb"))
+    select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches("_mfq"), matches("_ari"), matches("_scared"), matches("_medsctdb"))
 
   # coalescing any information incorrectly entered under 'self', rather than 'parent': 
   
@@ -284,7 +284,7 @@
     }
   
   ctdb_w_plusid_parent_reduced <- ctdb_w_plusid_parent %>% 
-    select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, matches("p_mfq"), matches("p_ari"), matches("p_scared"), matches("_medsctdb"))
+    select(PLUSID, SDAN, FIRST_NAME, LAST_NAME, Initials, Protocol_CTDB, source, matches("p_mfq"), matches("p_ari"), matches("p_scared"), matches("_medsctdb"))
 
   # joining parent and child report 
   
@@ -347,6 +347,7 @@
     iter <- as.numeric(i)
     # iter=1
     measure_name <- tot_sum[iter]
+    print(paste("************************LOOP = ", measure_name))
     
       measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
         filter(!is.na(Overall_date)) %>% 
@@ -400,7 +401,7 @@
     } else {
       measure_temp_sdq <- measure_temp_sdq
       measure_temp_ctdb <- ctdb_w_plusid %>% select(PLUSID, Initials, Protocol_CTDB, source, matches(measure_name)) %>% 
-      rename(date_temp = ends_with("_date")) %>% rename(tempcomplete = ends_with("_complete")) %>% rename(temptotal = ends_with("_tot")) %>% 
+        rename(date_temp = ends_with("_date")) %>% rename(tempcomplete = ends_with("_complete")) %>% rename(temptotal = ends_with("_tot")) %>% 
         filter(!is.na(temptotal))
       }
     
@@ -467,7 +468,7 @@
       group_by(Initials, Task_Name, Task_Date) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, Task_Date, measurement_TDiff_abs) %>% 
       slice(1) %>%
-      ungroup() %>% 
+      ungroup() %>%
       group_by(Initials, Task_Name, date_temp) %>% 
       arrange(FIRST_NAME, LAST_NAME, Initials, Task_Name, date_temp, measurement_TDiff_abs) %>% 
       slice(1) %>%
@@ -520,6 +521,8 @@
     iter <- as.numeric(i)
     # iter=2
     measure_name <- scared[iter]
+    print(paste("************************LOOP = ", measure_name))
+    
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
       distinct(., .keep_all = TRUE) 
@@ -575,6 +578,8 @@
     iter2 <- as.numeric(j)
       # iter2=5
       subscale_name <- scared_subscales[iter2]
+      print(paste("************************LOOP = ", measure_name, subscale_name))
+      
       measure_temp_sdq$subscaletot <- measure_temp_sdq %>% select(matches(eval(parse(text=scared_subscales[iter2])))) %>% rowSums(na.rm=TRUE)
       names(measure_temp_sdq)[names(measure_temp_sdq) == "subscaletot"] <- (paste0(subscale_name, "_temp"))
     }
@@ -1102,6 +1107,7 @@
   comorbid$c_ksadsdx_current_comorbid_dx_all <- na_if(comorbid$c_ksadsdx_current_comorbid_dx_all, "NA")
   comorbid$c_ksadsdx_lifetime_comorbid_dx_all <- na_if(comorbid$c_ksadsdx_lifetime_comorbid_dx_all, "NA")
   
+  # populating blanks with 'None', if applicable (i.e. clinician specified no comorbid dx in old version of questionnaire)
   comorbid$c_ksadsdx_ongoing_comorbid_dx_all <- coalesce(comorbid$c_ksadsdx_ongoing_comorbid_dx_all, comorbid$c_ksadsdx_comorbid_dx_old)
   comorbid$c_ksadsdx_current_comorbid_dx_all <- coalesce(comorbid$c_ksadsdx_current_comorbid_dx_all, comorbid$c_ksadsdx_comorbid_dx_old)
   comorbid$c_ksadsdx_lifetime_comorbid_dx_all <- coalesce(comorbid$c_ksadsdx_lifetime_comorbid_dx_all, comorbid$c_ksadsdx_comorbid_dx_old)
@@ -1313,14 +1319,14 @@
     arrange(Initials, desc(s_handedness_ehi_date), desc(s_handedness_ehi_tot), desc(s_handedness_ehi_source)) %>%
     slice(1) %>%
     ungroup()
-  s_handedness_subset$s_handedness_ehi_tot <- as.numeric(s_handedness_subset$s_handedness_ehi_tot)
   
   na_names_handedness <- s_handedness_subset %>% select(matches("s_handedness_")) %>% select(-matches("_date")) %>% colnames()
   s_handedness_subset[na_names_handedness] <- lapply(s_handedness_subset[na_names_handedness], replace_na, "999")
+  s_handedness_subset$s_handedness_ehi_tot <- as.numeric(s_handedness_subset$s_handedness_ehi_tot)
   
   s_handedness_subset <- s_handedness_subset %>% 
     mutate(s_handedness_ehi = ifelse(s_handedness_ehi_tot < -40, "LEFT", ifelse(s_handedness_ehi_tot >= 40, "RIGHT", "AMBIDEXTROUS")))
-  
+
   s_handedness_subset_clinical <- merge.default(clinical_DB_date, s_handedness_subset, all=TRUE) %>% 
     select(FIRST_NAME, LAST_NAME, Initials, PLUSID, Clinical_Visit_Date, s_handedness_ehi_source, s_handedness_ehi_date, matches('s_handedness_'))
   
@@ -1473,6 +1479,7 @@
     iter <- as.numeric(i)
     # iter=13
     measure_name <- tot_sum_clin[iter]
+    print(paste("************************LOOP = ", measure_name))
     
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% 
@@ -1617,8 +1624,9 @@
   
   for(i in seq_along(CASE)) {
     iter <- as.numeric(i)
-    # iter=2
+    # iter=1
     measure_name <- CASE[iter]
+    print(paste("************************LOOP = ", measure_name))
     
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       distinct(., .keep_all = TRUE)
@@ -1650,10 +1658,11 @@
       # iter2=3
       how_column_name <- as.character(combined[iter2,1])
       if_column_name <- as.character(combined[iter2,2])
+      print(paste("************************LOOP = ", measure_name, how_column_name))
  
-      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_pos = ifelse(((!!sym(how_column_name))>0), (!!sym(if_column_name)), 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_pos = ifelse(((!!sym(how_column_name))>0), 1, 0))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_pos"] <- (paste0("temp_pos",iter2))
-      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_neg = ifelse(((!!sym(how_column_name))<0), (!!sym(if_column_name)), 0))
+      measure_temp_sdq <- measure_temp_sdq %>% mutate(temp_neg = ifelse(((!!sym(how_column_name))<0), 1, 0))
       names(measure_temp_sdq)[names(measure_temp_sdq) == "temp_neg"] <- (paste0("temp_neg",iter2))
       }
     
@@ -2402,7 +2411,16 @@
   s_ascq_subset_sdq$NA_count <- s_ascq_subset_sdq %>% select(matches('s_ascq_')) %>% apply(., 1, count_na)
   s_ascq_subset_sdq$diff <- c(s_ascq_subset_sdq$no_columns - s_ascq_subset_sdq$NA_count)
   s_ascq_subset_sdq <- s_ascq_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+  
+  # s_ascq_subset_dummy <- s_ascq_subset_sdq %>% 
+  #   filter((PLUSID=='1131-3732-4602-4203' & Overall_date=="2018-08-20") | (PLUSID=='6527-2908-1008-7627' & Overall_date=="2019-05-29"))
   s_ascq_subset_sdq <- s_ascq_subset_sdq %>% filter_at(., vars(ends_with("_often")), all_vars(. <6))
+  
+  # add code to merge manual information in 
+  
+  
+  
+  
   
   s_ascq_subset_sdq$s_ascq_oten_tot <- s_ascq_subset_sdq %>% select(ends_with("_often")) %>% rowMeans(na.rm=TRUE) %>% round(digits=2)
   s_ascq_subset_sdq$s_ascq_believe_tot <- s_ascq_subset_sdq %>% select(ends_with("_believe")) %>% rowMeans(na.rm=TRUE) %>% round(digits=2)
@@ -3752,17 +3770,18 @@ rm(list=ls(pattern="data_"))
 rm(list=ls(pattern="na_names_"))
 rm(list=ls(pattern="parent_"))
 rm(list=ls(pattern="historical"))
+rm(list=ls(pattern="imported_imputed"))
 rm(list=ls(pattern="temp"))
-rm(tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, numeric_variables,
-   measure_name, panic_subscale, sep_subscale, social_subscale, gad_subscale, school_subscale, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d,
-   fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report, fill_in,
+rm(tot_sum, s_shaps_binary, imported_imputed_mfqs, gen_functioning, hand_columns, father_report, mother_report, column, numeric_variables, 
+   measure_name, panic_subscale, sep_subscale, social_subscale, gad_subscale, school_subscale, j, subscale_name, i, lsas_performance, lsas_social, hand_column_name, e, d, b, prev_crisis_file, prev_crisis_combined, prev_crisis_database, 
+   fix_var, remove_unknown, variables_no_scoring, CASE, CHoCIR, activities, activity_no, behav_control, c_snap_hyperactivity, ba_rating_columns, unknown_report, fill_in, crisis_na_names, 
    c_snap_inattention, comminication, chocir_compulsion_impairment, chocir_compulsion_symptom, chocir_obsession_impairment, chocir_obsession_symptom, sdq_columns, date_variables,
    affective_response, FAD, fad_normal, fad_reverse, if_column_name, if_columns, p_fasa_modification, p_fasa_distress, p_fasa_participation, sdq_w_names, sdq_dates, 
    s_cpss_avoidance, s_cpss_hyperarousal, s_cpss_impairment, s_cpss_reexperiencing, s_seq_academic, s_seq_emotional, s_seq_social, how_column_name, task_DB, task_DB_date, 
-   how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, sibling,
+   how_columns, roles, tot_sum_clin, problem_solving, scared, scared_subscales, cbt_columns, inpatient_columns, clinic_sets, combined, comorbid, file_save_check_time, sibling, f, 
    parent, child, p, c, q, incorrect, correct, dummy, file_save_check, task_sets, 
    file_save_check_combined, ctdb_columns, ctdb_Data_Download_reduced, ctdb_dates, ctdb_names, ctdb_numeric, ctdb_w_plusid, ctdb_w_plusid_child, ctdb_w_plusid_parent,
-   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, c_medsclin_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, c_medsclin_combined,
-   not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task,
+   ctdb_w_plusid_parent1, ctdb_w_plusid_parent2, c_medsclin_sdq, fill_names, fix_na_cols, c_medsclin1yr_sdq, demo_daily_mfq, imported_hyphen_issue, c_medsclin_combined, old_mdd_form, 
+   not_tracked, covid_recode, sscared_tminus2_long, smfq1w_tminus2_long, contact_info, measure_incomplete, c_medsclin1yr_sdq_task, c_medsclin_sdq_task, current_outpatients, hist_check, split1, 
    task_DB_date_before_covid, task_DB_date_since_covid, CBT_report_preint, mfq_change_s, mfq_change_p)
 rm(SDQ_Data_Download_raw, SDQ_Data_Download, CTDB_Data_Download) # SDQ_Data_dateadded_fixed, SDQ_Data_dateadded_missing, SDQ_Data_dateadded_uk, SDQ_Data_dateadded_usa

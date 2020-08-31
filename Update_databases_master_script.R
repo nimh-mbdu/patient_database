@@ -8,8 +8,8 @@ rm(list = ls()) # command to clear all variables from R environment
 computer = 'mac' # set this to either 'mac' or 'pc' or 'other'
 
 if (computer=="pc") {
-  string = 'W:/'
-  sdan1 = 'Y:/'
+  string = 'W:/string-mbd/'
+  sdan1 = 'Y:/SDAN1/'
 } else if (computer=="mac") {
   string = '/Volumes/string-mbd/'
   sdan1 = '/Volumes/SDAN1/'
@@ -95,11 +95,8 @@ max_MMI <- c(to_change$max_MMI)
 max_MEG <- c(to_change$max_MEG)
 
 # crisis recruitment related
-# child_contacted <- c(to_change$child_contacted)
-# parent_contacted <- c(to_change$parent_contacted)
-# parent_agreed <- c(to_change$parent_agreed)
-child_agreed <- 166
-parent_agreed <- 126
+child_agreed <- 177
+parent_agreed <- 139
 
 # database related - update with names of latest pulls (without file extension)
 latest_ctdb_pull <- c(to_change$latest_ctdb_pull)
@@ -210,7 +207,7 @@ if (modules2run==7 | modules2run==8) {
   
   for(a in seq_len(nrow(cbt_participants))) {
   iter9 <- as.numeric(a)
-    # iter9 = 1
+    # iter9 = 6
     
     Participant <- as.character(cbt_participants[iter9, 1])
     Clinician <- as.character(cbt_participants[iter9, 2])

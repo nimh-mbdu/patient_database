@@ -111,13 +111,8 @@ measures_completed <- measures_completed %>% select(-s_mfq1w_tot, -p_mfq1w_tot, 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-# total contacted 
-# child_contacted <- 173
-# parent_contacted <- 125
-# total agreed to participate 
-
-child_agreed <- 166
-parent_agreed <- 126
+child_agreed <- 177
+parent_agreed <- 139
 
 ##### all baseline measures completed 
 # parent
@@ -436,126 +431,220 @@ crisis_table %>% # select(-Tot_contacted:-Agreed_percent) %>%
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-measures_completed <- measures_completed %>% filter(!is.na(s_mfq_tot) | !is.na(s_scaredshort_tot) | !is.na(s_crisis_base_tot) | !is.na(s_crisis_fu_tot) |
-                        !is.na(p_mfq_tot) | !is.na(p_scaredshort_tot) | !is.na(p_crisis_base_tot) | !is.na(p_crisis_fu_tot))
+##### New method of putting together the dataset: 
+##### Includes march MFQs & SCAREDS
+##### Pre-covid = last timepoint before March 2020
+##### This is the apporach used to put together the
+##### dataset for Argyris' 08-21-2020 presentation. 
+##### Note: older code used is saved at the bottom 
+##### of this script & commented out 
 
-smfq_tminus2_long <- Psychometrics_treatment %>% 
-  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
-         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq_tot, s_mfq1w_date, s_mfq_date) %>% rename(Age = "Age_at_visit") %>% 
-  filter(!is.na(s_mfq1w_tot) | !is.na(s_mfq_tot)) %>% mutate(Age = round(Age, digits = 0))
-smfq_tminus2_long$s_mfq_tot <- coalesce(smfq_tminus2_long$s_mfq_tot, smfq_tminus2_long$s_mfq1w_tot) %>% round(., digits = 0)
-smfq_tminus2_long$s_mfq_date <- coalesce(smfq_tminus2_long$s_mfq_date, smfq_tminus2_long$s_mfq1w_date) %>% round(., digits = 0)
-smfq_tminus2_long <- smfq_tminus2_long %>% filter(s_mfq_date <= "2020-03-11") %>% group_by(Initials) %>% 
-  arrange(s_mfq_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% select(-s_mfq1w_date, -s_mfq1w_tot) %>% 
-  mutate(id = row_number()) %>% ungroup() %>% filter(Initials %in% measures_completed$Initials)
+# COVID measures ----------------------------------------------------------
 
-sscared_tminus2_long <- Psychometrics_treatment %>% 
-  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
-         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_scared_tot, s_scared_date) %>% rename(Age = "Age_at_visit") %>% 
-  filter(!is.na(s_scared_tot)) %>% mutate(s_scared_tot = round(s_scared_tot, digits = 0)) %>% mutate(Age = round(Age, digits = 0))
-sscared_tminus2_long <- sscared_tminus2_long %>% filter(s_scared_date <= "2020-03-11") %>% group_by(Initials) %>% 
-  arrange(s_scared_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% 
-  ungroup() %>% filter(Initials %in% measures_completed$Initials)
+s_measures_completed <- Psychometrics_treatment %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+    s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, matches("s_crisis_"), s_covid19_date) %>%
+  filter(s_crisis_base_date > "2020-03-17" | s_crisis_fu_date > "2020-03-17" | s_covid19_date > "2020-03-17") %>% 
+  select(-matches("_TDiff"), -matches("_complete"), -matches("_source"))
+p_measures_completed <- Psychometrics_treatment %>% 
+  select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+    p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, matches("p_crisis_"), s_covid19_date) %>%
+  filter(p_crisis_base_date > "2020-03-17" | p_crisis_fu_date > "2020-03-17" | s_covid19_date > "2020-03-17") %>% 
+  select(-matches("_TDiff"), -matches("_complete"), -matches("_source"))
 
-pmfq_tminus2_long <- Psychometrics_treatment %>% 
-  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
-         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_mfq1w_tot, p_mfq_tot, p_mfq1w_date, p_mfq_date) %>% rename(Age = "Age_at_visit") %>% 
-  filter(!is.na(p_mfq1w_tot) | !is.na(p_mfq_tot)) %>% mutate(Age = round(Age, digits = 0))
-pmfq_tminus2_long$p_mfq_tot <- coalesce(pmfq_tminus2_long$p_mfq_tot, pmfq_tminus2_long$p_mfq1w_tot) %>% round(., digits = 0)
-pmfq_tminus2_long$p_mfq_date <- coalesce(pmfq_tminus2_long$p_mfq_date, pmfq_tminus2_long$p_mfq1w_date) %>% round(., digits = 0)
-pmfq_tminus2_long <- pmfq_tminus2_long %>% filter(p_mfq_date <= "2020-03-11") %>% group_by(Initials) %>% 
-  arrange(p_mfq_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% ungroup() %>% 
-  select(-p_mfq1w_date, -p_mfq1w_tot) %>% filter(Initials %in% measures_completed$Initials)
+measures_completed <- merge.default(s_measures_completed, p_measures_completed, all = TRUE)
+num_variables <- measures_completed %>% select(matches("_tot")) %>% colnames()
+measures_completed[num_variables] <- lapply(measures_completed[num_variables], as.numeric)
 
-pscared_tminus2_long <- Psychometrics_treatment %>% 
-  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
-         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_scared_tot, p_scared_date) %>% 
-  filter(!is.na(p_scared_tot)) %>% mutate(p_scared_tot = round(p_scared_tot, digits = 0)) %>% rename(Age = "Age_at_visit") %>% 
-  mutate(Age = round(Age, digits = 0))
-pscared_tminus2_long <- pscared_tminus2_long %>% filter(p_scared_date <= "2020-03-11") %>% group_by(Initials) %>% 
-  arrange(p_scared_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% 
-  ungroup() %>% filter(Initials %in% measures_completed$Initials)
+measures_completed$Clinical_Visit_Date <- as.Date(measures_completed$Clinical_Visit_Date)
+measures_completed$s_mfq_tot <- coalesce(measures_completed$s_mfq_tot, measures_completed$s_mfq1w_tot) %>% round(., digits = 0)
+measures_completed$s_mfq_date <- coalesce(measures_completed$s_mfq_date, measures_completed$s_mfq1w_date)
+measures_completed$p_mfq_tot <- coalesce(measures_completed$p_mfq_tot, measures_completed$p_mfq1w_tot) %>% round(., digits = 0)
+measures_completed$p_mfq_date <- coalesce(measures_completed$p_mfq_date, measures_completed$p_mfq1w_date)
 
-measures_combined_long <- merge.default(smfq_tminus2_long, sscared_tminus2_long, all=TRUE) %>% 
-  merge.default(., pmfq_tminus2_long, all=TRUE) %>% merge.default(., pscared_tminus2_long, all=TRUE) %>%
-  distinct(., .keep_all = TRUE)
+base_names <- measures_completed %>% select(matches("_crisis_base_")) %>% colnames() %>% as.data.frame() %>% rename(Base = ".")
+fu_names <- measures_completed %>% select(matches("_crisis_fu_")) %>% colnames() %>% as.data.frame() %>% rename(FU = ".")
+crisis_merge_names <- cbind(base_names, fu_names) %>% mutate_all(as.character)
 
-crisis_final <- merge.default(measures_completed, measures_combined_long, all=TRUE) %>% rename(Sex = "SEX")
-crisis_final$row_label <- recode(crisis_final$id, `1`="baseline", `2`="pre-covid", 
-                          `3`="crisis_t1", `4`="crisis_t2", `5`="crisis_t3", `6`="crisis_t4", `7`="crisis_t5", `8`="crisis_t6", `9`="crisis_t7")
-crisis_final <- crisis_final %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Sex, Age, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-                                        id, row_label, matches("_mfq"), matches("scared"), matches("s_crisis_"), matches("p_crisis"))
+for(i in seq_len(nrow(crisis_merge_names))) {
+  iter <- as.numeric(i)
+  # iter=104
+  base <- crisis_merge_names[iter,1] %>% as.character
+  fu <- crisis_merge_names[iter,2] %>% as.character
+  b <- which(colnames(measures_completed)==eval(base)) %>% as.numeric()
+  f <- which(colnames(measures_completed)==eval(fu)) %>% as.numeric()
+  new <- gsub("_base_", "_", base, fixed = TRUE)
+  
+  measures_completed$temp <- coalesce(measures_completed[[b]], measures_completed[[f]])
+  names(measures_completed)[names(measures_completed) == "temp"] <- (paste0(new))
+}
 
-```
+measures_completed <- measures_completed %>% group_by(Initials) %>% mutate(id = row_number()) %>% ungroup()
+measures_completed$row_label <- paste("covid_t", measures_completed$id, sep = "")
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+measures_completed_combined <- measures_completed %>% 
+  select(Initials, SDAN, PLUSID, row_label, Participant_Type2, SEX, Age_at_visit, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
+    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, 
+    p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, matches("s_crisis_"), matches("p_crisis_")) %>% 
+  select(-matches("_crisis_base_"), -matches("_crisis_fu_"))
 
-############ CRISIS
-crisis_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_3m_tot, s_crisis_3m_date) %>% 
-  filter(!is.na(s_crisis_3m_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
+# Pre-COVID ---------------------------------------------------------------
+
+Psychometrics_treatment[num_variables] <- lapply(Psychometrics_treatment[num_variables], as.numeric)
+
+### MFQ
+# self
+smfq_tminus1_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
+  c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq_tot, s_mfq1w_date, s_mfq_date) %>% 
+  filter(!is.na(s_mfq1w_tot) | !is.na(s_mfq_tot)) 
+smfq_tminus1_long$s_mfq_tot <- coalesce(smfq_tminus1_long$s_mfq_tot, smfq_tminus1_long$s_mfq1w_tot) %>% round(., digits = 0)
+smfq_tminus1_long$s_mfq_date <- coalesce(smfq_tminus1_long$s_mfq_date, smfq_tminus1_long$s_mfq1w_date)
+smfq_tminus1_long <- smfq_tminus1_long %>% filter(s_mfq_date < "2020-03-17") %>% group_by(Initials) %>% 
+  arrange(desc(s_mfq_date)) %>% slice(1) %>% ungroup() %>% select(-s_mfq1w_date, -s_mfq1w_tot) %>% distinct(., .keep_all = TRUE)
+# parent
+pmfq_tminus1_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
+  c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_mfq1w_tot, p_mfq_tot, p_mfq1w_date, p_mfq_date) %>% 
+  filter(!is.na(p_mfq1w_tot) | !is.na(p_mfq_tot)) 
+pmfq_tminus1_long$p_mfq_tot <- coalesce(pmfq_tminus1_long$p_mfq_tot, pmfq_tminus1_long$p_mfq1w_tot) %>% round(., digits = 0)
+pmfq_tminus1_long$p_mfq_date <- coalesce(pmfq_tminus1_long$p_mfq_date, pmfq_tminus1_long$p_mfq1w_date)
+pmfq_tminus1_long <- pmfq_tminus1_long %>% filter(p_mfq_date < "2020-03-17") %>% group_by(Initials) %>% 
+  arrange(desc(p_mfq_date)) %>% slice(1) %>% ungroup() %>% select(-p_mfq1w_date, -p_mfq1w_tot) %>% distinct(., .keep_all = TRUE)
+
+### SCARED
+# self
+sscared_tminus1_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit,  IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
+  c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_scared_tot, s_scared_date) %>% 
+  filter(!is.na(s_scared_tot)) %>% mutate(s_scared_tot = round(s_scared_tot, digits = 0)) %>% filter(s_scared_date < "2020-03-17") %>% 
+  group_by(Initials) %>% arrange(desc(s_scared_date)) %>% slice(1) %>% ungroup()
+pscared_tminus1_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit,  IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
+  c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_scared_tot, p_scared_date) %>% 
+  filter(!is.na(p_scared_tot)) %>% mutate(p_scared_tot = round(p_scared_tot, digits = 0)) %>% filter(p_scared_date < "2020-03-17") %>% 
+  group_by(Initials) %>% arrange(desc(p_scared_date)) %>% slice(1) %>% ungroup()
+
+### Combining these
+# self
+s_measures_combined_long <- merge.default(smfq_tminus1_long, sscared_tminus1_long, all=TRUE) %>% group_by(Initials) %>% arrange(Initials, desc(Clinical_Visit_Date)) %>% 
+  fill(., s_mfq_tot:s_scared_date, .direction = "down") %>% fill(., s_mfq_tot:s_scared_date, .direction = "up") %>% slice(1) %>% ungroup() %>% 
+  filter(Initials %in% measures_completed$Initials) %>% mutate(row_label = "pre-covid")
+# parent
+p_measures_combined_long <- merge.default(pmfq_tminus1_long, pscared_tminus1_long, all=TRUE) %>% group_by(Initials) %>% arrange(Initials, desc(Clinical_Visit_Date)) %>% 
+  fill(., p_mfq_tot:p_scared_date, .direction = "down") %>% fill(., p_mfq_tot:p_scared_date, .direction = "up") %>% slice(1) %>% ungroup() %>% 
+  filter(Initials %in% measures_completed$Initials) %>% mutate(row_label = "pre-covid")
+# combining parent & child
+measures_combined_long <- merge.default(s_measures_combined_long, p_measures_combined_long, all = TRUE) %>% 
+  group_by(Initials) %>% arrange(Initials, desc(Clinical_Visit_Date)) %>% 
+  fill(., s_mfq_tot:p_scared_date, .direction = "down") %>% fill(., s_mfq_tot:p_scared_date, .direction = "up") %>% slice(1) %>% ungroup() 
+
+# Adding pre-COVID to COVID -----------------------------------------------
+
+CRISIS_data_presentation_final <- merge.default(measures_completed_combined, measures_combined_long, all=TRUE) %>% arrange(Initials, Clinical_Visit_Date) %>% 
+  select(Initials, SDAN, PLUSID, row_label, Participant_Type2, SEX, Age_at_visit,  IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
+    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, 
+    p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, matches("s_crisis_"), matches("p_crisis_"))
+
+# SCARED short scaling ----------------------------------------------------
+
+# scaling the SCARED short questionnaire & combining it with the original SCARED to have it all in one column
+CRISIS_data_presentation_final <- CRISIS_data_presentation_final %>%
+  mutate(s_scaredshort_tot_scaled=((s_scaredshort_tot/9)*41)) %>%
+  mutate(s_scaredshort_tot_scaled=round(s_scaredshort_tot_scaled, digits = 0)) %>%
+  mutate(p_scaredshort_tot_scaled=((p_scaredshort_tot/9)*41)) %>%
+  mutate(p_scaredshort_tot_scaled=round(p_scaredshort_tot_scaled, digits = 0))
+CRISIS_data_presentation_final$s_scared_combined_tot <- coalesce(CRISIS_data_presentation_final$s_scared_tot, CRISIS_data_presentation_final$s_scaredshort_tot_scaled)
+CRISIS_data_presentation_final$s_scared_combined_date <- coalesce(CRISIS_data_presentation_final$s_scared_date, CRISIS_data_presentation_final$s_scaredshort_date)
+CRISIS_data_presentation_final$p_scared_combined_tot <- coalesce(CRISIS_data_presentation_final$p_scared_tot, CRISIS_data_presentation_final$p_scaredshort_tot_scaled)
+CRISIS_data_presentation_final$p_scared_combined_date <- coalesce(CRISIS_data_presentation_final$p_scared_date, CRISIS_data_presentation_final$p_scaredshort_date)
+
+# CRISIS subset for means & graphs -----------------------------------------
+
+crisis_subset1 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_3m_tot, s_crisis_3m_date) %>%
+  filter(!is.na(s_crisis_3m_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>%
   rename(s_crisis_tot="s_crisis_3m_tot") %>% rename(s_crisis_date="s_crisis_3m_date") %>% mutate(row_label="pre-covid") %>% mutate(id="1")
-crisis_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_base_tot, s_crisis_base_date) %>% 
-  filter(!is.na(s_crisis_base_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
-  rename(s_crisis_tot="s_crisis_base_tot") %>% rename(s_crisis_date="s_crisis_base_date") %>% mutate(row_label="baseline") %>% mutate(id="2")
-crisis_subset3 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
-  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup1") %>% mutate(id="3")
-crisis_subset4 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% filter(n()>1) %>% slice(2) %>% ungroup() %>% 
-  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup2") %>% mutate(id="4")
-crisis_subset5 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% filter(n()>2) %>% slice(3) %>% ungroup() %>% 
-  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup3") %>% mutate(id="5")
-crisis_subset6 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% filter(n()>3) %>% slice(4) %>% ungroup() %>% 
-  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup4") %>% mutate(id="6")
-crisis_subset7 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% filter(n()>4) %>% slice(5) %>% ungroup() %>% 
-  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup5") %>% mutate(id="7")
-crisis_subset8 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% filter(n()>5) %>% slice(6) %>% ungroup() %>% 
-  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup6") %>% mutate(id="8")
-crisis_subset9 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_crisis_fu_tot, s_crisis_fu_date) %>% 
-  filter(!is.na(s_crisis_fu_tot)) %>% arrange(Initials, id) %>% group_by(Initials) %>% filter(n()>6) %>% slice(7) %>% ungroup() %>% 
-  rename(s_crisis_tot="s_crisis_fu_tot") %>% rename(s_crisis_date="s_crisis_fu_date") %>% mutate(row_label="followup7") %>% mutate(id="9")
+crisis_subset2 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_tot, s_crisis_date) %>%
+  filter(!is.na(s_crisis_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% mutate(row_label="baseline") %>% mutate(id="2")
+crisis_subset3 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_tot, s_crisis_date) %>%
+  filter(!is.na(s_crisis_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% filter(n()>1) %>% slice(2) %>% ungroup() %>% mutate(row_label="followup1") %>% mutate(id="3")
+crisis_subset4 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_tot, s_crisis_date) %>%
+  filter(!is.na(s_crisis_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% filter(n()>2) %>% slice(3) %>% ungroup() %>% mutate(row_label="followup2") %>% mutate(id="4")
+crisis_subset5 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_tot, s_crisis_date) %>%
+  filter(!is.na(s_crisis_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% filter(n()>3) %>% slice(4) %>% ungroup() %>% mutate(row_label="followup3") %>% mutate(id="5")
+crisis_subset6 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_tot, s_crisis_date) %>%
+  filter(!is.na(s_crisis_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% filter(n()>4) %>% slice(5) %>% ungroup() %>% mutate(row_label="followup4") %>% mutate(id="6")
+crisis_subset7 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_tot, s_crisis_date) %>%
+  filter(!is.na(s_crisis_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% filter(n()>5) %>% slice(6) %>% ungroup() %>% mutate(row_label="followup5") %>% mutate(id="7")
+# crisis_subset8 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_tot, s_crisis_date) %>%
+#   filter(!is.na(s_crisis_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% filter(n()>6) %>% slice(7) %>% ungroup() %>% mutate(row_label="followup6") %>% mutate(id="8")
+# crisis_subset9 <- CRISIS_data_presentation_final %>% select(Initials, c_ksadsdx_primary_dx, row_label, s_crisis_tot, s_crisis_date) %>%
+#   filter(!is.na(s_crisis_tot)) %>% arrange(Initials) %>% group_by(Initials) %>% filter(n()>6) %>% slice(7) %>% ungroup() %>% mutate(row_label="followup7") %>% mutate(id="9")
 
-crisis_subset <- merge.default(crisis_subset1, crisis_subset2, all = TRUE) %>% merge.default(., crisis_subset3, all = TRUE) %>% 
-  merge.default(., crisis_subset4, all = TRUE) %>% merge.default(., crisis_subset5, all = TRUE) %>% merge.default(., crisis_subset6, all = TRUE) %>% 
-  merge.default(., crisis_subset7, all = TRUE) %>% merge.default(., crisis_subset8, all = TRUE) %>% merge.default(., crisis_subset9, all = TRUE)
-crisis_subset <- crisis_subset %>% filter(!is.na(c_ksadsdx_primary_dx)) 
+crisis_subset <- merge.default(crisis_subset1, crisis_subset2, all = TRUE) %>% merge.default(., crisis_subset3, all = TRUE) %>%
+  merge.default(., crisis_subset4, all = TRUE) %>% merge.default(., crisis_subset5, all = TRUE) %>% merge.default(., crisis_subset6, all = TRUE) %>%
+  merge.default(., crisis_subset7, all = TRUE) %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy")
+# %>% merge.default(., crisis_subset8, all = TRUE) %>% merge.default(., crisis_subset9, all = TRUE)
+crisis_subset$row_label <- as.factor(crisis_subset$row_label)
+crisis_subset$row_label <- ordered(crisis_subset$row_label,
+  levels = c("pre-covid", "baseline", "followup1",  "followup2",  "followup3",  "followup4",  "followup5"))
 
 crisis_group_means <- crisis_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>%
   summarise(s_crisis_mean=mean(s_crisis_tot), s_crisis_sd=sd(s_crisis_tot), s_crisis_N=n()) %>%
   mutate(s_crisis_mean=round(s_crisis_mean, digit=2), s_crisis_sd=round(s_crisis_sd, digit=2)) %>% ungroup()
 
-############ MFQ
-mfq_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_mfq_tot, s_mfq_date) %>% filter(!is.na(s_mfq_tot)) %>% 
-  arrange(Initials, desc(s_mfq_date)) %>% filter(!str_detect(row_label, "crisis")) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
-  mutate(row_label="pre-covid") %>% mutate(id=1)
-mfq_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_mfq_tot, s_mfq_date) %>% filter(!is.na(s_mfq_tot)) %>% 
-  arrange(Initials, s_mfq_date) %>% filter(str_detect(row_label, "crisis")) %>% group_by(Initials) %>% mutate(id = (row_number()+1)) %>% ungroup()
-mfq_subset <- merge.default(mfq_subset1, mfq_subset2, all=TRUE)
-mfq_subset$row_label <- recode(mfq_subset$id, `1`="pre-covid", `2`="baseline", `3`="followup1", `4`="followup2", `5`="followup3", `6`="followup4", 
-  `7`="followup5", `8`="followup6", `9`="followup7")
+# MFQ subset for means & graphs ------------------------------------------
 
-mfq_group_means <- mfq_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>% 
+mfq_subset <- CRISIS_data_presentation_final %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% 
+  select(Initials, c_ksadsdx_primary_dx, row_label, s_mfq_tot, s_mfq_date) %>% filter(!is.na(s_mfq_tot)) 
+mfq_subset$row_label <- as.factor(mfq_subset$row_label)
+mfq_subset$row_label <- ordered(mfq_subset$row_label,
+  levels = c("pre-covid", "covid_t1",  "covid_t2",  "covid_t3",  "covid_t4",  "covid_t5",  "covid_t6" ,  "covid_t7", "covid_t8"))
+mfq_group_means <- mfq_subset %>% group_by(c_ksadsdx_primary_dx, row_label) %>%
   summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
   mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
 
-############ SCARED
-scared_subset1 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_scared_tot, s_scared_date) %>% filter(!is.na(s_scared_tot)) %>% 
-  arrange(Initials, desc(s_scared_date)) %>% filter(!str_detect(row_label, "crisis")) %>% group_by(Initials) %>% slice(1) %>% ungroup() %>% 
-  mutate(row_label="pre-covid") %>% mutate(id=1)
-scaredshort_subset2 <- crisis_final %>% select(Initials, c_ksadsdx_primary_dx, id, row_label, s_scaredshort_tot, s_scaredshort_date) %>%
-  filter(!is.na(s_scaredshort_tot)) %>% arrange(Initials, s_scaredshort_date) %>% mutate(s_scaredshort_tot=((s_scaredshort_tot/9)*41)) %>% 
-  mutate(s_scaredshort_tot=round(s_scaredshort_tot, digits = 0)) %>% rename(s_scared_tot="s_scaredshort_tot") %>% 
-  rename(s_scared_date="s_scaredshort_date") %>% group_by(Initials) %>% mutate(id = (row_number()+1)) %>% ungroup()
-scared_subset <- merge.default(scared_subset1, scaredshort_subset2, all=TRUE)
-scared_subset$row_label <- recode(scared_subset$id, `1`="pre-covid", `2`="baseline", `3`="followup1", `4`="followup2", `5`="followup3", `6`="followup4",
-  `7`="followup5", `8`="followup6", `9`="followup7")
+# Data for MFQ spaghetti plots ------------------------------------------
 
-scared_group_means <- scared_subset %>% group_by(c_ksadsdx_primary_dx, id, row_label) %>% 
-  summarise(s_scared_mean=mean(s_scared_tot), s_scared_sd=sd(s_scared_tot), s_scared_N=n()) %>%
+measures_all <- Psychometrics_treatment %>% filter(Clinical_Visit_Date >= "2016-10-01") %>%
+  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, SEX, Age_at_visit,
+    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date) %>%
+  rename(Age = "Age_at_visit") %>% mutate(Age = round(Age, digits = 0))
+measures_all$s_mfq_tot <- coalesce(measures_all$s_mfq_tot, measures_all$s_mfq1w_tot) %>% round(., digits = 0)
+measures_all$p_mfq_tot <- coalesce(measures_all$p_mfq_tot, measures_all$p_mfq1w_tot) %>% round(., digits = 0)
+measures_all$s_mfq_date <- coalesce(measures_all$s_mfq_date, measures_all$s_mfq1w_date) %>% round(., digits = 0)
+measures_all$p_mfq_date <- coalesce(measures_all$p_mfq_date, measures_all$p_mfq1w_date) %>% round(., digits = 0)
+measures_all <- measures_all %>% select(-s_mfq1w_tot, -p_mfq1w_tot, -s_mfq1w_date, -p_mfq1w_date)
+
+split1 <- colsplit(measures_all$Clinical_Visit_Date, "-", names = c("year", "month", "day"))
+measures_all <- cbind(measures_all, split1)
+measures_all <- measures_all %>% mutate(day2 = ifelse(day < 7, 1, ifelse((day >= 7 & day <14), 7, ifelse((day >=14 & day < 21), 14, ifelse(day >=21, 21, 0)))))
+measures_all$Clinical_Visit_Date3c <- as.Date(paste(measures_all$year, measures_all$month, measures_all$day2, sep="-"))
+measures_all <- measures_all %>% select(Initials:IRTA_tracker, matches("Clinical_Visit_Date"), year, month, day, day2, Clinical_Visit_Type:p_mfq_date)
+
+s_mfq_subset_all <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot)) %>% 
+  select(Initials, Clinical_Visit_Date, Clinical_Visit_Date3c, c_ksadsdx_primary_dx, s_mfq_tot)
+mfq_all_group_means <- s_mfq_subset_all %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
+  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
+  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
+
+s_mfq_5m_precovid <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot)) %>%
+  filter(Clinical_Visit_Date3c >= "2019-10-01") %>% select(Initials, Clinical_Visit_Date, Clinical_Visit_Date3c, c_ksadsdx_primary_dx, s_mfq_tot)
+s_mfq_5m_precovid_group_means <- s_mfq_5m_precovid %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
+  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
+  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
+
+s_mfq_since_covid <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot)) %>%
+  filter(Clinical_Visit_Date3c >= "2020-03-01") %>% select(Initials, Clinical_Visit_Date, Clinical_Visit_Date3c, c_ksadsdx_primary_dx, s_mfq_tot)
+s_mfq_since_covid_group_means <- s_mfq_since_covid %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
+  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
+  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
+
+# SCARED subset for means & graphs ----------------------------------------
+
+scared_subset <- CRISIS_data_presentation_final %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% 
+  select(Initials, c_ksadsdx_primary_dx, row_label, s_scared_combined_tot, s_scared_combined_date) %>% filter(!is.na(s_scared_combined_tot)) 
+scared_subset$row_label <- as.factor(scared_subset$row_label)
+scared_subset$row_label <- ordered(scared_subset$row_label,
+  levels = c("pre-covid", "covid_t1",  "covid_t2",  "covid_t3",  "covid_t4",  "covid_t5",  "covid_t6" ,  "covid_t7", "covid_t8"))
+scared_group_means <- scared_subset %>% group_by(c_ksadsdx_primary_dx, row_label) %>%
+  summarise(s_scared_mean=mean(s_scared_combined_tot), s_scared_sd=sd(s_scared_combined_tot), s_scared_N=n()) %>%
   mutate(s_scared_mean=round(s_scared_mean, digit=2), s_scared_sd=round(s_scared_sd, digit=2)) %>% ungroup()
 
 ```
@@ -569,10 +658,12 @@ scared_group_means <- scared_subset %>% group_by(c_ksadsdx_primary_dx, id, row_l
 
 crisis_group_means$s_crisis_combined <- paste(crisis_group_means$s_crisis_mean, " (", crisis_group_means$s_crisis_sd, ")", sep="")
 crisis_group_means_t <- crisis_group_means %>% 
-  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_crisis_combined", "s_crisis_N")) %>% 
-  select(id, row_label, s_crisis_combined_Healthy, s_crisis_N_Healthy, s_crisis_combined_MDD, s_crisis_N_MDD, `s_crisis_combined_Sub-MDD`, `s_crisis_N_Sub-MDD`)
+  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_crisis_combined", "s_crisis_N"))
+crisis_group_means_t$Tot_N <- crisis_group_means_t %>% select(matches("_N_")) %>% rowSums(na.rm=TRUE)
+crisis_group_means_t <- crisis_group_means_t %>% 
+  select(id, row_label, s_crisis_combined_Healthy, s_crisis_N_Healthy, s_crisis_combined_MDD, s_crisis_N_MDD, Tot_N)
 
-crisis_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Sub-MDD: M (SD)", "N")) %>% 
+crisis_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Overall N")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -589,24 +680,11 @@ ggplot() +
   geom_line(data = crisis_subset, aes(x=row_label, y=s_crisis_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
   labs(x="\nTime point", y="CRISIS total\n") +
   # labs(title="Depression symptoms\n", x="\nTime point", y="CRISIS total\n") +
-  scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2", "followup3", "followup4")) + 
+  scale_color_manual(values=c("#CC0000", "#0000CC")) +
+  # scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2", "followup3", "followup4")) + 
+  # scale_x_discrete(labels=c("Pre-covid", "March", "April", "May", "June", "July", "August") +
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
-
-```
-
-<!-- CRISIS graph: only Dx group mean lines -->
-
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-
-# ggplot(crisis_subset, aes(x=id, y=s_crisis_tot, color=c_ksadsdx_primary_dx), na.rm = TRUE) +
-#   geom_point(aes(group=Initials), size=1) +
-#   geom_line(data = crisis_group_means, size=2) + 
-#   labs(title="Responses to CRISIS questionnaire\n", x="\nTime point", y="CRISIS total\n") +
-#   scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-#   theme_minimal() +
-#   guides(color=guide_legend("Diagnosis:"))
 
 ```
 
@@ -619,10 +697,12 @@ ggplot() +
 
 mfq_group_means$s_mfq_combined <- paste(mfq_group_means$s_mfq_mean, " (", mfq_group_means$s_mfq_sd, ")", sep="")
 mfq_group_means_t <- mfq_group_means %>% 
-  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_mfq_combined", "s_mfq_N")) %>% 
-  select(id, row_label, s_mfq_combined_Healthy, s_mfq_N_Healthy, s_mfq_combined_MDD, s_mfq_N_MDD, `s_mfq_combined_Sub-MDD`, `s_mfq_N_Sub-MDD`)
+  pivot_wider(., id_cols = c("row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_mfq_combined", "s_mfq_N"))
+mfq_group_means_t$Tot_N <- mfq_group_means_t %>% select(matches("_N_")) %>% rowSums(na.rm=TRUE)
+mfq_group_means_t <- mfq_group_means_t %>% 
+  select(row_label, s_mfq_combined_Healthy, s_mfq_N_Healthy, s_mfq_combined_MDD, s_mfq_N_MDD, Tot_N)
 
-mfq_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Sub-MDD: M (SD)", "N")) %>% 
+mfq_group_means_t %>% kable(., col.names = c("Time point", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Overall N")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -639,8 +719,8 @@ ggplot() +
   geom_line(data = mfq_subset, aes(x=row_label, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
   labs(x="\nTime point", y="MFQ total\n") +
   # labs(title="Depression symptoms\n", x="\nTime point", y="MFQ total\n") +
-  scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2", "followup3", "followup4")) + 
+  scale_color_manual(values=c("#CC0000", "#0000CC")) +
+  # scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2", "followup3", "followup4")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
@@ -649,77 +729,43 @@ ggplot() +
 ##### ALTERNATIVE MFQ GRAPH: all timepoints in our study
 ###
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
-
-measures_all <- Psychometrics_treatment %>% filter(Clinical_Visit_Date >= "2016-10-01") %>% 
-  select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, SEX, Age_at_visit,
-         c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-         s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, 
-         s_crisis_3m_tot, s_crisis_3m_date, s_crisis_base_tot, s_crisis_base_date, s_crisis_fu_tot, s_crisis_fu_date, 
-         p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, 
-         p_crisis_3m_tot, p_crisis_3m_date, p_crisis_base_tot, p_crisis_base_date, p_crisis_fu_tot, p_crisis_fu_date) %>% 
-  rename(Age = "Age_at_visit") %>% mutate(Age = round(Age, digits = 0))
-measures_all$s_mfq_tot <- coalesce(measures_all$s_mfq_tot, measures_all$s_mfq1w_tot) %>% round(., digits = 0)
-measures_all$p_mfq_tot <- coalesce(measures_all$p_mfq_tot, measures_all$p_mfq1w_tot) %>% round(., digits = 0)
-measures_all$s_mfq_date <- coalesce(measures_all$s_mfq_date, measures_all$s_mfq1w_date) %>% round(., digits = 0)
-measures_all$p_mfq_date <- coalesce(measures_all$p_mfq_date, measures_all$p_mfq1w_date) %>% round(., digits = 0)
-measures_all <- measures_all %>% select(-s_mfq1w_tot, -p_mfq1w_tot, -s_mfq1w_date, -p_mfq1w_date) 
-
-split1 <- colsplit(measures_all$Clinical_Visit_Date, "-", names = c("year", "month", "day"))
-measures_all <- cbind(measures_all, split1)
-measures_all <- measures_all %>% mutate(day2 = ifelse(day < 7, 1, ifelse((day >= 7 & day <14), 7, ifelse((day >=14 & day < 21), 14, ifelse(day >=21, 21, 0)))))
-measures_all$Clinical_Visit_Date3c <- as.Date(paste(measures_all$year, measures_all$month, measures_all$day2, sep="-"))
-measures_all <- measures_all %>% select(Initials:IRTA_tracker, matches("Clinical_Visit_Date"), year, month, day, day2, Clinical_Visit_Type:p_crisis_fu_date)
-
-s_mfq_subset <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot))
-mfq_group_means <- s_mfq_subset %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
-  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
-  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
-
-s_mfq_subset_recent <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot)) %>%
-  filter(Clinical_Visit_Date3c >= "2020-01-01") %>% select(Initials, Clinical_Visit_Date, Clinical_Visit_Date3c, c_ksadsdx_primary_dx, s_mfq_tot)
-mfq_group_means_recent <- s_mfq_subset_recent %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
-  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
-  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
-
-s_mfq_subset_recent2 <- measures_all %>% filter(c_ksadsdx_primary_dx=="MDD" | c_ksadsdx_primary_dx=="Healthy") %>% filter(!is.na(s_mfq_tot)) %>%
-  filter(Clinical_Visit_Date3c >= "2020-03-01") %>% select(Initials, Clinical_Visit_Date, Clinical_Visit_Date3c, c_ksadsdx_primary_dx, s_mfq_tot)
-mfq_group_means_recent2 <- s_mfq_subset_recent2 %>% group_by(c_ksadsdx_primary_dx, Clinical_Visit_Date3c) %>%
-  summarise(s_mfq_mean=mean(s_mfq_tot), s_mfq_sd=sd(s_mfq_tot), s_mfq_N=n()) %>%
-  mutate(s_mfq_mean=round(s_mfq_mean, digit=2), s_mfq_sd=round(s_mfq_sd, digit=2)) %>% ungroup()
-
-```
-
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 ggplot() +
-  geom_line(data= mfq_group_means, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5) +
-  geom_line(data = s_mfq_subset, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
-  labs(x="\nTime point", y="MFQ total\n") +
-  scale_color_manual(values=c("#CC0000", "#006600")) + 
-  scale_x_date(date_break = "4 months", date_labels = "%m/%y") +
+  geom_line(data= mfq_all_group_means, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5) +
+  geom_line(data = s_mfq_subset_all, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
+  xlab ("\n") + ylab("Depression Score\n") + 
+  labs(title = "\nDepressive symptoms trajectories since the beginning of our study\n") + 
+  guides(color=guide_legend("Diagnosis:")) + 
+  scale_color_manual(values=c("#CC0000", "#0000CC")) +
+  scale_x_date(date_break = "4 months", date_labels = "%b") +
   geom_vline(xintercept=as.Date("2020-03-01"), size=1, colour="#000000") +
-  geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=30), colour="#000000", angle=90, text=element_text(size=10)) +
+  geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=30), colour="#000000", angle=90) + 
   ylim(0,40) +
   theme_minimal() +
-  guides(color=guide_legend("Diagnosis:"))
+  theme(axis.text=element_text(size=12), plot.title = element_text(size = 12, face = "bold"), 
+    axis.title=element_text(size=12), legend.title = element_text(size = 12), legend.text = element_text(size = 12))
 
 ```
 
-Limiting to measures collected from Jan 2020 - present: 
+Limiting to measures collected from Oct 2019 - present: 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 ggplot() +
-  geom_line(data = mfq_group_means_recent, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5, na.rm=TRUE) +
-  geom_line(data = s_mfq_subset_recent, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25, na.rm=TRUE) +
-  labs(x="\nTime point", y="MFQ total\n") +
-  scale_color_manual(values=c("#CC0000", "#006600")) +
-  scale_x_date(date_break = "1 month", date_labels = "%m/%y") +
+  geom_line(data = s_mfq_5m_precovid_group_means, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5, na.rm=TRUE) +
+  geom_line(data = s_mfq_5m_precovid, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25, na.rm=TRUE) +
+  xlab ("\n") + ylab("Depression Score\n") + 
+  labs(title = "\nDepressive symptoms trajectories before and during pandemic\n") + 
+  guides(color=guide_legend("Diagnosis:")) + 
+  scale_color_manual(values=c("#CC0000", "#0000CC")) +
+  scale_x_date(date_break = "1 month", date_labels = "%b") +
   geom_vline(xintercept=as.Date("2020-03-01"), size=1, colour="#000000") +
-  geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=30), colour="#000000", angle=90, text=element_text(size=10)) +
-  theme_minimal() + ylim(0,40) +
-  guides(color=guide_legend("Diagnosis:"))
+  geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=30), colour="#000000", angle=90) + 
+  ylim(0,40) +
+  theme_minimal() +
+  theme(axis.text=element_text(size=12), plot.title = element_text(size = 12, face = "bold"), 
+    axis.title=element_text(size=12), legend.title = element_text(size = 12), legend.text = element_text(size = 12))
 
 ```
 
@@ -728,15 +774,19 @@ Limiting to measures collected from March 2020 - present:
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 ggplot() +
-  geom_line(data = mfq_group_means_recent2, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5, na.rm=TRUE) +
-  geom_line(data = s_mfq_subset_recent2, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25, na.rm=TRUE) +
-  labs(x="\nTime point", y="MFQ total\n") +
-  scale_color_manual(values=c("#CC0000", "#006600")) +
-  scale_x_date(date_break = "1 month", date_labels = "%m/%y") +
-  # geom_vline(xintercept=as.Date("2020-03-01"), size=1, colour="#000000") +
-  # geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=25), colour="#000000", angle=90, text=element_text(size=10)) +
-  theme_minimal() + ylim(0,40) +
-  guides(color=guide_legend("Diagnosis:"))
+  geom_line(data = s_mfq_since_covid_group_means, aes(x=Clinical_Visit_Date3c, y=s_mfq_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=0.5, na.rm=TRUE) +
+  geom_line(data = s_mfq_since_covid, aes(x=Clinical_Visit_Date3c, y=s_mfq_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25, na.rm=TRUE) +
+  xlab ("\n") + ylab("Depression Score\n") + 
+  labs(title = "\nDepressive symptoms trajectories since pandemic\n") + 
+  guides(color=guide_legend("Diagnosis:")) + 
+  scale_color_manual(values=c("#CC0000", "#0000CC")) +
+  scale_x_date(date_break = "1 month", date_labels = "%b") +
+  geom_vline(xintercept=as.Date("2020-03-01"), size=1, colour="#000000") +
+  geom_text(aes(x=as.Date("2020-03-01"), label="March 2020\n", y=30), colour="#000000", angle=90) + 
+  ylim(0,40) +
+  theme_minimal() +
+  theme(axis.text=element_text(size=12), plot.title = element_text(size = 12, face = "bold"), 
+    axis.title=element_text(size=12), legend.title = element_text(size = 12), legend.text = element_text(size = 12))
 
 ```
 
@@ -749,11 +799,11 @@ ggplot() +
 
 scared_group_means$s_scared_combined <- paste(scared_group_means$s_scared_mean, " (", scared_group_means$s_scared_sd, ")", sep="")
 scared_group_means_t <- scared_group_means %>% 
-  pivot_wider(., id_cols = c("id", "row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_scared_combined", "s_scared_N")) %>% 
-  select(id, row_label, s_scared_combined_Healthy, s_scared_N_Healthy, s_scared_combined_MDD, 
-         s_scared_N_MDD, `s_scared_combined_Sub-MDD`, `s_scared_N_Sub-MDD`)
+  pivot_wider(., id_cols = c("row_label"), names_from = "c_ksadsdx_primary_dx", values_from = c("s_scared_combined", "s_scared_N"))
+scared_group_means_t$Tot_N <- scared_group_means_t %>% select(matches("_N_")) %>% rowSums(na.rm=TRUE)
+scared_group_means_t <- scared_group_means_t %>% select(row_label, s_scared_combined_Healthy, s_scared_N_Healthy, s_scared_combined_MDD, s_scared_N_MDD, Tot_N)
 
-scared_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Sub-MDD: M (SD)", "N")) %>% 
+scared_group_means_t %>% kable(., col.names = c("Time point", "Healthy: M (SD)", "N", "MDD: M (SD)", "N", "Overall total")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -767,11 +817,11 @@ scared_group_means_t %>% kable(., col.names = c("Time point", "Type", "Healthy: 
 
 ggplot() +
   geom_line(data=scared_group_means, aes(x=row_label, y=s_scared_mean, group=c_ksadsdx_primary_dx, color=c_ksadsdx_primary_dx), size=2) + 
-  geom_line(data = scared_subset, aes(x=row_label, y=s_scared_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
+  geom_line(data = scared_subset, aes(x=row_label, y=s_scared_combined_tot, group=Initials, color=c_ksadsdx_primary_dx), alpha=0.25) +
   labs(x="\nTime point", y="SCARED total\n") +
   # labs(title="Depression symptoms\n", x="\nTime point", y="SCARED total\n") +
-  scale_color_manual(values=c("#CC0000", "#006600", "#0000CC")) + 
-  scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2", "followup3", "followup4")) + 
+  scale_color_manual(values=c("#CC0000", "#0000CC")) +
+  # scale_x_discrete(expand = c(0,0), limit = c("pre-covid", "baseline", "followup1", "followup2", "followup3", "followup4")) + 
   theme_minimal() +
   guides(color=guide_legend("Diagnosis:"))
 
@@ -785,9 +835,73 @@ ggplot() +
 
 rm(list=ls(pattern="child_completed_"))
 rm(list=ls(pattern="parent_completed_"))
-rm(parent_agreed, child_agreed, all_table, crisis_table, measures_combined_long, 
-  pscared_tminus2_long, pmfq_tminus2_long, smfq_tminus2_long, scared_group_means_t, scared_group_means, scared_subset, 
-  scaredshort_subset2, scared_subset1, mfq_group_means_t, mfq_group_means, mfq_subset, mfq_subset1, mfq_subset2, 
-  crisis_group_means_t, crisis_group_means, crisis_subset, crisis_subset1, crisis_subset2, crisis_subset3, crisis_subset4, crisis_subset5)
+rm(parent_agreed, child_agreed, all_table, crisis_table, measures_combined_long, base, fu, new, num_variables, 
+  base_names, crisis_merge_names, fu_names, mfq_all_group_means, s_mfq_5m_precovid, s_mfq_5m_precovid_group_means,
+  pscared_tminus1_long, pmfq_tminus1_long, smfq_tminus1_long, scared_group_means_t, scared_group_means, scared_subset, 
+  mfq_group_means_t, mfq_group_means, mfq_subset, crisis_group_means_t, crisis_group_means, crisis_subset, crisis_subset1,
+  sscared_tminus1_long, s_mfq_since_covid, s_mfq_since_covid_group_means, 
+  crisis_subset2, crisis_subset3, crisis_subset4, crisis_subset5)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
+
+##### Old method for putting toghether the dataset for analysis: 
+##### Issue with this approach is that it does not include MFQs & SCAREDs 
+##### that were collected in March during the time we were collecting 
+##### the first COVID questionnaire. I have left this section in so that
+##### you can put together the CRISIS dataset with a 'baseline' timepoint
+##### (i.e. baseline = their first ever timepoint with us) and a pre-covid. 
+# 
+# measures_completed <- measures_completed %>% 
+#   filter(!is.na(s_mfq_tot) | !is.na(s_scaredshort_tot) | !is.na(s_crisis_base_tot) | !is.na(s_crisis_fu_tot) |
+#                         !is.na(p_mfq_tot) | !is.na(p_scaredshort_tot) | !is.na(p_crisis_base_tot) | !is.na(p_crisis_fu_tot))
+# 
+# smfq_tminus2_long <- Psychometrics_treatment %>% 
+#   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
+#          c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq1w_tot, s_mfq_tot, s_mfq1w_date, s_mfq_date) %>% rename(Age = "Age_at_visit") %>% 
+#   filter(!is.na(s_mfq1w_tot) | !is.na(s_mfq_tot)) %>% mutate(Age = round(Age, digits = 0))
+# smfq_tminus2_long$s_mfq_tot <- coalesce(smfq_tminus2_long$s_mfq_tot, smfq_tminus2_long$s_mfq1w_tot) %>% round(., digits = 0)
+# smfq_tminus2_long$s_mfq_date <- coalesce(smfq_tminus2_long$s_mfq_date, smfq_tminus2_long$s_mfq1w_date) %>% round(., digits = 0)
+# smfq_tminus2_long <- smfq_tminus2_long %>% filter(s_mfq_date <= "2020-03-11") %>% group_by(Initials) %>% 
+#   arrange(s_mfq_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% select(-s_mfq1w_date, -s_mfq1w_tot) %>% 
+#   mutate(id = row_number()) %>% ungroup() %>% filter(Initials %in% measures_completed$Initials)
+# 
+# sscared_tminus2_long <- Psychometrics_treatment %>% 
+#   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
+#          c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_scared_tot, s_scared_date) %>% rename(Age = "Age_at_visit") %>% 
+#   filter(!is.na(s_scared_tot)) %>% mutate(s_scared_tot = round(s_scared_tot, digits = 0)) %>% mutate(Age = round(Age, digits = 0))
+# sscared_tminus2_long <- sscared_tminus2_long %>% filter(s_scared_date <= "2020-03-11") %>% group_by(Initials) %>% 
+#   arrange(s_scared_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% 
+#   ungroup() %>% filter(Initials %in% measures_completed$Initials)
+# 
+# pmfq_tminus2_long <- Psychometrics_treatment %>% 
+#   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
+#          c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_mfq1w_tot, p_mfq_tot, p_mfq1w_date, p_mfq_date) %>% rename(Age = "Age_at_visit") %>% 
+#   filter(!is.na(p_mfq1w_tot) | !is.na(p_mfq_tot)) %>% mutate(Age = round(Age, digits = 0))
+# pmfq_tminus2_long$p_mfq_tot <- coalesce(pmfq_tminus2_long$p_mfq_tot, pmfq_tminus2_long$p_mfq1w_tot) %>% round(., digits = 0)
+# pmfq_tminus2_long$p_mfq_date <- coalesce(pmfq_tminus2_long$p_mfq_date, pmfq_tminus2_long$p_mfq1w_date) %>% round(., digits = 0)
+# pmfq_tminus2_long <- pmfq_tminus2_long %>% filter(p_mfq_date <= "2020-03-11") %>% group_by(Initials) %>% 
+#   arrange(p_mfq_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% ungroup() %>% 
+#   select(-p_mfq1w_date, -p_mfq1w_tot) %>% filter(Initials %in% measures_completed$Initials)
+# 
+# pscared_tminus2_long <- Psychometrics_treatment %>% 
+#   select(Initials, SDAN, PLUSID, Participant_Type2, IRTA_tracker, SEX, Age_at_visit,
+#          c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_scared_tot, p_scared_date) %>% 
+#   filter(!is.na(p_scared_tot)) %>% mutate(p_scared_tot = round(p_scared_tot, digits = 0)) %>% rename(Age = "Age_at_visit") %>% 
+#   mutate(Age = round(Age, digits = 0))
+# pscared_tminus2_long <- pscared_tminus2_long %>% filter(p_scared_date <= "2020-03-11") %>% group_by(Initials) %>% 
+#   arrange(p_scared_date) %>% slice(1,n()) %>% distinct(., .keep_all = TRUE) %>% mutate(id = row_number()) %>% 
+#   ungroup() %>% filter(Initials %in% measures_completed$Initials)
+# 
+# measures_combined_long <- merge.default(smfq_tminus2_long, sscared_tminus2_long, all=TRUE) %>% 
+#   merge.default(., pmfq_tminus2_long, all=TRUE) %>% merge.default(., pscared_tminus2_long, all=TRUE) %>%
+#   distinct(., .keep_all = TRUE)
+# 
+# crisis_final <- merge.default(measures_completed, measures_combined_long, all=TRUE) %>% rename(Sex = "SEX")
+# crisis_final$row_label <- recode(crisis_final$id, `1`="baseline", `2`="pre-covid", 
+#                           `3`="crisis_t1", `4`="crisis_t2", `5`="crisis_t3", `6`="crisis_t4", `7`="crisis_t5", `8`="crisis_t6", `9`="crisis_t7")
+# crisis_final <- crisis_final %>% select(Initials, SDAN, PLUSID, IRTA_tracker, Sex, Age, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
+#                                         id, row_label, matches("_mfq"), matches("scared"), matches("s_crisis_"), matches("p_crisis"))
 
 ```

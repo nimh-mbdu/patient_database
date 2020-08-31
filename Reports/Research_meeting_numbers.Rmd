@@ -348,7 +348,7 @@ referrals_final %>%
   geom_point(size=3) +
   geom_line(size=0.25) +
   scale_colour_manual(values = c("#FF0066","#000000")) +
-  scale_x_date(date_break = "1 month", date_labels = "%m/%y") +
+  scale_x_date(date_break = "2 months", date_labels = "%b-%y") +
   scale_y_continuous(expand = c(0, 1)) +
   geom_vline(xintercept = (HV_postcards$date), size=1, colour="#FF0000") +
   geom_vline(xintercept = (MDD_postcards$date), size=1, colour="#000000") +
@@ -628,6 +628,7 @@ protocol_table2 <- reshape(protocol_table, idvar = "Participant_Type2", timevar 
   mutate(Screening_Percent = (proportions.Screening.Screening * 100)) %>% 
   mutate(Screening_Percent = round(Screening_Percent, 2)) %>%
   select(Participant_Type2, Freq.Characterization, Characterization_Percent, Freq.Screening, Screening_Percent, Freq.Total)
+protocol_table2 <- na_if(protocol_table2,  "<NA>")
 
 ######## Current eligibility of all enrolled 
 
@@ -641,17 +642,17 @@ protocol_0037_characterization_table2 <- reshape(protocol_0037_characterization_
   mutate_all(as.character)
 protocol_0037_characterization_table2 <- na_if(protocol_0037_characterization_table2,  "<NA>")
 order <- tibble(Order=c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14), Eligible=c("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", NA, "Total"))
-protocol_0037_characterization_table3 <- left_join(protocol_0037_characterization_table2, order) %>% arrange(Order) %>% select(-Order)
+protocol_0037_characterization_table3 <- left_join(protocol_0037_characterization_table2, order) %>% arrange(Order) %>% select(-Order) %>% mutate_all(as.character)
 
 protocol_0037_characterization_table3$Eligible <- recode(protocol_0037_characterization_table3$Eligible,
-  "0"="1a. Include",
-  "1"="1b. Include: can’t scan (braces, etc.)",
-  "2"="2a. On hold: contact again after specified amount of time",
-  "3"="2b. On hold: low priority",
-  "4"="3a. Excluded: cannot be reached or scheduled, all contact options exhausted",
-  "5"="3b. Excluded: does not meet criteria",
-  "6"="3c. Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
-  "7"="4. Withdrawn: did not or withdrew assent/consent",
+  "0"="Include", 
+  "1"="Include: can’t scan (braces, etc.)", 
+  "2"="On hold: contact again after specified amount of time", 
+  "3"="On hold: low priority", 
+  "4"="Excluded: cannot be reached or scheduled, all contact options exhausted",
+  "5"="Excluded: does not meet criteria", 
+  "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)", 
+  "7"="Withdrawn: did not or withdrew assent/consent",
   "8"="Treatment status 1: ruled as ineligible for treatment during baseline assessment",
   "9"="Treatment status 2: patient (or parent) withdrew from treatment",
   "10"="Treatment status 3: excluded after commencing treatment: clinician decision",
@@ -685,6 +686,8 @@ protocol_0037_characterization_table3 %>% kable(., col.names = c("Eligible", "An
 ```
 
 Resulting in **`r tot_withdrew`** excluded/withdrawn in total.
+
+*** 
 
 ##### Longitudinal clinical follow up
 
@@ -1144,14 +1147,6 @@ measures_completed <- measures_completed %>% select(-s_mfq1w_tot, -p_mfq1w_tot, 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
-# total contacted 
-# child_contacted <- 173
-# parent_contacted <- 125
-# total agreed to participate 
-
-child_agreed <- 166
-parent_agreed <- 126
-
 ##### all baseline measures completed 
 # parent
 parent_completed_all_base <- measures_completed %>% filter(!is.na(p_crisis_base_tot)) %>% group_by(Initials) %>% arrange(Initials, Task_Date) %>% 
@@ -1530,6 +1525,7 @@ MMI_recovery_latest %>% kable(., col.names = c("Diagnosis", "Freq")) %>%
 outpatients <- master_IRTA_latest %>% filter(Clinical_Visit_Code=="o") %>% group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
   slice(n()) %>% ungroup()
 outpatients$Eligible <- recode(outpatients$Eligible, "0"="Active in treatment", 
+      "2"="On hold: contact again after specified amount of time", 
       "5"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
       "6"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
       "7"="Patient (or parent) withdrew from treatment", 
@@ -1588,6 +1584,7 @@ current_outpatients %>% kable(., col.names = c("Initials", "Last/Next CBT Date",
 inpatients <- master_IRTA_latest %>% filter(Clinical_Visit_Code=="i") %>% group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
   slice(n()) %>% ungroup()
 inpatients$Eligible <- recode(inpatients$Eligible, "0"="Active in treatment", 
+      "2"="On hold: contact again after specified amount of time", 
       "5"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
       "6"="Excluded after commencing treatment: some treatment received before participant was later excluded (e.g. bad scanner, now meets exclusionary criteria, etc.)",
       "7"="Patient (or parent) withdrew from treatment", 
@@ -1622,7 +1619,7 @@ current_inpatients <- inpatients %>% filter(is.na(Eligible) | Eligible=="Active 
 current_inpatients$Clinical_Visit_Date <- format(current_inpatients$Clinical_Visit_Date, "%B %d %Y")
 
 if (nrow(current_inpatients)=="0") {
-  current_inpatients <- rbind(current_inpatients, tibble(Initials=c("No upcoming MEG scheduled"), Clinical_Visit_Date=c(NA), 
+  current_inpatients <- rbind(current_inpatients, tibble(Initials=c("None currently in treatment"), Clinical_Visit_Date=c(NA), 
                                                            Clinical_Visit_Number=c(NA), IRTA_tracker=c(NA)))
   }
 

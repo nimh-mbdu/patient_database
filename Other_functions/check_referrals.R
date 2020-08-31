@@ -168,13 +168,17 @@ screening_phone_temp_b <- str_split_fixed(screening_phone_temp_a$V1, pattern = c
   mutate_all(as.character)
 
 possibleError <- tryCatch(
-  str_split_fixed(screening_phone_temp_a$V2, pattern = c(":"), n=Inf) %>% as.data.frame() %>% mutate(row_id = row_number()),
+ screening_phone_temp_c <- str_split_fixed(screening_phone_temp_a$V2, pattern = c(":"), n=Inf) %>% as.data.frame() %>% 
+    mutate(row_id = row_number()) %>% mutate_all(as.character),
  error=function(e) e)
-if(inherits(possibleError, "error")) {
+if (inherits(possibleError, "error")) {
   print("no second phone number")
+} else if (nrow(screening_phone_temp_c)==0) {
+  print("no second phone number")
+  rm(screening_phone_temp_c)
 } else {
-  screening_phone_temp_c <- str_split_fixed(screening_phone_temp_a$V2, pattern = c(":"), n=Inf) %>% as.data.frame() %>% mutate(row_id = row_number()) %>% 
-    mutate_all(as.character)
+  screening_phone_temp_c <- str_split_fixed(screening_phone_temp_a$V2, pattern = c(":"), n=Inf) %>% as.data.frame() %>% 
+    mutate(row_id = row_number()) %>% mutate_all(as.character)
 }
 
 if(exists("screening_phone_temp_c") == TRUE) {
