@@ -167,6 +167,8 @@
     select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
   manual_medication <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "Clinician medication forms", skip=2) %>% 
     select(-starts_with("x"), -Entry_date, -matches("c_medsclin1yr_")) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
+  manual_ascq <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "ASCQ", skip=2) %>% 
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
   
   manual_ethnicity <- read_excel(paste0(database_location, "other_data_never_delete/ethnicity_list_KCs_CR_tracker.xlsx")) %>% mutate_all(as.character)
   
@@ -2404,23 +2406,24 @@
   s_ascq_subset_sdq <- sdq_w_names %>% select(PLUSID, Initials, Overall_date, source, matches('s_ascq_')) %>% 
     distinct(., .keep_all = TRUE)
   
+  # removing the two participants that mixed up the 'often' and 'believe' columns 
+  # s_ascq_subset_dummy <- s_ascq_subset_sdq %>%
+  #   filter((PLUSID=='1131-3732-4602-4203' & Overall_date=="2018-08-20") | (PLUSID=='6527-2908-1008-7627' & Overall_date=="2019-05-29"))
+  # s_ascq_subset_sdq <- s_ascq_subset_sdq %>% filter_at(., vars(ends_with("_often")), all_vars(. <6))
+  
+  # add code to merge manual information in 
+  s_ascq_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches('s_ascq_'))
+  s_ascq_subset_sdq <- merge.default(s_ascq_subset_sdq, s_ascq_manual, all=TRUE)
+  
   s_ascq_subset_sdq[,5:ncol(s_ascq_subset_sdq)] <- sapply(s_ascq_subset_sdq[,5:ncol(s_ascq_subset_sdq)], as.numeric) 
   s_ascq_subset_sdq[,5:33]  <- lapply(s_ascq_subset_sdq[,5:33], FUN = function(x) recode(x, `4`=5, `3`=4, `2`=3, `1`=2, `0`=1, .missing = NULL))
-  
+
   s_ascq_subset_sdq$no_columns <- s_ascq_subset_sdq %>% select(matches('s_ascq_')) %>% ncol() %>% as.numeric()
   s_ascq_subset_sdq$NA_count <- s_ascq_subset_sdq %>% select(matches('s_ascq_')) %>% apply(., 1, count_na)
   s_ascq_subset_sdq$diff <- c(s_ascq_subset_sdq$no_columns - s_ascq_subset_sdq$NA_count)
   s_ascq_subset_sdq <- s_ascq_subset_sdq %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
   
-  # s_ascq_subset_dummy <- s_ascq_subset_sdq %>% 
-  #   filter((PLUSID=='1131-3732-4602-4203' & Overall_date=="2018-08-20") | (PLUSID=='6527-2908-1008-7627' & Overall_date=="2019-05-29"))
-  s_ascq_subset_sdq <- s_ascq_subset_sdq %>% filter_at(., vars(ends_with("_often")), all_vars(. <6))
-  
-  # add code to merge manual information in 
-  
-  
-  
-  
+  s_ascq_subset_sdq <- s_ascq_subset_sdq %>% group_by(Initials, Overall_date) %>% arrange(Initials, Overall_date, source) %>% slice(1) %>% ungroup()
   
   s_ascq_subset_sdq$s_ascq_oten_tot <- s_ascq_subset_sdq %>% select(ends_with("_often")) %>% rowMeans(na.rm=TRUE) %>% round(digits=2)
   s_ascq_subset_sdq$s_ascq_believe_tot <- s_ascq_subset_sdq %>% select(ends_with("_believe")) %>% rowMeans(na.rm=TRUE) %>% round(digits=2)
@@ -2544,8 +2547,10 @@
   
   for(i in seq_along(crisis_measures)) {
     iter <- as.numeric(i)
-    # iter=2
+    # iter=1
     measure_name <- crisis_measures[iter]
+    print(paste("************************LOOP = ", measure_name))
+    
     measure_temp_sdq <- sdq_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
       filter(!is.na(Overall_date)) %>% rename(measure_temp_source = "source") %>% distinct(., .keep_all = TRUE) 
     
@@ -3730,17 +3735,17 @@ CRISIS_data_presentation_final %>% write_csv(paste0(database_location, "COVID19/
 CRISIS_data_presentation_final %>% write_xlsx(paste0(database_location, "COVID19/CRISIS_subset_tminus1.xlsx"))
 
 # checking saved properly
-file_save_check <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^CRISIS_subset_w_baseline.csv", all.files = FALSE,
+file_save_check <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^CRISIS_subset_tminus1.csv", all.files = FALSE,
                               full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
 file_save_check_time <- file.mtime(paste0(database_location, "COVID19/", file_save_check)) %>% as.Date()
 file_save_check_combined <- tibble(File=c(file_save_check), Date=c(file_save_check_time)) 
 file_save_check_combined$date_diff <- as.numeric(difftime(todays_date_formatted, file_save_check_combined$Date, tz="", units = "days"))
 
 if (file_save_check_combined$date_diff[1]==0) {
-  print("Exported as 'CRISIS_subset_w_baseline'")
+  print("Exported as 'CRISIS_subset_tminus1'")
 } else {
-  print("Conflict: exporting as 'CRISIS_subset_w_baseline_updated'")
-  crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_w_baseline.csv"))
+  print("Conflict: exporting as 'CRISIS_subset_tminus1_updated'")
+  crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_tminus1_updated.csv"))
 }
 
 # Identifying missing cases -----------------------------------------------

@@ -815,6 +815,10 @@ Participants long overdue for clinical follow up
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
+if (nrow(overdue)=="0") {
+  overdue <- rbind(overdue, tibble(Initials=c("No participants more than one month overdue"), IRTA=c(NA), Diagnosis=c(NA), Eligibility=c(NA), Days_overdue=c(NA)))
+  }
+
 overdue %>% arrange(expt_FU_date_TDiff) %>% kable(., col.names = c("Initials", "IRTA", "Diagnosis", "Eligibility", "Days overdue")) %>%
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
