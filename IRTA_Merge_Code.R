@@ -30,7 +30,12 @@ for(i in seq_along(current_IRTAs_full)) {
   
 }
 
-temp_active_data <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/REMOVED_Patient_List.xlsx"), sheet = "Active_Participants") %>% mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
+# REMOVED tracker
+temp_active_data <- read_excel(paste0(IRTA_tracker_location, "/other_data_never_delete/REMOVED_Patient_List.xlsx"), sheet = "Active_Participants") %>% 
+  mutate_all(as.character) %>% mutate(IRTA_tracker="REMOVED")
+# Jerry's tracker here 
+JM_active_data <- read_excel(paste0(string, "/Jerry's Folder/JM_Patient_List.xlsx"), sheet = "Active_Participants") %>% 
+  mutate_all(as.character) %>% mutate(IRTA_tracker="JM")
 
 # merge & tidy up
 
