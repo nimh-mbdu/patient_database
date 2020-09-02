@@ -3217,10 +3217,11 @@ current_outpatients <- Psychometrics_treatment %>% filter(str_detect(Clinical_Vi
   select(Initials, SDAN, Age_at_visit, SEX, c_ksadsdx_dx_detailed, IRTA_tracker)
 outpatient_list <- c(current_outpatients$Initials)
 CBT_report <- Psychometrics_treatment %>% 
-  select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba_"), matches("s_after_ba_"), matches("s_baexpout_"),
-         s_after_ba_sess_come_again, matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_"), -matches("_TDiff"), -matches("_complete"), 
-         -matches("_source")) %>% arrange(LAST_NAME, Initials, FIRST_NAME, Clinical_Visit_Date) %>% filter(Initials %in% outpatient_list) %>% 
-  select(-s_fua_date, -p_fua_date, -s_before_ba_date, -s_after_ba_date, -s_baexpout_date, -s_menstruation_date, -c_medsclin_date) %>% 
+  select(cbt_columns$select, matches("s_fua_"), matches("p_fua_"), matches("s_srsors_"),
+    # matches("s_before_ba_"), matches("s_after_ba_"), matches("s_baexpout_"), s_after_ba_sess_come_again, 
+    matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_")) %>% 
+  arrange(LAST_NAME, Initials, FIRST_NAME, Clinical_Visit_Date) %>% filter(Initials %in% outpatient_list) %>% 
+  select(-matches("_TDiff"), -matches("_complete"), -matches("_source"), -s_fua_date, -p_fua_date, -s_srsors_date, -s_menstruation_date, -c_medsclin_date) %>% 
   filter(str_detect(Clinical_Visit_Code, "o") | Clinical_Visit_Type=="c1")
 
 # insert code to filter out future dates
@@ -3279,22 +3280,25 @@ for(q in seq_along(parent_report)) {
 
 CBT_report <- merge.default(CBT_report, parent_col_spread, all=TRUE) %>% filter(Initials!="DUMMY")
 
-ba_rating_columns <- CBT_report %>% select(matches("s_before_ba_"), matches("s_after_ba_")) %>% colnames()
-ba_rating_columns <- ba_rating_columns[ba_rating_columns != "s_before_ba_clinician_name"]
-ba_rating_columns <- ba_rating_columns[ba_rating_columns != "s_after_ba_clinician_name"]
+# no longer need the BA measures to be in the CBT database 
+# ba_rating_columns <- CBT_report %>% select(matches("s_before_ba_"), matches("s_after_ba_")) %>% colnames()
+# ba_rating_columns <- ba_rating_columns[ba_rating_columns != "s_before_ba_clinician_name"]
+# ba_rating_columns <- ba_rating_columns[ba_rating_columns != "s_after_ba_clinician_name"]
+# 
+# CBT_report[ba_rating_columns] <- lapply(CBT_report[ba_rating_columns], as.numeric)
+# CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_after_ba_mood - s_before_ba_mood), s_ba_sess_difficulty_diff = (s_after_ba_difficult - s_before_ba_difficult),
+#                                     s_ba_sess_enjoy_diff = (s_after_ba_enjoy - s_before_ba_enjoy), s_ba_sess_anxiety_diff = (s_after_ba_anx - s_before_ba_anx),
+#                                     s_ba_sess_satisfaction_diff = (s_after_ba_sat - s_before_ba_sat)
+#                                     # s_ba_week_enjoy_diff = (s_after_ba_week_expected_enjoyment - s_before_ba_week_actual_enjoyment), # cannot include this until I resolve how I will have to
+#                                     # take the expected weekly enjoyment from the previous week from the actual enjoyment of the present week - i.e. 1 row previous
+#                                 )
 
-CBT_report[ba_rating_columns] <- lapply(CBT_report[ba_rating_columns], as.numeric)
-CBT_report <- CBT_report %>% mutate(s_ba_sess_mood_diff = (s_after_ba_mood - s_before_ba_mood), s_ba_sess_difficulty_diff = (s_after_ba_difficult - s_before_ba_difficult),
-                                    s_ba_sess_enjoy_diff = (s_after_ba_enjoy - s_before_ba_enjoy), s_ba_sess_anxiety_diff = (s_after_ba_anx - s_before_ba_anx),
-                                    s_ba_sess_satisfaction_diff = (s_after_ba_sat - s_before_ba_sat)
-                                    # s_ba_week_enjoy_diff = (s_after_ba_week_expected_enjoyment - s_before_ba_week_actual_enjoyment), # cannot include this until I resolve how I will have to
-                                    # take the expected weekly enjoyment from the previous week from the actual enjoyment of the present week - i.e. 1 row previous
-                                )
-
-CBT_report <- CBT_report %>% select(Initials, FIRST_NAME:Eligible, Clinical_Visit_Date:Clinical_Visit_Number, Scheduling_status:c_ksadsdx_lifetime_comorbid_dx_all, matches("_mfq"), 
-                                    matches("_scared"), matches("_ari"), s_shaps_tot:s_rumination_tot, matches("s_fua_"), matches("p_fua_"), matches("s_before_ba_"), 
-                                    matches("s_after_ba_"), matches("_ba_sess_"), matches("s_baexpout_"), matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_")) %>%
-  select(-matches("s_baexpout_act_3_"), -matches("s_baexpout_act_4_"), -matches("s_baexpout_act_5_")) %>% 
+CBT_report <- CBT_report %>% select(Initials, FIRST_NAME:Eligible, Clinical_Visit_Date:Clinical_Visit_Number, 
+  Scheduling_status:c_ksadsdx_lifetime_comorbid_dx_all, matches("_mfq"), matches("_scared"), matches("_ari"), s_shaps_tot:c_ygtss_tot, 
+  matches("s_fua_"), matches("p_fua_"), matches("s_srsors_"),
+  # matches("s_before_ba_"), matches("s_after_ba_"), matches("_ba_sess_"), matches("s_baexpout_"), 
+  matches("s_menstruation_"), matches("s_medsctdb_"), matches("c_medsclin_")) %>%
+  # select(-matches("s_baexpout_act_3_"), -matches("s_baexpout_act_4_"), -matches("s_baexpout_act_5_")) %>% 
   arrange(LAST_NAME, Initials, Clinical_Visit_Date)
 
 parent_report <- select(CBT_report, matches("_parent")) %>% colnames()

@@ -121,7 +121,9 @@ inpatient_list <- c(current_inpatients$Initials)
 psychometric_data <- MATCH_tracker %>% filter(Initials %in% inpatient_list) %>% 
   select(Initials, Clinical_Visit_Date, Clinical_Visit_Date2, Clinical_Visit_Date3, Clinical_Visit_Type, Clinical_Visit_Number, s_mfq1w_tot, s_ari1w_tot,
          s_scared_tot, s_shaps_tot, s_lsas_tot, s_vadis_tot, s_rumination_tot, s_chocir_symptom_tot, s_chocir_impairment_tot, s_seq_tot, p_conners_tot,
-         c_snap_tot, c_cybocs_ob_tot, c_cybocs_com_tot, c_ygtss_severity_tot, c_ygtss_tot)
+         c_snap_tot, c_cybocs_ob_tot, c_cybocs_com_tot
+    # , c_ygtss_severity_tot, c_ygtss_tot
+    )
 psychometric_data[,7:ncol(psychometric_data)] <- sapply(psychometric_data[,7:ncol(psychometric_data)], as.numeric)
 psychometric_data[,7:ncol(psychometric_data)] <- sapply(psychometric_data[,7:ncol(psychometric_data)], round, 0)
 
@@ -233,14 +235,20 @@ for(i in seq(nrow(current_inpatients))) {
   questionnaire_data <- flextable(temp_psych, col_keys = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", 
       "s_ari1w_tot", "s_scared_tot", "s_shaps_tot", "s_lsas_tot", "s_vadis_tot", "s_rumination_tot", "s_chocir_symptom_tot", 
       "s_chocir_impairment_tot", "s_seq_tot", "p_conners_tot", "c_snap_tot", "c_cybocs_ob_tot",
-      "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot")) %>% 
+      "c_cybocs_com_tot"
+    # , "c_ygtss_severity_tot", "c_ygtss_tot"
+    )) %>% 
     set_header_labels(., Clinical_Visit_Number="Week",  Clinical_Visit_Date2="Date", s_mfq1w_tot="MFQ", s_ari1w_tot="ARI",
        s_scared_tot="SCARED", s_shaps_tot="SHAPS", s_lsas_tot="LSAS", s_vadis_tot="VADIS", s_rumination_tot="RUM", s_chocir_symptom_tot="CHOCIR:S",
        s_chocir_impairment_tot="CHOCIR:I", s_seq_tot="SEQ", p_conners_tot="CONNERS", c_snap_tot="SNAP", c_cybocs_ob_tot="CYBOCS:O",
-       c_cybocs_com_tot="CYBOCS:C", c_ygtss_severity_tot="YGTSS:S", c_ygtss_tot="YGTSS:T") %>% 
+       c_cybocs_com_tot="CYBOCS:C"
+      # , c_ygtss_severity_tot="YGTSS:S", c_ygtss_tot="YGTSS:T"
+      ) %>% 
     colformat_num(j = c("Clinical_Visit_Number", "Clinical_Visit_Date2", "s_mfq1w_tot", "s_ari1w_tot", "s_scared_tot",
       "s_shaps_tot", "s_lsas_tot", "s_vadis_tot", "s_rumination_tot", "s_chocir_symptom_tot", "s_chocir_impairment_tot", "s_seq_tot", "p_conners_tot", "c_snap_tot",
-      "c_cybocs_ob_tot", "c_cybocs_com_tot", "c_ygtss_severity_tot", "c_ygtss_tot"), digits = 0, na_str = "") %>% 
+      "c_cybocs_ob_tot", "c_cybocs_com_tot"
+      # , "c_ygtss_severity_tot", "c_ygtss_tot"
+      ), digits = 0, na_str = "") %>% 
     fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>%
     FitFlextableToPage2(.)
   cat(knit_print(questionnaire_data))
@@ -269,15 +277,18 @@ for(i in seq(nrow(current_inpatients))) {
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="asis"}
 
 measures <- tibble(Abbreviation=c("MFQ", "ARI", "SCARED", "SHAPS", "LSAS", "VADIS", "RUM", "CHOCIR:S", "CHOCIR:I", "SEQ", "CONNERS", 
-                                  "SNAP", "CYBOCS:O", "CYBOCS:C", "YGTSS:S", "YGTSS:T"),
+                                  "SNAP", "CYBOCS:O", "CYBOCS:C"
+  # , "YGTSS:S", "YGTSS:T"
+  ),
                    Measure=c("Mood and Feelings Questionnaire", "Affective Reactivity Index", "Self-Report for Childhood Anxiety Related Emotional Disorders", 
                              "Snaith-Hamilton Pleasure Scale", "Liebowitz Social Anxiety Scale", "Child Depression Rating Scale", "Rumination Scale", 
                              "Obsession Compulsive Inventory Revised (symptom total)", "Obsession Compulsive Inventory Revised (impairment total)", 
                              "Self-efficacy Questionnaire", "Conners Comprehensive Behavior Rating Scale", "Swanson, Nolan and Pelham-IV Questionnaire", 
                              "Children's Yale-Brown Obsessive Compulsive Scale (obsessions subscale)", 
-                             "Children's Yale-Brown Obsessive Compulsive Scale (compulsions subscale)", 
-                             "Yale Global Tic Severity Scale (severity subscale)", 
-                             "Yale Global Tic Severity Scale (total = severity + impairment)"))
+                             "Children's Yale-Brown Obsessive Compulsive Scale (compulsions subscale)"
+                     # , "Yale Global Tic Severity Scale (severity subscale)", 
+                             # "Yale Global Tic Severity Scale (total = severity + impairment)"
+                     ))
 measure_table <- flextable(measures) %>% fontsize(., size=8, part="all") %>% align(., align = "left", part="all") %>% FitFlextableToPage2(.)
 cat(knit_print(measure_table))
 

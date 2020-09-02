@@ -86,6 +86,9 @@ data <- CBT_report %>% filter(Initials==Participant)
 # changing date formats
 data$Clinical_Visit_Date2 <- format(data$Clinical_Visit_Date, "%b-%d")
 data$Clinical_Visit_Date3 <- format(data$Clinical_Visit_Date, "%B-%d-%Y")
+# the following was created to make sure the dates, when displayed in a table, would not be ordered 
+# alphabetically by month. It creates a factor variable of clinic visit number, therefore ordered
+# by clinic visit number, and labels these levels with the clinic visit date in the format of Mon-day
 data$Clinical_Visit_Date4 <- factor(data$Clinical_Visit_Number, levels=data$Clinical_Visit_Number, labels=data$Clinical_Visit_Date2)
 todays_date <- todays_date_formatted %>% format(., "%B %d %Y")
 

@@ -556,8 +556,8 @@ for(i in seq(nrow(scheduling_v1))) {
 
 # removing finished variables
 
-rm(sdq_dates, common_identifiers_screening, common_identifiers_sheduling, fill_names, SDQ_Data_Download_raw, sdq_columns, p_demo_screen_sdq,
+rm(sdq_dates, common_identifiers_screening, common_identifiers_sheduling, SDQ_Data_Download_raw, sdq_columns, p_demo_screen_sdq,
    name_variables, numeric_variables, screening, scheduled_v1, scheduling_v1, p_demo_screen_sdq_plus_tracker, ready_to_review, common_identifiers, 
-   temp, iter, i, ready_to_review2, screening2, demo_table, referral_table, notes_table, p_mfq_screen_sdq, sdq_plus_tracker, numeric_variables2)
+   temp, iter, i, demo_table, referral_table, notes_table, p_mfq_screen_sdq, sdq_plus_tracker, numeric_variables2)
 
 ```
