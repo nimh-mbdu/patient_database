@@ -5,14 +5,18 @@ rm(list = ls()) # command to clear all variables from R environment
 # directories -------------------------------------------------------------
 
 # what device are you running this script on? 
-computer = 'mac' # set this to either 'mac' or 'pc' or 'other'
+computer = 'mac' # set this to either 'mac' or 'pc' or 'other', 'jsbach'
+username = 'ocallaghang2'
 
 if (computer=="pc") {
   string = 'W:/string-mbd/'
-  sdan1 = 'Y:/SDAN1/'
+  sdan1 = 'Y:/sdan1/'
 } else if (computer=="mac") {
   string = '/Volumes/string-mbd/'
   sdan1 = '/Volumes/SDAN1/'
+} else if (computer=="jsbach") {
+  string = paste0('/home/', username, '/cifs/jsbach/string-mbd/')
+  sdan1 = paste0('/home/', username, '/cifs/jsbach/sdan1/')
 } else { # if using a PC and your drives aren't mounted as specified above, enter what letter your drives are mounted under here... 
   string = 'W:/'
   sdan1 = 'Y:/'
@@ -27,6 +31,7 @@ clinician_sheet_location = paste0(string, "Patient Information/Clinician Sheet/"
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring 
 graphs_location = paste0(database_location, "graphs/")
 clinician_supervision_location = paste0(string, "Psychotherapy/Supervision/")
+otherfunctions=paste0(scripts, "Other_functions", .Platform$file.sep)
 
 # location of backups
 backup_location = paste0(IRTA_tracker_location, "IRTA_Master_Backups/") # IRTA tracker backup location 
@@ -57,6 +62,9 @@ supreme_file_location = paste0(string, "Tasks/supreme/data/")
 
 # packages ----------------------------------------------------------------
 
+# source script to install packages if missing here 
+source(paste0(otherfunctions,"installpackages.R"))
+# load packages 
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(writexl)) 
 suppressPackageStartupMessages(library(tidyr))
@@ -94,7 +102,8 @@ max_MID <- c(to_change$max_MID)
 max_MMI <- c(to_change$max_MMI)
 max_MEG <- c(to_change$max_MEG)
 
-# crisis recruitment related
+# crisis recruitment related - these numbers obtained by running the following script: 
+# 'Database/Master Psychometric Database/COVID19/identifying_num_agreed_participate.R'
 child_agreed <- 177
 parent_agreed <- 139
 
@@ -227,9 +236,9 @@ if (modules2run==7 | modules2run==8) {
              output_file = paste0(Participant, "_", todays_date_formatted), output_dir = out_file)
     } else {
       render(paste0(scripts, "CBT_scripts/Produce_CBT_final_report.Rmd"), output_format = "word_document", 
-             output_file = paste0(Participant, "_final_", todays_date_formatted), output_dir = out_file)
+             output_file = paste0(Participant, "_final", todays_date_formatted), output_dir = out_file)
       render(paste0(scripts, "CBT_scripts/Produce_CBT_final_report_provider.Rmd"), output_format = "word_document", 
-             output_file = paste0(Participant, "_final_provider_", todays_date_formatted), output_dir = out_file)
+             output_file = paste0(Participant, "_final_provider", todays_date_formatted), output_dir = out_file)
     }
     
     # creating individual patient BA tracker:

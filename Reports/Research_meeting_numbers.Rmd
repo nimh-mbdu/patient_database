@@ -36,8 +36,8 @@ knitr::opts_chunk$set(echo = TRUE)
 # computer = 'pc' # set this to either 'mac' or 'pc' (Georgia = W:/ as I have string mounted differently)
 # 
 # if (computer=="pc") {
-#   string = 'W:/'
-#   sdan1 = 'Y:/'
+#   string = 'W:/string-mbd/'
+#   sdan1 = 'Y:/sdan1/'
 # } else if (computer=="mac") {
 #   string = '/Volumes/string-mbd/'
 #   sdan1 = '/Volumes/sdan1/'
@@ -816,7 +816,7 @@ Participants long overdue for clinical follow up
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 if (nrow(overdue)=="0") {
-  overdue <- rbind(overdue, tibble(Initials=c("No participants more than one month overdue"), IRTA=c(NA), Diagnosis=c(NA), Eligibility=c(NA), Days_overdue=c(NA)))
+  overdue <- rbind(overdue, tibble(Initials=c("No participants more than one month overdue"), IRTA=c(NA), Diagnosis=c(NA), Eligibility=c(NA), expt_FU_date_TDiff=c(NA)))
   }
 
 overdue %>% arrange(expt_FU_date_TDiff) %>% kable(., col.names = c("Initials", "IRTA", "Diagnosis", "Eligibility", "Days overdue")) %>%

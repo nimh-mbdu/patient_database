@@ -177,8 +177,8 @@
   manual_combined <- reduce(manual_sets, full_join)
   fill_names <- manual_combined %>% select(-Initials, -Overall_date) %>% colnames()
   manual_combined <- manual_combined %>% group_by(Initials, Overall_date) %>% 
-    # fill(., all_of(fill_names), .direction = "down") %>% fill(., all_of(fill_names), .direction = "up") %>%
-    fill(., fill_names, .direction = "down") %>% fill(., fill_names, .direction = "up") %>%
+    fill(., all_of(fill_names), .direction = "down") %>% fill(., all_of(fill_names), .direction = "up") %>%
+    # fill(., fill_names, .direction = "down") %>% fill(., fill_names, .direction = "up") %>%
     ungroup() %>% distinct(., .keep_all = TRUE) %>% mutate(source = "MANUAL")
   
   date_variables <- manual_combined %>% select(matches("_date")) %>% select(-Overall_date) %>% colnames()
@@ -2961,7 +2961,7 @@
     if (measure_name=="p_demo_screen_background_"){
       fill_names <- measure_temp %>% select(-Initials) %>% colnames()
       measure_temp <- measure_temp %>% group_by(Initials) %>% arrange(Initials, desc(source)) %>%
-        fill(., fill_names, .direction = "down") %>% fill(., fill_names, .direction = "up") %>% slice(1) %>% ungroup()
+        fill(., all_of(fill_names), .direction = "down") %>% fill(., all_of(fill_names), .direction = "up") %>% slice(1) %>% ungroup()
     }
     
     if (measure_name=="p_demo_screen_background_" | measure_name=="p_demo_screen_" | measure_name=="c_family_interview_" | measure_name=="ksads_") {
@@ -3191,19 +3191,24 @@ clinic_sets <- mget(clinic_sets)
 # merge & tidy up
 
 Psychometrics_treatment <- reduce(clinic_sets, full_join)
-fill_names <- Psychometrics_treatment %>% select(-Initials, -Clinical_Visit_Date) %>% colnames()
-# str(Psychometrics_treatment, list.len=ncol(Psychometrics_treatment))
+# # str(Psychometrics_treatment, list.len=ncol(Psychometrics_treatment))
 Psychometrics_treatment <- Psychometrics_treatment %>%
-  group_by(Initials, Clinical_Visit_Date) %>%
-  arrange(Initials, Clinical_Visit_Date) %>% 
-  fill(., fill_names, .direction = "down") %>%
-  fill(., fill_names, .direction = "up") %>%
-  ungroup() %>%
-  group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
+  group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>%
   fill(., matches("p_demo_screen_background_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
        matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
-  ungroup() %>% 
-  distinct(., .keep_all = TRUE)
+  fill(., matches("p_demo_screen_background_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_wasi_"), matches("s_handedness_"), .direction = "up") %>%
+  ungroup() %>%
+  distinct(., .keep_all = TRUE) %>% 
+  filter(!is.na(IRTA_tracker))
+
+# fill_names <- Psychometrics_treatment %>% select(-Initials, -Clinical_Visit_Date) %>% colnames()
+# duplicates <- Psychometrics_treatment %>% group_by(Initials, Clinical_Visit_Date) %>% filter(n()>1) %>% filter(!is.na(Clinical_Visit_Date))
+# Psychometrics_treatment <- Psychometrics_treatment %>%
+#   group_by(Initials, Clinical_Visit_Date) %>%
+#   arrange(Initials, Clinical_Visit_Date) %>%
+#   fill(., all_of(fill_names1), .direction = "down") %>%
+#   fill(., all_of(fill_names), .direction = "up") %>%
+#   ungroup()
 
 na_names_combined <- c(na_names_dx, na_names_iq, na_names_tanner, na_names_handedness, na_names_cfamilyinterview,
                        na_names_pdemoscreenbackground, na_names_pdemoscreen, na_names_ksads)
@@ -3436,7 +3441,7 @@ measures_completed <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID,
   mutate(Review_notes = NA) %>% mutate(Clinician_reviewed = NA) %>% mutate(Clinician_notes = NA) %>% mutate(Clinician_assigned = NA) %>% 
   mutate(Clinician_followup = NA) %>% mutate(Clinician_discussion = NA) %>% mutate(Clinician_call_date = NA)
 measures_dataset_w_missing <- merge.default(measures_expected, measures_completed, all=TRUE) %>% group_by(Initials) %>% 
-  fill(., fill_names, .direction = "up") %>% fill(., fill_names, .direction = "down") %>% ungroup()
+  fill(., all_of(fill_names), .direction = "up") %>% fill(., all_of(fill_names), .direction = "down") %>% ungroup()
 measures_dataset_w_missing$Clinical_Visit_Date <- as.Date(measures_dataset_w_missing$Clinical_Visit_Date)
 
 contact_info <- master_IRTA_latest %>% group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% slice(n()) %>% select(Initials, FIRST_NAME, LAST_NAME, Child_Phone_Number, Parent_Contact_Number) %>% 
@@ -3482,7 +3487,7 @@ measures_dataset_tminus2_long$s_mfq_date <- coalesce(measures_dataset_tminus2_lo
 measures_dataset_tminus2_long$p_mfq_tot <- coalesce(measures_dataset_tminus2_long$p_mfq_tot, measures_dataset_tminus2_long$p_mfq1w_tot)
 measures_dataset_tminus2_long$p_mfq_date <- coalesce(measures_dataset_tminus2_long$p_mfq_date, measures_dataset_tminus2_long$p_mfq1w_date)
 measures_dataset_tminus2_long <- measures_dataset_tminus2_long %>% select(-matches("_mfq1w_")) %>% group_by(Initials) %>% 
-  fill(., fill_names, .direction = "down") %>% fill(., fill_names, .direction = "up") %>% ungroup()
+  fill(., all_of(fill_names), .direction = "down") %>% fill(., all_of(fill_names), .direction = "up") %>% ungroup()
 
 # adding auto flagged variables:
 crisis_na_names <- c("s_crisis_base_tot", "p_crisis_base_tot", "s_crisis_fu_tot", "p_crisis_fu_tot", "s_mfq_tot", "p_mfq_tot")
@@ -3569,7 +3574,7 @@ measures_dataset_tminus2_long <- measures_dataset_tminus2_long %>%
          p_crisis_fu_44_support, p_crisis_fu_44_support_other, p_crisis_fu_additional_concerns, p_crisis_fu_additional_comments,
          QC_notes, New_info, CRISIS_flag, MFQ_flag, Review_status, Review_notes, Clinician_reviewed, Clinician_discussion, Clinician_assigned, 
          Clinician_call_date, Clinician_notes, Clinician_followup) %>% 
-  group_by(Initials) %>% fill(., fill_names, .direction = "up") %>% fill(., fill_names, .direction = "down") %>% 
+  group_by(Initials) %>% fill(., all_of(fill_names), .direction = "up") %>% fill(., all_of(fill_names), .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 
 if (file.exists(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_formatted, ".xlsx"))){
@@ -3589,19 +3594,22 @@ task_sets <- mget(task_sets)
 # merge & tidy up
 
 Psychometrics_behav <- reduce(task_sets, full_join)
-fill_names <- Psychometrics_behav %>% select(-Initials, -Task_Name, -Task_Date, -Task_Number) %>% colnames()
+# fill_names <- Psychometrics_behav %>% select(-Initials, -Task_Name, -Task_Date, -Task_Number) %>% colnames()
 # str(Psychometrics_behav, list.len=ncol(Psychometrics_behav))
 Psychometrics_behav <- Psychometrics_behav %>%
-  group_by(Initials, Task_Name, Task_Date, Task_Number) %>%
-  arrange(Initials, Task_Name, Task_Date) %>% 
-  fill(., fill_names, .direction = c("down")) %>%
-  fill(., fill_names, .direction = c("up")) %>%
-  ungroup() %>%
+  # group_by(Initials, Task_Name, Task_Date, Task_Number) %>%
+  # arrange(Initials, Task_Name, Task_Date) %>% 
+  # fill(., all_of(fill_names), .direction = c("down")) %>%
+  # fill(., all_of(fill_names), .direction = c("up")) %>%
+  # ungroup() %>%
   group_by(Initials) %>% arrange(Initials, Clinical_Visit_Date) %>% 
   fill(., matches("p_demo_screen_background_"), matches("p_demo_screen_"), matches("c_family_hist_"), matches("c_ksadsdx_"), matches("c_ksads_"),
        matches("c_wasi_"), matches("s_tanner_"), matches("s_handedness_"), .direction = "down") %>%
+  fill(., matches("p_demo_screen_background_"), matches("p_demo_screen_"), matches("c_family_hist_"),
+    matches("c_wasi_"), matches("s_handedness_"), .direction = "up") %>%
   ungroup() %>%
-  distinct(., .keep_all = TRUE)
+  distinct(., .keep_all = TRUE) %>% 
+  filter(!is.na(IRTA_tracker))
 
 na_names_combined <- c(na_names_dx, na_names_iq, na_names_tanner, na_names_handedness,
                        na_names_pdemoscreenbackground, na_names_pdemoscreen, na_names_ksads)

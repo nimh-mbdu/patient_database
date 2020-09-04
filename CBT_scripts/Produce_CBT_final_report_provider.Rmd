@@ -228,9 +228,9 @@ Please see below for a summary of `r f_name`’s diagnoses, medications, clinica
 
 Sessions were conducted via video-conference, in accordance with the guidance regarding novel coronavirus-19 for patient care at the NIH. 
 
-Over the course of his treatment, Leo and his parents, `r p_f_name` `r p_l_name` and `r p_f_name2` `r p_l_name2`, ...*INSERT*
+Over the course of `r pronoun` treatment, `r f_name` and `r pronoun` parents, `r p_f_name` `r p_l_name` and `r p_f_name2` `r p_l_name2`, ...*INSERT*
 
-At the end of treatment, `r f_name` and `pronoun` parents reported that he had more ability to ...*INSERT*
+At the end of treatment, `r f_name` and `r pronoun` parents reported that he had more ability to ...*INSERT*
 
 Recommendations: 
 
