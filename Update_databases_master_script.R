@@ -6,7 +6,7 @@ rm(list = ls()) # command to clear all variables from R environment
 
 # what device are you running this script on? 
 computer = 'mac' # set this to either 'mac' or 'pc' or 'other', 'jsbach'
-username = 'ocallaghang2'
+username = 'taigmanjm'
 
 if (computer=="pc") {
   string = 'W:/string-mbd/'
@@ -63,7 +63,15 @@ supreme_file_location = paste0(string, "Tasks/supreme/data/")
 # packages ----------------------------------------------------------------
 
 # source script to install packages if missing here 
-source(paste0(otherfunctions,"installpackages.R"))
+#source(paste0(otherfunctions,"installpackages.R"))
+packages <- c("readxl", "writexl", "tidyr", "dplyr", "summarytools", "rmarkdown", "eeptools", 
+              "openxlsx", "data.table", "reshape2", "stringr","lubridate","ggplot2","rlang", 
+              "purrr", "tidyverse","shiny","knitr","ggpubr","chron","kableExtra", "ggthemes", "ggrepel")
+
+if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
+  install.packages(setdiff(packages, rownames(installed.packages())))  
+}
+
 # load packages 
 suppressPackageStartupMessages(library(readxl))
 suppressPackageStartupMessages(library(writexl)) 
@@ -113,8 +121,8 @@ latest_dawba_pull <- c(to_change$latest_dawba_pull)
 latest_sdq_pull <- c(to_change$latest_sdq_pull)
 
 # check list of current IRTAs is correct
-current_IRTAs_full <- c("Lisa Gorham", "Chris Camp")
-current_IRTAs_init <- c("LG", "CC")
+current_IRTAs_full <- c("Payton Fors", "Lily Eisner","Karen Qi", "Jeremy Taigman", "Lisa Gorham", "Chris Camp")
+current_IRTAs_init <- c("PF", "LE", "KQ", "JT", "LG", "CC")
 
 # functions ---------------------------------------------------------------
 
@@ -137,8 +145,8 @@ modules2run <- c(to_change$modules2run)
 # update master IRTA tracker and tasks database ---------------------------
 
 if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2run==11 | modules2run==13 | modules2run==15) {
-  
-  suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
+
+    suppressWarnings(source(paste0(scripts, 'IRTA_Merge_Code.R')))
   
   # Note - check that the files have saved with a new date - this won't happen if someone else has the file open.
   # If any of the files have not exported properly, uncomment out and run the relevant line below, which will save it under a new name: 

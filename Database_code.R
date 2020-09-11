@@ -2818,7 +2818,7 @@
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
-    # iter=14
+    # iter=23
     measure_name <- variables_no_scoring[iter]
     print(paste("************************LOOP = ", measure_name))
 
@@ -2956,6 +2956,7 @@
         filter(Initials %in% sibling$Initials) %>% merge.default(sibling, ., all = TRUE)
       measure_temp <- merge.default(measure_temp, sibling, all=TRUE) %>% 
         select(PLUSID, Initials, date_temp, source, matches(measure_name), tempcomplete)
+      # add row to replace nas for 'c_family_interview_type' with 'complete'
     }
     
     if (measure_name=="p_demo_screen_background_"){

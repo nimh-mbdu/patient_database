@@ -78,13 +78,13 @@ participant_identifiers_combined <- merge.default(master_IRTA_identifiers, maste
   merge.default(., master_old_screen_identifiers, all=TRUE)
 fill_names <- participant_identifiers_combined %>% select(-Initials) %>% colnames()
 participant_identifiers_combined <- participant_identifiers_combined %>% group_by(Initials) %>% 
-  fill(., fill_names, .direction = c("down")) %>% 
-  fill(., fill_names, .direction = c("up")) %>% 
+  fill(., all_of(fill_names), .direction = c("down")) %>% 
+  fill(., all_of(fill_names), .direction = c("up")) %>% 
   arrange(Initials, Source) %>% filter(1:n() == 1) %>% ungroup()
 
 # finish the split below
 
-split1 <- colsplit(participant_identifiers_combined$DAWBA_ID, "/", names = c("DAWBA1", "DAWBA2"))
+split1 <- colsplit(participant_identifiers_combined$DAWBA_ID, "/", names = c("DAWBA1", "DAWBA2", "DAWBA3"))
 participant_identifiers_combined <- cbind(participant_identifiers_combined, split1) 
 participant_identifiers_combined <- melt(data = participant_identifiers_combined, id.vars = 
   c("FIRST_NAME", "LAST_NAME", "Initials", "PLUSID", "SDAN", "IRTA_tracker", "SEX", "DOB", "Participant_Type2", "Clinical_Visit_Date", "Screening_Start_Date", 
@@ -111,6 +111,7 @@ DAWBA_Archive <- read_excel(paste0(database_location, "other_data_never_delete/d
 # merging old & new, clean up & then save new DAWBA archive 
 
 dawba_combined <- merge.default(DAWBA_Archive, DAWBA_Data_Download_raw, all=TRUE) %>% 
+  # the following DAWBA IDs to be removed are those given to other people to demo DAWBA, not valid IDs: 
   filter(sid !="234110") %>% filter(sid !="234111") %>% filter(sid !="234112") %>% filter(sid !="234113") %>% filter(sid !="None")
 fill_names <- dawba_combined %>% select(-sid) %>% colnames()
 dawba_combined[fill_names] <- lapply(dawba_combined[fill_names], na_if, "")
