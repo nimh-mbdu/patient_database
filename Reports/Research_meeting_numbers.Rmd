@@ -1354,24 +1354,24 @@ child_completed_crisis_both_num3 <- child_completed_crisis_both3 %>% nrow() %>% 
 # parent
 parent_completed_all_fu4 <- parent_completed_all_fu4 %>% rename(p_mfq_fu4_tot="p_mfq_tot") %>% rename(p_scaredshort_fu4_tot="p_scaredshort_tot") %>% 
   rename(p_crisis_fu4_tot="p_crisis_fu_tot")
-parent_completed_all_both4 <- merge.default(parent_completed_all_both2, parent_completed_all_fu4, all=TRUE) %>%
+parent_completed_all_both4 <- merge.default(parent_completed_all_both3, parent_completed_all_fu4, all=TRUE) %>%
   filter(!is.na(p_crisis_base_tot)) %>% filter(!is.na(p_crisis_fu_tot)) %>% filter(!is.na(p_crisis_fu4_tot))
 parent_completed_all_both_num4 <- parent_completed_all_both4 %>% nrow() %>% as.numeric()
 # # child 
 child_completed_all_fu4 <- child_completed_all_fu4 %>% rename(s_mfq_fu4_tot="s_mfq_tot") %>% rename(s_scaredshort_fu4_tot="s_scaredshort_tot") %>% 
   rename(s_crisis_fu4_tot="s_crisis_fu_tot")
-child_completed_all_both4 <- merge.default(child_completed_all_both2, child_completed_all_fu4, all=TRUE) %>%
+child_completed_all_both4 <- merge.default(child_completed_all_both3, child_completed_all_fu4, all=TRUE) %>%
   filter(!is.na(s_crisis_base_tot)) %>% filter(!is.na(s_crisis_fu_tot)) %>% filter(!is.na(s_crisis_fu4_tot))
 child_completed_all_both_num4 <- child_completed_all_both4 %>% nrow() %>% as.numeric()
 ##### crisis baseline + followup completed, crisis only
 # parent
 parent_completed_crisis_fu4 <- parent_completed_crisis_fu4 %>% rename(p_crisis_fu4_tot="p_crisis_fu_tot")
-parent_completed_crisis_both4 <- merge.default(parent_completed_crisis_both2, parent_completed_crisis_fu4, all=TRUE) %>%
+parent_completed_crisis_both4 <- merge.default(parent_completed_crisis_both3, parent_completed_crisis_fu4, all=TRUE) %>%
   filter(!is.na(p_crisis_fu_tot)) %>% filter(!is.na(p_crisis_fu4_tot))
 parent_completed_crisis_both_num4 <- parent_completed_crisis_both4 %>% nrow() %>% as.numeric()
 # child
 child_completed_crisis_fu4 <- child_completed_crisis_fu4 %>% rename(s_crisis_fu4_tot="s_crisis_fu_tot")
-child_completed_crisis_both4 <- merge.default(child_completed_crisis_both2, child_completed_crisis_fu4, all=TRUE) %>%
+child_completed_crisis_both4 <- merge.default(child_completed_crisis_both3, child_completed_crisis_fu4, all=TRUE) %>%
   filter(!is.na(s_crisis_fu_tot)) %>% filter(!is.na(s_crisis_fu4_tot))
 child_completed_crisis_both_num4 <- child_completed_crisis_both4 %>% nrow() %>% as.numeric()
 
@@ -1379,24 +1379,24 @@ child_completed_crisis_both_num4 <- child_completed_crisis_both4 %>% nrow() %>% 
 # parent
 parent_completed_all_fu5 <- parent_completed_all_fu5 %>% rename(p_mfq_fu5_tot="p_mfq_tot") %>% rename(p_scaredshort_fu5_tot="p_scaredshort_tot") %>% 
   rename(p_crisis_fu5_tot="p_crisis_fu_tot")
-parent_completed_all_both5 <- merge.default(parent_completed_all_both2, parent_completed_all_fu5, all=TRUE) %>%
+parent_completed_all_both5 <- merge.default(parent_completed_all_both4, parent_completed_all_fu5, all=TRUE) %>%
   filter(!is.na(p_crisis_base_tot)) %>% filter(!is.na(p_crisis_fu_tot)) %>% filter(!is.na(p_crisis_fu5_tot))
 parent_completed_all_both_num5 <- parent_completed_all_both5 %>% nrow() %>% as.numeric()
 # # child 
 child_completed_all_fu5 <- child_completed_all_fu5 %>% rename(s_mfq_fu5_tot="s_mfq_tot") %>% rename(s_scaredshort_fu5_tot="s_scaredshort_tot") %>% 
   rename(s_crisis_fu5_tot="s_crisis_fu_tot")
-child_completed_all_both5 <- merge.default(child_completed_all_both2, child_completed_all_fu5, all=TRUE) %>%
+child_completed_all_both5 <- merge.default(child_completed_all_both4, child_completed_all_fu5, all=TRUE) %>%
   filter(!is.na(s_crisis_base_tot)) %>% filter(!is.na(s_crisis_fu_tot)) %>% filter(!is.na(s_crisis_fu5_tot))
 child_completed_all_both_num5 <- child_completed_all_both5 %>% nrow() %>% as.numeric()
 ##### crisis baseline + followup completed, crisis only
 # parent
 parent_completed_crisis_fu5 <- parent_completed_crisis_fu5 %>% rename(p_crisis_fu5_tot="p_crisis_fu_tot")
-parent_completed_crisis_both5 <- merge.default(parent_completed_crisis_both2, parent_completed_crisis_fu5, all=TRUE) %>%
+parent_completed_crisis_both5 <- merge.default(parent_completed_crisis_both4, parent_completed_crisis_fu5, all=TRUE) %>%
   filter(!is.na(p_crisis_fu_tot)) %>% filter(!is.na(p_crisis_fu5_tot))
 parent_completed_crisis_both_num5 <- parent_completed_crisis_both5 %>% nrow() %>% as.numeric()
 # child
 child_completed_crisis_fu5 <- child_completed_crisis_fu5 %>% rename(s_crisis_fu5_tot="s_crisis_fu_tot")
-child_completed_crisis_both5 <- merge.default(child_completed_crisis_both2, child_completed_crisis_fu5, all=TRUE) %>%
+child_completed_crisis_both5 <- merge.default(child_completed_crisis_both4, child_completed_crisis_fu5, all=TRUE) %>%
   filter(!is.na(s_crisis_fu_tot)) %>% filter(!is.na(s_crisis_fu5_tot))
 child_completed_crisis_both_num5 <- child_completed_crisis_both5 %>% nrow() %>% as.numeric()
 
