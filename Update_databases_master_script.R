@@ -1,26 +1,44 @@
 #############Master script###################
 
 rm(list = ls()) # command to clear all variables from R environment
-
+start_time <- Sys.time()
 # directories -------------------------------------------------------------
 
 # what device are you running this script on? 
-computer = 'mac' # set this to either 'mac' or 'pc' or 'other', 'jsbach'
-username = 'taigmanjm'
+#computer = 'jsbach' # set this to either 'mac' or 'pc' or 'other', 'jsbach'
+#username = 'sadeghin'
 
-if (computer=="pc") {
+print("running the script")
+
+computer = Sys.getenv("R_PLATFORM") #no need to set this anymore
+username = Sys.getenv("USER") #no need to set this anymore
+isdocker = Sys.getenv("IS_DOCKER")
+
+if (isdocker!="") { #running inside of a container
+  string="/string-mbd/"
+  sdan1="/sdan1/"
+} else if (Sys.info()[[1]]=="Windows"){ #R_platform returns empty string for windows! Check via Sys.info()
   string = 'W:/string-mbd/'
   sdan1 = 'Y:/sdan1/'
-} else if (computer=="mac") {
-  string = '/Volumes/string-mbd/'
-  sdan1 = '/Volumes/SDAN1/'
-} else if (computer=="jsbach") {
-  string = paste0('/home/', username, '/cifs/jsbach/string-mbd/')
-  sdan1 = paste0('/home/', username, '/cifs/jsbach/sdan1/')
-} else { # if using a PC and your drives aren't mounted as specified above, enter what letter your drives are mounted under here... 
-  string = 'W:/'
-  sdan1 = 'Y:/'
+} else {
+  if (length(grep("apple",computer)) > 0) {
+    string = '/Volumes/string-mbd/'
+    sdan1 = '/Volumes/SDAN1/'
+  } else if (length(grep("linux",computer))>0 & length(grep("jsbach",Sys.getenv("HOSTNAME")) > 0)){#"jsbach") 
+    string = paste0('/home/', username, '/cifs/jsbach/string-mbd/')
+    sdan1 = paste0('/home/', username, '/cifs/jsbach/sdan1/')
+  }else { 
+    warning("Can't determine computer type. Manually set string and sdan1 servers!")
+  }
 }
+# if using a PC and your drives aren't mounted as specified above, enter what letter your drives are mounted under here... 
+#string = 'W:/'
+#sdan1 = 'Y:/'
+
+print(computer)
+print(username)
+print(string)
+print(sdan1)
 
 # main folders needed
 scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful directory while scripts are still under development 
@@ -64,13 +82,13 @@ supreme_file_location = paste0(string, "Tasks/supreme/data/")
 
 # source script to install packages if missing here 
 #source(paste0(otherfunctions,"installpackages.R"))
-packages <- c("readxl", "writexl", "tidyr", "dplyr", "summarytools", "rmarkdown", "eeptools", 
-              "openxlsx", "data.table", "reshape2", "stringr","lubridate","ggplot2","rlang", 
-              "purrr", "tidyverse","shiny","knitr","ggpubr","chron","kableExtra", "ggthemes", "ggrepel")
-
-if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
-  install.packages(setdiff(packages, rownames(installed.packages())))  
-}
+# packages <- c("readxl", "writexl", "tidyr", "dplyr", "summarytools", "rmarkdown", "eeptools", 
+#               "openxlsx", "data.table", "reshape2", "stringr","lubridate","ggplot2","rlang", 
+#               "purrr", "tidyverse","shiny","knitr","ggpubr","chron","kableExtra", "ggthemes", "ggrepel", "flextable")
+# 
+# if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
+#   install.packages(setdiff(packages, rownames(installed.packages())))  
+# }
 
 # load packages 
 suppressPackageStartupMessages(library(readxl))
@@ -112,8 +130,8 @@ max_MEG <- c(to_change$max_MEG)
 
 # crisis recruitment related - these numbers obtained by running the following script: 
 # 'Database/Master Psychometric Database/COVID19/identifying_num_agreed_participate.R'
-child_agreed <- 177
-parent_agreed <- 139
+child_agreed <- 179 #was 177, changed to 179 for new rounds as of September 23, 2020
+parent_agreed <- 139 #this remained the same as of September 23, 2020
 
 # database related - update with names of latest pulls (without file extension)
 latest_ctdb_pull <- c(to_change$latest_ctdb_pull)
@@ -324,4 +342,6 @@ if (modules2run==14 | modules2run==15) {
 # end ---------------------------------------------------------------------
 
 rm(to_change)
-
+end_time <- Sys.time()
+timeIttakes=end_time - start_time
+print(timeIttakes)

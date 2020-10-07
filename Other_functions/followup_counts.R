@@ -25,7 +25,7 @@ suppressPackageStartupMessages(library(knitr))
 suppressPackageStartupMessages(library(kableExtra))
 
 computer = "pc"
-today = "2020-07-28"
+today = "2020-08-25"
 irta = "CC"
 
 if (computer=="pc") {

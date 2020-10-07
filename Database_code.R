@@ -100,8 +100,8 @@
   # changing column names
   
   ctdb_columns <- read_excel(paste0(database_location, "other_data_never_delete/ctdb_column_names_and_descriptions.xlsx"))
-  setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name), skip_absent=TRUE)
-  # setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name))
+  #setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name), skip_absent=TRUE)
+  setnames(CTDB_Data_Download, old=c(ctdb_columns$old_name), new=c(ctdb_columns$new_name))
   
   CTDB_Data_Download$Overall_date <- as.Date(CTDB_Data_Download$Overall_date, tz="", "%Y-%m-%d")
   CTDB_Data_Download <- CTDB_Data_Download %>% select(ctdb_columns$new_name) %>% arrange(FIRST_NAME, LAST_NAME, Overall_date) 
@@ -2957,6 +2957,11 @@
       measure_temp <- merge.default(measure_temp, sibling, all=TRUE) %>% 
         select(PLUSID, Initials, date_temp, source, matches(measure_name), tempcomplete)
       # add row to replace nas for 'c_family_interview_type' with 'complete'
+      #September 10, 2020. Georgia changed c_family_type to include "gave_up", "refusal", and "complete"
+      #any data before that was NA we replaced with "complete" except the ones that IRTAs modified to be "gave_up" and
+      #"refusal"
+      measure_temp$c_family_interview_type <- sapply(measure_temp$c_family_interview_type, replace_na, "complete")
+                                   
     }
     
     if (measure_name=="p_demo_screen_background_"){
@@ -3578,6 +3583,7 @@ measures_dataset_tminus2_long <- measures_dataset_tminus2_long %>%
   group_by(Initials) %>% fill(., all_of(fill_names), .direction = "up") %>% fill(., all_of(fill_names), .direction = "down") %>% 
   ungroup() %>% distinct(., .keep_all = TRUE)
 
+
 if (file.exists(paste0(database_location, "COVID19/CRISIS_subset_", todays_date_formatted, ".xlsx"))){
   print("CRISIS file already exported today")
 } else {
@@ -3758,7 +3764,7 @@ if (file_save_check_combined$date_diff[1]==0) {
   print("Exported as 'CRISIS_subset_tminus1'")
 } else {
   print("Conflict: exporting as 'CRISIS_subset_tminus1_updated'")
-  crisis_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_tminus1_updated.csv"))
+  CRISIS_data_presentation_final %>% write_csv(paste0(database_location, "COVID19/CRISIS_subset_tminus1_updated.csv"))
 }
 
 # Identifying missing cases -----------------------------------------------

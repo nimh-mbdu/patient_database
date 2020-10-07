@@ -78,29 +78,44 @@ referrals_final <- combined_temp %>% group_by(Date, Participant_Type2) %>% summa
 
 ############### grouped by postcard mailout intervals 
 
-referrals_final <- referrals_final %>% mutate(postcard_period_descrip = 
-    ### MDD postcards
-    ifelse((Participant_Type2 == "MDD" & Date < "2019-02-08"), "Between BSC cut off (2018-11-30) and 1st MDD mailout (2019-02-08)", # referral period from BSC tofirst MDD postcard mailout 
-    ifelse((Participant_Type2 == "MDD" & Date >= "2019-02-08" & Date < "2019-09-20"), "Between 1st (2019-02-08) and 2nd (2019-09-20) MDD mailouts", # period between 1st and 2nd MDD postcard mailtouts 
-    ifelse((Participant_Type2 == "MDD" & Date >= "2019-09-20" & Date < "2020-01-17"), "Between 2nd (2019-09-20) and 3rd (2020-01-17) MDD mailouts", # period between 2nd and 3rd MDD postcard mailtouts 
-    ifelse((Participant_Type2 == "MDD" & Date >= "2020-01-17"), "Since 3rd MDD mailout (2020-01-17)", # period after 3rd MDD postcard mailout 
-    ### HV postcards
-    ifelse((Participant_Type2 == "HV" & Date < "2019-04-26"), "Between BSC cut off (2018-11-30) and 1st HV mailout (2019-04-26)", # referral period from BSC to first HV postcard mailout 
-    ifelse((Participant_Type2 == "HV" & Date >= "2019-04-26" & Date < "2019-07-08"), "Between 1st (2019-04-26) and 2nd (2019-07-08) HV mailouts", # period between 1st and 2nd HV postcard mailtouts 
-    ifelse((Participant_Type2 == "HV" & Date >= "2019-07-08"), "Since 2nd HV mailout (2019-07-08)", # period after 2nd HV postcard mailout     
-    "NA"))))))))
+# referrals_final <- referrals_final %>% mutate(postcard_period_descrip = 
+#     ### MDD postcards
+#     ifelse((Participant_Type2 == "MDD" & Date < "2019-02-08"), "Between BSC cut off (2018-11-30) and 1st MDD mailout (2019-02-08)", # referral period from BSC tofirst MDD postcard mailout 
+#     ifelse((Participant_Type2 == "MDD" & Date >= "2019-02-08" & Date < "2019-09-20"), "Between 1st (2019-02-08) and 2nd (2019-09-20) MDD mailouts", # period between 1st and 2nd MDD postcard mailtouts 
+#     ifelse((Participant_Type2 == "MDD" & Date >= "2019-09-20" & Date < "2020-01-17"), "Between 2nd (2019-09-20) and 3rd (2020-01-17) MDD mailouts", # period between 2nd and 3rd MDD postcard mailtouts 
+#     ifelse((Participant_Type2 == "MDD" & Date >= "2020-01-17" & Date < "2020-09-18"), "Between 2nd (2020-01-17) and 3rd (2020-09-18) MDD mailouts", # period between 3rd and 4th MDD postcard mailout
+#     ifelse((Participant_Type2 == "MDD" & Date >= "2020-09-18"), "Since 4th MDD mailout (2020-9-18)", # period after 4th MDD postcard mailout 
+#     ### HV postcards
+#     ifelse((Participant_Type2 == "HV" & Date < "2019-04-26"), "Between BSC cut off (2018-11-30) and 1st HV mailout (2019-04-26)", # referral period from BSC to first HV postcard mailout 
+#     ifelse((Participant_Type2 == "HV" & Date >= "2019-04-26" & Date < "2019-07-08"), "Between 1st (2019-04-26) and 2nd (2019-07-08) HV mailouts", # period between 1st and 2nd HV postcard mailtouts 
+#     ifelse((Participant_Type2 == "HV" & Date >= "2019-07-08"), "Since 2nd HV mailout (2019-07-08)", # period after 2nd HV postcard mailout     
+#     "NA"))))))))
+
+    referrals_final <- referrals_final %>% mutate(postcard_period_descrip = 
+                                                    ### MDD postcards
+                                                    ifelse((Participant_Type2 == "MDD" & Date < "2019-02-08"), "Between BSC cut off (2018-11-30) and 1st MDD mailout (2019-02-08)", # referral period from BSC tofirst MDD postcard mailout 
+                                                           ifelse((Participant_Type2 == "MDD" & Date >= "2019-02-08" & Date < "2019-09-20"), "Between 1st (2019-02-08) and 2nd (2019-09-20) MDD mailouts", # period between 1st and 2nd MDD postcard mailtouts 
+                                                                  ifelse((Participant_Type2 == "MDD" & Date >= "2019-09-20" & Date < "2020-01-17"), "Between 2nd (2019-09-20) and 3rd (2020-01-17) MDD mailouts", # period between 2nd and 3rd MDD postcard mailtouts 
+                                                                         ifelse((Participant_Type2 == "MDD" & Date >= "2020-01-17" & Date < "2020-09-18"), "Between 3rd (2020-01-17) and 4th (2020-09-18) MDD mailouts", # period after 3rd MDD postcard mailout 
+                                                                                ifelse((Participant_Type2 == "MDD" & Date >= "2020-09-18"), "Since 4th MDD mailout (2020-09-18)", # period after 3rd MDD postcard mailout 
+                                                                                ### HV postcards
+                                                                                ifelse((Participant_Type2 == "HV" & Date < "2019-04-26"), "Between BSC cut off (2018-11-30) and 1st HV mailout (2019-04-26)", # referral period from BSC to first HV postcard mailout 
+                                                                                       ifelse((Participant_Type2 == "HV" & Date >= "2019-04-26" & Date < "2019-07-08"), "Between 1st (2019-04-26) and 2nd (2019-07-08) HV mailouts", # period between 1st and 2nd HV postcard mailtouts 
+                                                                                              ifelse((Participant_Type2 == "HV" & Date >= "2019-07-08"), "Since 2nd HV mailout (2019-07-08)", # period after 2nd HV postcard mailout     
+                                                                                                     "NA")))))))))
 
 referrals_final <- referrals_final %>% mutate(postcard_period_num = 
     ### MDD postcards
     ifelse((Participant_Type2 == "MDD" & Date < "2019-02-08"), 1, # referral period from BSC tofirst MDD postcard mailout 
     ifelse((Participant_Type2 == "MDD" & Date >= "2019-02-08" & Date < "2019-09-20"), 2, # period between 1st and 2nd MDD postcard mailtouts 
     ifelse((Participant_Type2 == "MDD" & Date >= "2019-09-20" & Date < "2020-01-17"), 3, # period between 2nd and 3rd MDD postcard mailtouts 
-    ifelse((Participant_Type2 == "MDD" & Date >= "2020-01-17"), 4, # period after 3rd MDD postcard mailout 
+    ifelse((Participant_Type2 == "MDD" & Date >= "2020-01-17" & Date < "2020-09-18"), 4, # period between 3rd and 4th MDD postcard mailout 
+    ifelse((Participant_Type2 == "MDD" & Date >= "2020-09-18"), 5, # period after 4th MDD postcard mailout 
     ### HV postcards
     ifelse((Participant_Type2 == "HV" & Date < "2019-04-26"), 1, # referral period from BSC to first HV postcard mailout 
     ifelse((Participant_Type2 == "HV" & Date >= "2019-04-26" & Date < "2019-07-08"), 2, # period between 1st and 2nd HV postcard mailtouts 
     ifelse((Participant_Type2 == "HV" & Date >= "2019-07-08"), 3, # period after 2nd HV postcard mailout     
-    "NA"))))))))
+    "NA")))))))))
 
 summary_mail_periods <- referrals_final %>% group_by(postcard_period_num, Participant_Type2, postcard_period_descrip) %>% summarise(Freq = sum(Freq)) %>% 
   arrange(postcard_period_num) %>% ungroup() %>% select(-postcard_period_num)
