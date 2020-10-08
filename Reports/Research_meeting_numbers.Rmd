@@ -396,7 +396,7 @@ screens_table1$Eligible <- replace_na(screens_table1$Eligible, "Missing")
 ######## Table to print
 screens_table2 <- pivot_wider(screens_table1, id_cols = "Eligible", names_from = "Participant_Type2", values_from = "Freq") %>% 
   arrange(Eligible)
-screens_table2$Eligible <- recode(screens_table2$Eligible, "0"="Include: fully eligible", "1"="Include: can’t scan (braces, etc.)",
+screens_table2$Eligible <- recode(screens_table2$Eligible, "0"="Include: fully eligible", "1"="Include: can't scan (braces, etc.)",
   "2"="On hold: contact again after specified amount of time", "3"="On hold: low priority", 
   "4"="Excluded: cannot be reached or scheduled, all contact options exhausted", "5"="Excluded: does not meet criteria", 
   "6"="Excluded: meets exclusionary criteria (substance use, psychosis, etc.)",
@@ -422,7 +422,8 @@ rm(screens_dummy, screens_table1)
 #                                           "Contact not recorded", "%", "Total")) %>% 
 #   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
-screens_table2 %>% kable(., col.names = c("Eligibility", "HV", "MDD",  "UNSURE", "Total", "NA")) %>% 
+screens_table2=as.data.frame(cbind(screens_table2[,-4],screens_table2[,4]))
+screens_table2 %>% kable(., col.names = c("Eligibility", "HV", "MDD",  "UNSURE", "NA","Total")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
