@@ -305,7 +305,7 @@ rm(referrals_table_dummy, referrals_last_week, num_referrals2, referrals_table)
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
     
-referrals_table2 %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%", "Contact Unsuccessful", "%", "Not recorded", "%", "Total")) %>% 
+referrals_table2 %>% arrange(Successful) %>% kable(., col.names = c("Diagnosis", "Contact Successful", "%", "Contact Unsuccessful", "%", "Not recorded", "%", "Total")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
