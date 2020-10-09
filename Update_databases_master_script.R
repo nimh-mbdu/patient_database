@@ -2,21 +2,13 @@
 
 rm(list = ls()) # command to clear all variables from R environment
 start_time <- Sys.time()
+# directories -------------------------------------------------------------
 
-# modules to run ----------------------------------------------------------
-# description of modules: for full list see 'to_change_before_running_master_script.xlsx'
-# Some common modules are:
-#  1: update master IRTA tracker & produce QC reports, 
-#  2: update master database, 
-#  6: runs 1 and 2
-# Reports:
-#  4: Weekly numbers, 9: runs 1 and 4
-#  8: CBT report, 7: runs 1 and 8
-#  10: Clinician sheet, 11: runs 1 and 10
-#  12: Inpatient report, 13: runs 1, 2, and 12
-#  14: Supervision sheet, 15: runs 1,2, and 14
-# change this to the module you want to run
-modules2run=0
+# what device are you running this script on? 
+#computer = 'jsbach' # set this to either 'mac' or 'pc' or 'other', 'jsbach'
+#username = 'sadeghin'
+
+print("running the script")
 
 computer = Sys.getenv("R_PLATFORM") #no need to set this anymore
 username = Sys.getenv("USER") #no need to set this anymore
@@ -122,19 +114,19 @@ suppressPackageStartupMessages(library(chron))
 
 # things to check and may need to modify before running -------------------
 
-#to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.xlsx"), sheet = "info")
+to_change <- read_excel(paste0(scripts, "to_change_before_running_master_script.xlsx"), sheet = "info")
 
 # date
-todays_date_formatted <- Sys.Date()
+todays_date_formatted <- c(to_change$todays_date_formatted)
+todays_date_formatted <- as.Date(todays_date_formatted)
 last_week_date_formatted <- todays_date_formatted - as.difftime(7, unit="days")
 # todays_date_formatted <- as.Date("2019-11-15") # if you want to manually set the date (outside of the excel sheet)
 
 # task related 
-#change it later so we can pass if need to
-max_tasks <- 5
-max_MID <- 13
-max_MMI <- 1
-max_MEG <- 4
+max_tasks <- c(to_change$max_tasks)
+max_MID <- c(to_change$max_MID)
+max_MMI <- c(to_change$max_MMI)
+max_MEG <- c(to_change$max_MEG)
 
 # crisis recruitment related - these numbers obtained by running the following script: 
 # 'Database/Master Psychometric Database/COVID19/identifying_num_agreed_participate.R'
@@ -142,13 +134,9 @@ child_agreed <- 179 #was 177, changed to 179 for new rounds as of September 23, 
 parent_agreed <- 139 #this remained the same as of September 23, 2020
 
 # database related - update with names of latest pulls (without file extension)
-latest_ctdb_pull <- "SDAN_and_BSD_MBDU.08.21.2020" #this is the latest we have and won't change
-latest_dawba_pull <- "DAWBA.92200052_09082020" #this will change every 3-4 months
-#need to download the sdq file everyday, get the latest from directory
-sdqfiles=list.files(path = paste0(sdq_pull), pattern = "^Total", all.files = FALSE,full.names = FALSE, recursive = FALSE,
-                    ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE) #lists in alphabetical order if full.names=TRUE, then can get the last file
-latest_sdq_pull=gsub(".txt","",sdqfiles[length(sdqfiles)])
-print(paste("sdq files is ",latest_sdq_pull))
+latest_ctdb_pull <- c(to_change$latest_ctdb_pull)
+latest_dawba_pull <- c(to_change$latest_dawba_pull)
+latest_sdq_pull <- c(to_change$latest_sdq_pull)
 
 # check list of current IRTAs is correct
 current_IRTAs_full <- c("Payton Fors", "Lily Eisner","Karen Qi", "Jeremy Taigman", "Lisa Gorham", "Chris Camp")
@@ -163,6 +151,14 @@ FitFlextableToPage <- function(ft, pgwidth = 10){
   ft_out <- width(ft_out, width = dim(ft_out)$widths*10.5/(flextable_dim(ft_out)$widths))
   return(ft_out)
 }
+
+# modules to run ----------------------------------------------------------
+
+modules2run <- c(to_change$modules2run)
+# to overwrite the above, uncomment the below and enter number that you want to run instead
+# modules2run <- c(1)
+
+# description of modules: see 'to_change_before_running_master_script.xlsx'
 
 # update master IRTA tracker and tasks database ---------------------------
 
@@ -345,7 +341,7 @@ if (modules2run==14 | modules2run==15) {
 
 # end ---------------------------------------------------------------------
 
+rm(to_change)
 end_time <- Sys.time()
 timeIttakes=end_time - start_time
 print(timeIttakes)
-
