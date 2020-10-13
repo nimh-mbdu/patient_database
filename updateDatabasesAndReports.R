@@ -1,6 +1,4 @@
-args = commandArgs(trailingOnly=TRUE)
-modules2run=as.numeric(args[1])
-nargs=length(args)
+updateDatabasesAndReports=function(module){
 
 msg = " Need to pass the number of the module you would like to run \n
   Some common modules are:
@@ -15,10 +13,10 @@ msg = " Need to pass the number of the module you would like to run \n
     14: Supervision sheet, 15: runs 1,2, and 14
     for full list see 'to_change_before_running_master_script.xlsx' "
 
-# change this to the module you want to run"
-if(nargs < 1){
-  stop(msg)
-} else if(modules2run > 15 | modules2run < 0){
+  modules2run=module
+
+
+if(modules2run > 15 | modules2run < 0){
   stop(msg)
 }
 
@@ -352,4 +350,4 @@ if (modules2run==14 | modules2run==15) {
 end_time <- Sys.time()
 timeIttakes=end_time - start_time
 print(paste("Time it took to run module", modules2run, "is", timeIttakes))
-#}
+}
