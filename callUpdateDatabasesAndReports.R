@@ -5,15 +5,15 @@ nargs=length(args)
 if(nargs > 0) {
   modules2run=as.numeric(args[1]) # do not change this
 }else{
-  modules2run=0 #set this to the module you like to run, but should instead call updateDatabasesAndReports.R 
+  modules2run=0 #set this to the module you like to run, but should instead call updateDatabasesAndReports.R
   #and pass the modules2run as an argument to the function
 }
 
 msg = " Need to pass the number of the module you would like to run to the script
 or, set the modules2run below \n
   Some common modules are:
-    1: update master IRTA tracker & produce QC reports, 
-    2: update master database, 
+    1: update master IRTA tracker & produce QC reports,
+    2: update master database,
     6: runs 1 and 2
   Reports:
     4: Weekly numbers, 9: runs 1 and 4
@@ -27,5 +27,5 @@ if(modules2run > 15 | modules2run < 0){
   stop(msg)
 }
 
-source("./updateDatabasesAndReports.R")
+source("/string-mbd/Database/Database_Scripts_Github/updateDatabasesAndReports.R")
 updateDatabasesAndReports(modules2run)
