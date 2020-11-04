@@ -852,34 +852,35 @@ FU_completed_summary %>% kable(., col.names = c("Follow up type", "Diagnosis", "
 
 ```
 
-Completed baseline, eligible for annual follow up
+#commented this since added a table with all the annual follow ups
+<!-- Completed baseline, eligible for annual follow up -->
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE} -->
 
-temp3 %>% kable(., col.names = c("Status", "", "MDD", "%", "HV", "%", "Total")) %>%
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+<!-- temp3 %>% kable(., col.names = c("Status", "", "MDD", "%", "HV", "%", "Total")) %>% -->
+<!--   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed")) -->
 
-```
+<!-- ``` -->
 
-Summary: 
+<!-- Summary:  -->
 
-* MDDs due in next 6 months: `r MDD_6_months`
-* HVs due in next 6 months: `r HV_6_months`
-* Due on 3TA in next 6 months: `r six_months_3TA`
-* Due on 3TC in next 6 months: `r six_months_3TC`
+<!-- * MDDs due in next 6 months: `r MDD_6_months` -->
+<!-- * HVs due in next 6 months: `r HV_6_months` -->
+<!-- * Due on 3TA in next 6 months: `r six_months_3TA` -->
+<!-- * Due on 3TC in next 6 months: `r six_months_3TC` -->
 
-Participants long overdue for clinical follow up
+<!-- Participants long overdue for clinical follow up -->
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE} -->
 
-if (nrow(overdue)=="0") {
-  overdue <- rbind(overdue, tibble(Initials=c("No participants more than one month overdue"), IRTA=c(NA), Diagnosis=c(NA), Eligibility=c(NA), expt_FU_date_TDiff=c(NA)))
-  }
+<!-- if (nrow(overdue)=="0") { -->
+<!--   overdue <- rbind(overdue, tibble(Initials=c("No participants more than one month overdue"), IRTA=c(NA), Diagnosis=c(NA), Eligibility=c(NA), expt_FU_date_TDiff=c(NA))) -->
+<!--   } -->
 
-overdue %>% arrange(expt_FU_date_TDiff) %>% kable(., col.names = c("Initials", "IRTA", "Diagnosis", "Eligibility", "Days overdue")) %>%
-  kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
+<!-- overdue %>% arrange(expt_FU_date_TDiff) %>% kable(., col.names = c("Initials", "IRTA", "Diagnosis", "Eligibility", "Days overdue")) %>% -->
+<!--   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed")) -->
 
-```
+<!-- ``` -->
 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
