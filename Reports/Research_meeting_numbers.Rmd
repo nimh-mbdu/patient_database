@@ -727,8 +727,10 @@ FU_completed <- baseline %>% group_by(Initials) %>% filter(n()>1) %>% ungroup() 
   select(-c_ksadsdx_TDiff, -exclude, -Protocol, -Clinical_Visit_Type) %>% filter(c_ksadsdx_visit_type!="baseline")
 MDD_one_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="12 month FU") %>% filter(Participant_Type2=="MDD") %>% nrow() %>% as.numeric()
 MDD_two_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="24 month FU") %>% filter(Participant_Type2=="MDD") %>% nrow() %>% as.numeric()
+MDD_three_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="36 month FU") %>% filter(Participant_Type2=="MDD") %>% nrow() %>% as.numeric()
 HV_one_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="12 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
 HV_two_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="24 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
+HV_three_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="36 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
 
 FU_completed_summary <- tibble(Type=c("12 month", "12 month", "24 month", "24 month"), Diagnosis=c("MDD", "HV", "MDD", "HV"), 
                                Freq=c(MDD_one_year, HV_one_year, MDD_two_year, HV_two_year))
@@ -984,7 +986,7 @@ y123fuDisplay<-y123fu %>% select("Descrip","Date","baselineMDD","y1MDD","y2MDD",
 
 
 ```
-Summamry of Follow ups:
+Eligible for annual follow up :
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 
 #the names are based on completed that year, eligible for the next follow up
