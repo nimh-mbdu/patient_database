@@ -732,8 +732,8 @@ HV_one_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="12 month FU") %>% 
 HV_two_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="24 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
 HV_three_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="36 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
 
-FU_completed_summary <- tibble(Type=c("12 month", "12 month", "24 month", "24 month"), Diagnosis=c("MDD", "HV", "MDD", "HV"), 
-                               Freq=c(MDD_one_year, HV_one_year, MDD_two_year, HV_two_year))
+FU_completed_summary <- tibble(Type=c("12 month", "12 month", "24 month", "24 month","36 month", "36 month"), Diagnosis=c("MDD", "HV", "MDD", "HV","MDD","HV"), 
+                               Freq=c(MDD_one_year, HV_one_year, MDD_two_year, HV_two_year, MDD_three_year, HV_three_year))
 
 #### eligible for annual FU - not yet completed 
 baseline_keep <- baseline %>% filter(exclude=="FALSE") %>% group_by(Initials) %>% filter(n()==1) %>% ungroup() %>% 
