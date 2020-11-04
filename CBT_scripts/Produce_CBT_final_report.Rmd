@@ -185,7 +185,7 @@ if (Clinician=="Brenda") {
 
 ```
 
-![](`r paste0(CBT_location, "images/NIH_logo.png")`)
+![](`r paste0("../", "images/NIH_logo.png")`)
 
 ***
 
