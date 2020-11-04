@@ -852,7 +852,7 @@ FU_completed_summary %>% kable(., col.names = c("Follow up type", "Diagnosis", "
 
 ```
 
-#commented this since added a table with all the annual follow ups
+<!-- commented this since added a table with all the annual follow ups -->
 <!-- Completed baseline, eligible for annual follow up -->
 
 <!-- ```{r echo=FALSE, warning=FALSE, message=FALSE} -->
