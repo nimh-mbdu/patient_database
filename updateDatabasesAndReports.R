@@ -193,7 +193,7 @@ if (modules2run==1 | modules2run==5 | modules2run==6 | modules2run==9 | modules2
 
 if (modules2run==2 | modules2run==5 | modules2run==6 | modules2run==7 | modules2run==13 | modules2run==15) {
 
-  suppressWarnings(source(paste0(scripts, 'Database_code.R')), local=TRUE)
+  suppressWarnings(source(paste0(scripts, 'Database_code.R'), local=TRUE))
 
   # Note - check that the files have saved with a new date - this won't happen if someone else has the file open.
   # Similar to the above, if any of the database files have not exported properly, uncomment out and run the relevant line below, which will save it under a new name:
