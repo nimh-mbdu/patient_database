@@ -57,7 +57,7 @@ print(paste("SDAN server:", sdan1))
 
 # main folders needed
 scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful directory while scripts are still under development
-scripts="/Users/sadeghin/github/Database_Scripts_Github/"
+#scripts="/Users/sadeghin/github/Database_Scripts_Github/"
 
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
@@ -229,8 +229,8 @@ if (modules2run==4 | modules2run==5 | modules2run==9) {
   print("----*****") #parent.frame(), environment()
   myenv = sys.frame(1)
   suppressPackageStartupMessages(library(kableExtra))
-  #render(paste0(scripts, 'Reports/Research_meeting_numbers.Rmd'),
-  render('/Users/sadeghin/github/Database_Scripts_Github/Reports/Research_meeting_numbers.Rmd',
+  #render('/Users/sadeghin/github/Database_Scripts_Github/Reports/Research_meeting_numbers.Rmd',
+  render(paste0(scripts, 'Reports/Research_meeting_numbers.Rmd'),
          output_format = "html_document",
          envir=myenv,
          # output_format = "word_document",
