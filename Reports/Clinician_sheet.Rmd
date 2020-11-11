@@ -121,7 +121,7 @@ common_identifiers_screening <- master_IRTA_screens_latest %>%
   select(FIRST_NAME, LAST_NAME, Initials, Participant_Type, IRTA_tracker, PLUSID, DAWBA_ID, DOB, Age_at_visit, SEX, 
          Eligible, Scheduling_status, Clinical_Visit_Date, Clinical_Visit_Type, NIMH_Clinician, Referral_Date, Screening_Start_Date, 
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, City, State, Primary_clinician, Marital_Status, Metal, 
-         Screening_notes, Referral_other_notes, Eligibility_notes, Scheduling_status_notes, Treatment_Notes, Referral_Source) %>% 
+         Screening_notes, Referral_other_notes, Eligibility_notes, Scheduling_status_notes, Treatment_Notes, Referral_Source, Important_Info) %>% 
   mutate(source="screens")
 
 # from active patient list 
@@ -130,7 +130,7 @@ common_identifiers_sheduling <- master_IRTA_latest %>%
   select(FIRST_NAME, LAST_NAME, Initials, Participant_Type, IRTA_tracker, PLUSID, DAWBA_ID, DOB, Age_at_visit, SEX, 
          Eligible, Scheduling_status, Clinical_Visit_Date, Clinical_Visit_Type, NIMH_Clinician, Referral_Date, Screening_Start_Date, 
          Parent_e_consented, Child_e_assented, Parent_DAWBA_completed, Child_DAWBA_completed, City, State, Primary_clinician, Marital_Status, Metal, 
-         Screening_notes, Referral_other_notes, Eligibility_notes, Scheduling_status_notes, Treatment_Notes, Referral_Source) %>% 
+         Screening_notes, Referral_other_notes, Eligibility_notes, Scheduling_status_notes, Treatment_Notes, Referral_Source, Important_Info) %>% 
     group_by(Initials) %>% arrange(Clinical_Visit_Date) %>% slice(1) %>% ungroup() %>% mutate(source="irta trackers")
 
 # merging these 
@@ -329,7 +329,8 @@ sdq_plus_tracker <- left_join(p_demo_screen_sdq_plus_tracker, p_mfq_screen_sdq, 
 
 sdq_plus_tracker$Notes <- paste("Referral notes", sdq_plus_tracker$Referral_other_notes, "Screening notes", sdq_plus_tracker$Screening_notes, 
                                 "Eligibility notes", sdq_plus_tracker$Eligibility_notes, "Scheduling notes", sdq_plus_tracker$Scheduling_status_notes, 
-                                "Treatment notes", sdq_plus_tracker$Treatment_Notes, "Parent notes", sdq_plus_tracker$p_demo_screen_demogrphic_notes, sep="; ")
+                                "Treatment notes", sdq_plus_tracker$Treatment_Notes, "Parent notes", sdq_plus_tracker$p_demo_screen_demogrphic_notes, 
+                                "Important Info", sdq_plus_tracker$Important_Info, sep="; ")
 
 sdq_plus_tracker$Notes <- gsub("Referral notes; NA; ", "", sdq_plus_tracker$Notes, fixed=TRUE)
 sdq_plus_tracker$Notes <- gsub("Screening notes; NA; ", "", sdq_plus_tracker$Notes, fixed=TRUE)
@@ -337,6 +338,7 @@ sdq_plus_tracker$Notes <- gsub("Eligibility notes; NA; ", "", sdq_plus_tracker$N
 sdq_plus_tracker$Notes <- gsub("Scheduling notes; NA; ", "", sdq_plus_tracker$Notes, fixed=TRUE)
 sdq_plus_tracker$Notes <- gsub("Treatment notes; NA; ", "", sdq_plus_tracker$Notes, fixed=TRUE)
 sdq_plus_tracker$Notes <- gsub("Parent notes; NA", "", sdq_plus_tracker$Notes, fixed=TRUE)
+sdq_plus_tracker$Notes <- gsub("Important Info; NA", "", sdq_plus_tracker$Notes, fixed=TRUE)
 sdq_plus_tracker$Notes <- na_if(sdq_plus_tracker$Notes, "")
 
 sdq_plus_tracker <- sdq_plus_tracker %>% 
