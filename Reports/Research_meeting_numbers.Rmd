@@ -1237,8 +1237,16 @@ bloods_table <- ctable(bloods$Task_Number, bloods$Clinical_Visit_Code, useNA = "
   as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Clinical_Visit_Code = "cross_table.bloods.Clinical_Visit_Code") %>% 
   rename(Task_Number = "cross_table.bloods.Task_Number") %>% select(-proportions.Total)
 
+# bloods_table2 <- reshape(bloods_table, idvar = "Task_Number", timevar = "Clinical_Visit_Code", direction = "wide") %>% 
+#   mutate(c_Percent = (proportions.c.c * 100)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+#   mutate(i_Percent = (proportions.i.i * 100)) %>% mutate(i_Percent = round(i_Percent, 2)) %>%
+#   select(Task_Number, Freq.i, i_Percent, Freq.c, c_Percent, Freq.Total)
+
+#This needs to be fixed to check for proportions.c.c
 bloods_table2 <- reshape(bloods_table, idvar = "Task_Number", timevar = "Clinical_Visit_Code", direction = "wide") %>% 
-  mutate(c_Percent = (proportions.c.c * 100)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+ # mutate(c_Percent = (proportions.c.c * 100)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+  mutate(c_Percent = 0) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+  mutate(Freq.c=0) %>%
   mutate(i_Percent = (proportions.i.i * 100)) %>% mutate(i_Percent = round(i_Percent, 2)) %>%
   select(Task_Number, Freq.i, i_Percent, Freq.c, c_Percent, Freq.Total)
 

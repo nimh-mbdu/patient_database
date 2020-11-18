@@ -1,4 +1,4 @@
-updateDatabasesAndReports=function(module){
+updateDatabasesAndReports=function(module, pathOfscripts){
 
 msg = " Need to pass the number of the module you would like to run \n
   Some common modules are:
@@ -55,10 +55,18 @@ print(paste("Username:", username))
 print(paste("String server:", string))
 print(paste("SDAN server:", sdan1))
 
-# main folders needed
-scripts = paste0(string, "Database/Database_Scripts_Github/") # temp useful directory while scripts are still under development
-#scripts="/Users/sadeghin/github/Database_Scripts_Github/"
+if(missing(pathOfscripts)){
+  scripts = paste0(string, "Database/Database_Scripts_Github/") 
+} else{
+  scripts=pathOfscripts #scripts="/Users/sadeghin/github/Database_Scripts_Github/"
+}
 
+print(paste("Scripts folder:", scripts))
+if(!(file.exists(paste0(scripts, 'IRTA_Merge_Code.R')))){
+  stop("Check that the correct path is passed to the function and make sure it ends with /")
+}
+
+# main folders needed
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
 weekly_numbers_location = paste0(string, "Minutes and conversation archives/Weekly Meeting Sheet/")
