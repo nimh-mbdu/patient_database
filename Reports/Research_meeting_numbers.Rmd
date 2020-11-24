@@ -609,9 +609,26 @@ scheduled %>% arrange(Clinical_Visit_Date) %>% select(Initials, Participant_Type
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide" }
 
+# Changed 0037 to 0039 to see if I could break chunk and if it would still run correctly (changed back after successful check) - LE practice
+
 protocol_0037 <- master_IRTA_latest %>% filter(str_detect(Protocol, "0037")) %>% group_by(Initials) %>% 
   slice(n()) %>% ungroup() %>% select(Initials, IRTA_tracker, Participant_Type2, Eligible, Eligibility_notes, Clinical_Visit_Type,
                                     Clinical_Visit_Date, Consent_Date, Protocol) 
+
+
+# Create dummy variables to check if code is running correctly and how to run the next few code chunks - LE practice 
+
+if (nrow(protocol_0037)=="0"){
+  do_next_chunk <- FALSE
+  do_next_chunk_2 <-TRUE
+} else {
+  do_next_chunk <- TRUE
+  do_next_chunk_2 <- FALSE
+}
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide", eval=do_next_chunk}
 
 protocol_0037$Protocol_Type[str_detect(protocol_0037$Protocol, 'SCREENING')] <- 'Screening'
 protocol_0037$Protocol_Type[str_detect(protocol_0037$Protocol, 'Screening')] <- 'Screening'
@@ -669,7 +686,7 @@ rm(protocol_0037, protocol_table, protocol_0037_characterization, protocol_0037_
 
 All eval visits:
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=do_next_chunk}
 
 protocol_table2 %>% kable(., col.names = c("Diagnosis", "Signed into Characterization", "%", 
                                            "Signed Screening Consents Only", "%", "Total")) %>% 
@@ -677,9 +694,18 @@ protocol_table2 %>% kable(., col.names = c("Diagnosis", "Signed into Characteriz
 
 ```
 
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=do_next_chunk_2}
+
+# practice chunk to see if I can sucessfully break code and run it without problems
+
+print('Something went wrong - no protocols found')
+tot_withdrew <- "Not Calculated"
+
+```
+
 Current status of everyone who signed full characterization consents: 
 
-```{r echo=FALSE, warning=FALSE, message=FALSE}
+```{r echo=FALSE, warning=FALSE, message=FALSE, eval=do_next_chunk}
 
 protocol_0037_characterization_table3 %>% kable(., col.names = c("Eligible", "Anxious", "HV", "MDD", "Dx Missing", "Total")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
