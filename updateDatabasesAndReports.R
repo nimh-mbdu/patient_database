@@ -75,7 +75,7 @@ weekly_numbers_location = paste0(string, "RA Instruction Manuals/Lily Eisner/Mis
 clinician_sheet_location = paste0(string, "Patient Information/Clinician Sheet/")
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring
 graphs_location = paste0(database_location, "graphs/")
-clinician_supervision_location = paste0(string, "Psychotherapy/Supervision/")
+clinician_supervision_location = paste0(database_location, "CBT/Supervision/")
 otherfunctions=paste0(scripts, "Other_functions", .Platform$file.sep)
 
 # location of backups
