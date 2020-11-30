@@ -1260,24 +1260,86 @@ bloods <- task_reshape_master_QC %>% filter(str_detect(Task_Name, "lood")) %>% f
   filter(Age_at_visit>11) %>% filter(!is.na(Task_Number) & Task_Number != "777" & Task_Number != "999") %>% 
   filter(Task_Date < todays_date_formatted)
 
+bloods_clinical_rows <- bloods %>% filter(Clinical_Visit_Code == "c")
+
+bloods_inpatient_rows <- bloods %>% filter(Clinical_Visit_Code == "i")
+
 bloods_table <- ctable(bloods$Task_Number, bloods$Clinical_Visit_Code, useNA = "no", prop="r", totals=FALSE, display.type=FALSE) %>% 
   as.data.frame() %>% rename(Freq = "cross_table.Freq") %>% rename(Clinical_Visit_Code = "cross_table.bloods.Clinical_Visit_Code") %>% 
   rename(Task_Number = "cross_table.bloods.Task_Number") %>% select(-proportions.Total)
 
-# bloods_table2 <- reshape(bloods_table, idvar = "Task_Number", timevar = "Clinical_Visit_Code", direction = "wide") %>% 
-#   mutate(c_Percent = (proportions.c.c * 100)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
-#   mutate(i_Percent = (proportions.i.i * 100)) %>% mutate(i_Percent = round(i_Percent, 2)) %>%
-#   select(Task_Number, Freq.i, i_Percent, Freq.c, c_Percent, Freq.Total)
+# Create dummy variables to check if code is running correctly and how to run the next few code chunks - LE practice 
 
-#This needs to be fixed to check for proportions.c.c
+do_next_chunk <- FALSE
+do_next_chunk_2 <- FALSE
+do_next_chunk_3 <- FALSE
+do_next_chunk_4 <- FALSE
+
+# Check each possibility of combinations of clinical and inpatient visit codes - LE practice
+
+if((nrow(bloods_inpatient_rows) > 0)&(nrow(bloods_clinical_rows) > 0)){
+  do_next_chunk <- TRUE
+}
+
+if ((nrow(bloods_clinical_rows)==0)&(nrow(bloods_inpatient_rows) > 0)){
+  do_next_chunk_2 <-TRUE
+} 
+
+if ((nrow(bloods_clinical_rows) > 0)&(nrow(bloods_inpatient_rows)==0)){
+  do_next_chunk_3 <-TRUE
+} 
+
+if ((nrow(bloods_clinical_rows)==0)&(nrow(bloods_inpatient_rows)==0)){
+  do_next_chunk_4 <-TRUE
+} 
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide", eval=do_next_chunk}
+
 bloods_table2 <- reshape(bloods_table, idvar = "Task_Number", timevar = "Clinical_Visit_Code", direction = "wide") %>% 
- # mutate(c_Percent = (proportions.c.c * 100)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+   mutate(c_Percent = (proportions.c.c * 100)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+   mutate(i_Percent = (proportions.i.i * 100)) %>% mutate(i_Percent = round(i_Percent, 2)) %>%
+   select(Task_Number, Freq.i, i_Percent, Freq.c, c_Percent, Freq.Total)
+
+rm(bloods, bloods_clinical_rows, bloods_inpatient_rows, bloods_table)
+
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide", eval=do_next_chunk_2}
+
+bloods_table2 <- reshape(bloods_table, idvar = "Task_Number", timevar = "Clinical_Visit_Code", direction = "wide") %>% 
   mutate(c_Percent = 0) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
   mutate(Freq.c=0) %>%
   mutate(i_Percent = (proportions.i.i * 100)) %>% mutate(i_Percent = round(i_Percent, 2)) %>%
   select(Task_Number, Freq.i, i_Percent, Freq.c, c_Percent, Freq.Total)
 
-rm(bloods, bloods_table)
+rm(bloods, bloods_clinical_rows, bloods_inpatient_rows, bloods_table)
+    
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide", eval=do_next_chunk_3}
+
+bloods_table2 <- reshape(bloods_table, idvar = "Task_Number", timevar = "Clinical_Visit_Code", direction = "wide") %>% 
+  mutate(c_Percent = (proportions.c.c * 100)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+  mutate(i_Percent = 0) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+  mutate(Freq.i=0) %>%
+  select(Task_Number, Freq.i, i_Percent, Freq.c, c_Percent, Freq.Total)
+
+rm(bloods, bloods_clinical_rows, bloods_inpatient_rows, bloods_table)
+    
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results="hide", eval=do_next_chunk_4}
+
+bloods_table2 <- reshape(bloods_table, idvar = "Task_Number", timevar = "Clinical_Visit_Code", direction = "wide") %>% 
+  mutate(c_Percent = 0)) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+  mutate(Freq.c=0)
+  mutate(i_Percent = 0) %>% mutate(c_Percent = round(c_Percent, 2)) %>%
+  mutate(Freq.i=0) %>%
+  select(Task_Number, Freq.i, i_Percent, Freq.c, c_Percent, Freq.Total)
+
+rm(bloods, bloods_clinical_rows, bloods_inpatient_rows, bloods_table)
     
 ```
 
