@@ -696,7 +696,7 @@ protocol_table2 %>% kable(., col.names = c("Diagnosis", "Signed into Characteriz
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, eval=do_next_chunk_2}
 
-# practice chunk to see if I can sucessfully break code and run it without problems
+# practice chunk to see if I can sucessfully break code and run it without problems - LE practice
 
 print('Something went wrong - no protocols found')
 tot_withdrew <- "Not Calculated"
@@ -759,6 +759,7 @@ HV_one_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="12 month FU") %>% 
 HV_two_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="24 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
 HV_three_year <- FU_completed %>% filter(c_ksadsdx_visit_type=="36 month FU") %>% filter(Participant_Type2=="HV") %>% nrow() %>% as.numeric()
 
+# Create table based on annual visits calculated above
 FU_completed_summary <- tibble(Type=c("12 month", "12 month", "24 month", "24 month","36 month", "36 month"), Diagnosis=c("MDD", "HV", "MDD", "HV","MDD","HV"), 
                                Freq=c(MDD_one_year, HV_one_year, MDD_two_year, HV_two_year, MDD_three_year, HV_three_year))
 
