@@ -69,9 +69,9 @@ if(!(file.exists(paste0(scripts, 'IRTA_Merge_Code.R')))){
 # main folders needed
 database_location = paste0(string, "Database/Master Psychometric Database/") # tasks database also located here
 IRTA_tracker_location = paste0(string, "Database/Master Participant Tracker/")
-#weekly_numbers_location = paste0(string, "Minutes and conversation archives/Weekly Meeting Sheet/") LE changed while worked on reports script
+weekly_numbers_location = paste0(string, "Minutes and conversation archives/Weekly Meeting Sheet/") 
 # LE folder
-weekly_numbers_location = paste0(string, "RA Instruction Manuals/Lily Eisner/Misc/Database_Scripts")
+#weekly_numbers_location = paste0(string, "RA Instruction Manuals/Lily Eisner/Misc/Database_Scripts")
 clinician_sheet_location = paste0(string, "Patient Information/Clinician Sheet/")
 referrals_location = paste0(string, "RA Instruction Manuals/") # to change with server restructuring
 graphs_location = paste0(database_location, "graphs/")
