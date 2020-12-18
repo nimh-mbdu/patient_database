@@ -49,11 +49,45 @@
   }
   
   #****** SDQ+ = where we collect our own psychometric data
+  
+  # LE adding check for latest SDQ pull file size, accessibility, and readability, print warning message if not downloaded correctly 
+
+  sdq_file_size <- file.size(paste0(sdq_pull, latest_sdq_pull, ".txt"))
+  if(sdq_file_size == 0){
+    warning("The latest SDQ pull was not downloaded correctly, issue with file size")
+  }
+  
+  if(file.access(paste0(sdq_pull, latest_sdq_pull, ".txt"), mode = 0) != 0){
+    warning("The lastest SDQ pull was not downloaded correctly, issue with file accessibility")
+  }
+  
+  if(file.access(paste0(sdq_pull, latest_sdq_pull, ".txt"), mode = 4) != 0){
+    warning("The lastest SDQ pull was not downloaded correctly, issue with reading file")
+  }
+  
+  # Read in SDQ data from latest pull
 
   SDQ_Data_Download_raw <- read.delim(paste0(sdq_pull, latest_sdq_pull, ".txt"),  quote="",  
                                     encoding="UTF-8", row.names = NULL, header = TRUE, stringsAsFactors = FALSE) %>% mutate_all(as.character)
   
   #****** adding special cases
+  
+  # LE Check for files in the other_data_never_delete directory
+  
+  never_delete_location <- paste0(database_location, 'other_data_never_delete/')
+  never_delete_files <- list.files(never_delete_location)
+  
+  for (filename in never_delete_files){
+    if(file.size(paste0(never_delete_location, filename)) == 0){
+      warning("At least one file in the other_data_never_delete directory was not downloaded correctly, issue with file size")
+    }
+    if(file.access(paste0(imputed_location, filename), mode = 0) != 0){
+      warning("At least one file in the other_data_never_delete directory was not downloaded correctly, issue with file accessibility")
+    }
+    if(file.access(paste0(imputed_location, filename), mode = 4) != 0){
+      warning("At least one file in the other_data_never_delete directory was not downloaded correctly, issue with reading file")
+    }
+  }
   
   SDQ_Data_Download_raw <- SDQ_Data_Download_raw %>% filter(PlusIID != "4711-5358-6649-5157")
   SDQ_Data_Download_raw <- SDQ_Data_Download_raw %>% filter(PlusIID != "8768-8233-7459-5808")
@@ -94,6 +128,23 @@
   SDQ_Data_Download <- merge.default(SDQ_Data_Download, old_mdd_form, all=TRUE)
 
   #****** CTDB = where data is stored for those not in 0037
+  
+  # LE adding check for latest CTDB pull file size, accessibility, and readability, print warning message if not downloaded correctly 
+  
+  ctdb_file_size <- file.size(paste0(ctdb_pull, latest_ctdb_pull, ".xlsx"))
+  if(ctdb_file_size == 0){
+    warning("The latest CTDB pull was not downloaded correctly, issue with file size")
+  }
+  
+  if(file.access(paste0(ctdb_pull, latest_ctdb_pull, ".xlsx"), mode = 0) != 0){
+    warning("The lastest CTDB pull was not downloaded correctly, issue with file accessibility")
+  }
+  
+  if(file.access(paste0(ctdb_pull, latest_ctdb_pull, ".xlsx"), mode = 4) != 0){
+    warning("The lastest CTDB pull was not downloaded correctly, issue with reading file")
+  }
+  
+  # Read in CTDB data from latest pull
   
   CTDB_Data_Download <- read_excel(paste0(ctdb_pull, latest_ctdb_pull, ".xlsx"), sheet = 'Data_and_Scores') %>% mutate(source = "CTDB")
   
@@ -148,6 +199,24 @@
   CTDB_Data_Download[remove_unknown] <- lapply(CTDB_Data_Download[remove_unknown], na_if, 'NA')
 
   #****** Manual entry database
+  
+  # LE adding check for manual entry database file size, accessibility, and readability, print warning message if not downloaded correctly 
+  
+  manual_entry_database_file_size <- file.size(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"))
+  
+  if(manual_entry_database_file_size == 0){
+    warning("The manual entry database was not downloaded correctly, issue with file size")
+  }
+  
+  if(file.access(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), mode = 0) != 0){
+    warning("The manual entry database was not downloaded correctly, issue with file accessibility")
+  }
+  
+  if(file.access(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), mode = 4) != 0){
+    warning("The manual entry database was not downloaded correctly, issue with reading file")
+  }
+  
+  # Read in manual entry database
   
   manual_shaps <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "SHAPS", skip=2) %>% 
     select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
