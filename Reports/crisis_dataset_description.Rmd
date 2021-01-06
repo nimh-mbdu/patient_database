@@ -494,14 +494,21 @@ crisis_table %>% # select(-Tot_contacted:-Agreed_percent) %>%
 
 # COVID measures ----------------------------------------------------------
 
+s_scaredshortnames=names(Psychometrics_treatment %>% select("s_scaredshort_24_no_reason", "s_scaredshort_25_alone_at_home","s_scaredshort_28_worry_too_much", "s_scaredshort_36_go_to_school","s_scaredshort_41_shy"))
+s_scaredlongnames=gsub("scaredshort","scared",s_scaredshortnames)
+p_scaredlongnames=gsub("s_","p_",s_scaredlongnames)
+Psychometrics_treatment <- Psychometrics_treatment %>%
+  mutate(s_scaredshort_tot_from_long=round(Psychometrics_treatment %>% select(matches(s_scaredlongnames)) %>% rowSums(na.rm=FALSE), digits=0)) %>%
+  mutate(p_scaredshort_tot_from_long=round(Psychometrics_treatment %>% select(matches(p_scaredlongnames)) %>% rowSums(na.rm=FALSE), digits=0))
+
 s_measures_completed <- Psychometrics_treatment %>% 
   select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-    s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, matches("s_crisis_"), s_covid19_date) %>%
+    s_mfq1w_tot, s_mfq1w_date, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, s_scaredshort_tot_from_long, matches("s_crisis_"), s_covid19_date) %>%
   filter(s_crisis_base_date > "2020-03-17" | s_crisis_fu_date > "2020-03-17" | s_covid19_date > "2020-03-17") %>% 
   select(-matches("_TDiff"), -matches("_complete"), -matches("_source"))
 p_measures_completed <- Psychometrics_treatment %>% 
   select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type, c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, 
-    p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, matches("p_crisis_"), s_covid19_date) %>%
+    p_mfq1w_tot, p_mfq1w_date, p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, p_scaredshort_tot_from_long, matches("p_crisis_"), s_covid19_date) %>%
   filter(p_crisis_base_date > "2020-03-17" | p_crisis_fu_date > "2020-03-17" | s_covid19_date > "2020-03-17") %>% 
   select(-matches("_TDiff"), -matches("_complete"), -matches("_source"))
 
@@ -537,8 +544,8 @@ measures_completed$row_label <- paste("covid_t", measures_completed$id, sep = ""
 
 measures_completed_combined <- measures_completed %>% 
   select(Initials, SDAN, PLUSID, row_label, Participant_Type2, SEX, Age_at_visit, IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
-    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, 
-    p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, matches("s_crisis_"), matches("p_crisis_")) %>% 
+    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date,s_scaredshort_tot_from_long, 
+    p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, p_scaredshort_tot_from_long, matches("s_crisis_"), matches("p_crisis_")) %>% 
   select(-matches("_crisis_base_"), -matches("_crisis_fu_"))
 
 # Pre-COVID ---------------------------------------------------------------
@@ -566,47 +573,46 @@ pmfq_tminus1_long <- pmfq_tminus1_long %>% filter(p_mfq_date < "2020-03-17") %>%
 ### SCARED
 # self
 sscared_tminus1_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit,  IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
-  c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_scared_tot, s_scared_date) %>% 
+  c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_scared_tot, s_scared_date, s_scaredshort_tot_from_long) %>% 
   filter(!is.na(s_scared_tot)) %>% mutate(s_scared_tot = round(s_scared_tot, digits = 0)) %>% filter(s_scared_date < "2020-03-17") %>% 
   group_by(Initials) %>% arrange(desc(s_scared_date)) %>% slice(1) %>% ungroup()
 pscared_tminus1_long <- Psychometrics_treatment %>% select(Initials, SDAN, PLUSID, Participant_Type2, SEX, Age_at_visit,  IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
-  c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_scared_tot, p_scared_date) %>% 
+  c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, p_scared_tot, p_scared_date, p_scaredshort_tot_from_long) %>% 
   filter(!is.na(p_scared_tot)) %>% mutate(p_scared_tot = round(p_scared_tot, digits = 0)) %>% filter(p_scared_date < "2020-03-17") %>% 
   group_by(Initials) %>% arrange(desc(p_scared_date)) %>% slice(1) %>% ungroup()
 
 ### Combining these
 # self
 s_measures_combined_long <- merge.default(smfq_tminus1_long, sscared_tminus1_long, all=TRUE) %>% group_by(Initials) %>% arrange(Initials, desc(Clinical_Visit_Date)) %>% 
-  fill(., s_mfq_tot:s_scared_date, .direction = "down") %>% fill(., s_mfq_tot:s_scared_date, .direction = "up") %>% slice(1) %>% ungroup() %>% 
+  fill(., s_mfq_tot:s_scared_date, .direction = "down") %>% fill(., s_mfq_tot:s_scaredshort_tot_from_long, .direction = "up") %>% slice(1) %>% ungroup() %>% 
   filter(Initials %in% measures_completed$Initials) %>% mutate(row_label = "pre-covid")
 # parent
 p_measures_combined_long <- merge.default(pmfq_tminus1_long, pscared_tminus1_long, all=TRUE) %>% group_by(Initials) %>% arrange(Initials, desc(Clinical_Visit_Date)) %>% 
-  fill(., p_mfq_tot:p_scared_date, .direction = "down") %>% fill(., p_mfq_tot:p_scared_date, .direction = "up") %>% slice(1) %>% ungroup() %>% 
+  fill(., p_mfq_tot:p_scared_date, .direction = "down") %>% fill(., p_mfq_tot:p_scaredshort_tot_from_long, .direction = "up") %>% slice(1) %>% ungroup() %>% 
   filter(Initials %in% measures_completed$Initials) %>% mutate(row_label = "pre-covid")
 # combining parent & child
 measures_combined_long <- merge.default(s_measures_combined_long, p_measures_combined_long, all = TRUE) %>% 
   group_by(Initials) %>% arrange(Initials, desc(Clinical_Visit_Date)) %>% 
-  fill(., s_mfq_tot:p_scared_date, .direction = "down") %>% fill(., s_mfq_tot:p_scared_date, .direction = "up") %>% slice(1) %>% ungroup() 
+  fill(., s_mfq_tot:p_scared_date, .direction = "down") %>% fill(., s_mfq_tot:p_scaredshort_tot_from_long, .direction = "up") %>% slice(1) %>% ungroup() 
 
 # Adding pre-COVID to COVID -----------------------------------------------
 
+CRISIS_data_presentation_final1 <- merge.default(measures_completed_combined, measures_combined_long, all=TRUE)
+
+
 CRISIS_data_presentation_final <- merge.default(measures_completed_combined, measures_combined_long, all=TRUE) %>% arrange(Initials, Clinical_Visit_Date) %>% 
   select(Initials, SDAN, PLUSID, row_label, Participant_Type2, SEX, Age_at_visit,  IRTA_tracker, Clinical_Visit_Date, Clinical_Visit_Type,
-    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, 
-    p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, matches("s_crisis_"), matches("p_crisis_"))
+    c_ksadsdx_primary_dx, c_ksadsdx_dx_detailed, s_mfq_tot, s_mfq_date, s_scared_tot, s_scared_date, s_scaredshort_tot, s_scaredshort_date, s_scaredshort_tot_from_long, 
+    p_mfq_tot, p_mfq_date, p_scared_tot, p_scared_date, p_scaredshort_tot, p_scaredshort_date, p_scaredshort_tot_from_long, matches("s_crisis_"), matches("p_crisis_"))
 
-# SCARED short scaling ----------------------------------------------------
+# SCARED short and long ----------------------------------------------------
+#this used to take long values, and if not available put short, we switched it so it takes short by default and if not, items form long - changed 01-04-2021
+CRISIS_data_presentation_final$s_scared_combined_tot <- coalesce(CRISIS_data_presentation_final$s_scaredshort_tot, CRISIS_data_presentation_final$s_scaredshort_tot_from_long)
+CRISIS_data_presentation_final$s_scared_combined_date <- coalesce(CRISIS_data_presentation_final$s_scaredshort_date, CRISIS_data_presentation_final$s_scared_date)
+CRISIS_data_presentation_final$p_scared_combined_tot <- coalesce(CRISIS_data_presentation_final$p_scaredshort_tot, CRISIS_data_presentation_final$p_scaredshort_tot_from_long)
+CRISIS_data_presentation_final$p_scared_combined_date <- coalesce(CRISIS_data_presentation_final$p_scaredshort_date, CRISIS_data_presentation_final$p_scared_date)
 
-# scaling the SCARED short questionnaire & combining it with the original SCARED to have it all in one column
-CRISIS_data_presentation_final <- CRISIS_data_presentation_final %>%
-  mutate(s_scaredshort_tot_scaled=((s_scaredshort_tot/9)*41)) %>%
-  mutate(s_scaredshort_tot_scaled=round(s_scaredshort_tot_scaled, digits = 0)) %>%
-  mutate(p_scaredshort_tot_scaled=((p_scaredshort_tot/9)*41)) %>%
-  mutate(p_scaredshort_tot_scaled=round(p_scaredshort_tot_scaled, digits = 0))
-CRISIS_data_presentation_final$s_scared_combined_tot <- coalesce(CRISIS_data_presentation_final$s_scared_tot, CRISIS_data_presentation_final$s_scaredshort_tot_scaled)
-CRISIS_data_presentation_final$s_scared_combined_date <- coalesce(CRISIS_data_presentation_final$s_scared_date, CRISIS_data_presentation_final$s_scaredshort_date)
-CRISIS_data_presentation_final$p_scared_combined_tot <- coalesce(CRISIS_data_presentation_final$p_scared_tot, CRISIS_data_presentation_final$p_scaredshort_tot_scaled)
-CRISIS_data_presentation_final$p_scared_combined_date <- coalesce(CRISIS_data_presentation_final$p_scared_date, CRISIS_data_presentation_final$p_scaredshort_date)
+rm(s_scaredshort_tot_from_long1,p_scaredshort_tot_from_long1)
 
 # CRISIS subset for means & graphs -----------------------------------------
 
@@ -661,8 +667,8 @@ measures_all <- Psychometrics_treatment %>% filter(Clinical_Visit_Date >= "2016-
   rename(Age = "Age_at_visit") %>% mutate(Age = round(Age, digits = 0))
 measures_all$s_mfq_tot <- coalesce(measures_all$s_mfq_tot, measures_all$s_mfq1w_tot) %>% round(., digits = 0)
 measures_all$p_mfq_tot <- coalesce(measures_all$p_mfq_tot, measures_all$p_mfq1w_tot) %>% round(., digits = 0)
-measures_all$s_mfq_date <- coalesce(measures_all$s_mfq_date, measures_all$s_mfq1w_date) %>% round(., digits = 0)
-measures_all$p_mfq_date <- coalesce(measures_all$p_mfq_date, measures_all$p_mfq1w_date) %>% round(., digits = 0)
+measures_all$s_mfq_date <- coalesce(measures_all$s_mfq_date, measures_all$s_mfq1w_date)
+measures_all$p_mfq_date <- coalesce(measures_all$p_mfq_date, measures_all$p_mfq1w_date)
 measures_all <- measures_all %>% select(-s_mfq1w_tot, -p_mfq1w_tot, -s_mfq1w_date, -p_mfq1w_date)
 
 split1 <- colsplit(measures_all$Clinical_Visit_Date, "-", names = c("year", "month", "day"))

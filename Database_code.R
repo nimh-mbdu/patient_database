@@ -2644,7 +2644,7 @@
       measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     } else if (measure_name=="s_scaredshort_" | measure_name=="p_scaredshort_") {
-      measure_temp_sdq[,5:12] <- lapply(measure_temp_sdq[,5:12], as.numeric)
+      measure_temp_sdq[,5:13] <- lapply(measure_temp_sdq[,5:13], as.numeric)
       measure_temp_sdq$date_temp <- as.Date(measure_temp_sdq$Overall_date)
       measure_temp_sdq <- measure_temp_sdq %>% select(-Overall_date)
     } else {
@@ -2782,7 +2782,8 @@
     }
     
     if (measure_name=="s_scaredshort_" | measure_name=="p_scaredshort_") {
-      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(measure_name)) %>% rowSums(na.rm=TRUE)
+      #24:41 are scared related, 42:45 are ptsd related
+      measure_temp_sdq$temptotal <- measure_temp_sdq %>% select(matches(paste0(measure_name,"24_no_reason")):matches(paste0(measure_name,"41_shy")))%>% rowSums(na.rm=TRUE)
     } else if (measure_name=="mmi_recovery_") {
       measure_temp_sdq$temptotal <- c(0)
     } else {

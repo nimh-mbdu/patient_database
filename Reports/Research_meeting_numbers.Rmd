@@ -1429,8 +1429,8 @@ measures_completed <- Psychometrics_behav %>% filter(str_detect(Task_Name, "easu
   group_by(Initials) %>% mutate(id = row_number()) %>% ungroup() %>% mutate(id = (id + 2)) %>% mutate(Age = round(Age, digits = 0))
 measures_completed$s_mfq_tot <- coalesce(measures_completed$s_mfq_tot, measures_completed$s_mfq1w_tot) %>% round(., digits = 0)
 measures_completed$p_mfq_tot <- coalesce(measures_completed$p_mfq_tot, measures_completed$p_mfq1w_tot) %>% round(., digits = 0)
-measures_completed$s_mfq_date <- coalesce(measures_completed$s_mfq_date, measures_completed$s_mfq1w_date) %>% round(., digits = 0)
-measures_completed$p_mfq_date <- coalesce(measures_completed$p_mfq_date, measures_completed$p_mfq1w_date) %>% round(., digits = 0)
+measures_completed$s_mfq_date <- coalesce(measures_completed$s_mfq_date, measures_completed$s_mfq1w_date)
+measures_completed$p_mfq_date <- coalesce(measures_completed$p_mfq_date, measures_completed$p_mfq1w_date)
 measures_completed <- measures_completed %>% select(-s_mfq1w_tot, -p_mfq1w_tot, -s_mfq1w_date, -p_mfq1w_date)
 
 ```
@@ -1759,8 +1759,8 @@ Each timepoint separately:
 
 all_table %>% # select(-Tot_contacted:-Agreed_percent) %>% 
   select(Respondant:All_fu5_percent) %>% 
-  kable(., col.names = c("Respondant", "Total agreed", "Completed baseline", "%", "Completed follow up 1", "%", "Completed follow up 2", "%", 
-    "Completed follow up 3", "%", "Completed follow up 4", "%", "Completed follow up 5", "%")) %>% 
+  kable(., col.names = c("Respondant", "Total agreed", "Completed baseline", "%", "Completed 1 follow up ", "%", "Completed 2 follow ups ", "%", 
+    "Completed 3 follow ups", "%", "Completed 4 follow ups", "%", "Completed 5 follow ups", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -1771,8 +1771,8 @@ Completing all timepoints:
 
 all_table %>% # select(-Tot_contacted:-Agreed_percent) %>% 
   select(Respondant, Tot_agreed, ALL_both_completed:All_both5_percent) %>% 
-  kable(., col.names = c("Respondant", "Total agreed", "Completed baseline & follow up 1", "%", "Completed baseline & follow ups 1 & 2", "%", 
-    "Completed baseline & follow ups 1-3", "%", "Completed baseline & follow ups 1-4", "%","Completed baseline & follow ups 1-5", "%")) %>% 
+  kable(., col.names = c("Respondant", "Total agreed", "Completed baseline & 1 follow up", "%", "Completed baseline & 2 follow ups", "%", 
+    "Completed baseline & 3 follow ups", "%", "Completed baseline & 4 follow ups", "%","Completed baseline & 5 follow ups", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -1788,8 +1788,8 @@ Each timepoint separately:
 
 crisis_table %>% # select(-Tot_contacted:-Agreed_percent) %>% 
   select(Respondant:CRISIS_fu5_percent) %>% 
-  kable(., col.names = c("Respondant", "Total agreed", "Completed CRISIS: baseline", "%", "Completed CRISIS: follow up 1", "%", "Completed CRISIS: follow up 2", "%",
-    "Completed CRISIS: follow up 3", "%", "Completed CRISIS: follow up 4", "%", "Completed CRISIS: follow up 5", "%")) %>% 
+  kable(., col.names = c("Respondant", "Total agreed", "Completed CRISIS: baseline", "%", "Completed CRISIS: 1 follow up", "%", "Completed CRISIS: 2 follow ups", "%",
+    "Completed CRISIS: 3 follow ups", "%", "Completed CRISIS: 4 follow ups", "%", "Completed CRISIS: 5 follow ups", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
@@ -1800,8 +1800,8 @@ Completing all timepoints:
 
 crisis_table %>% # select(-Tot_contacted:-Agreed_percent) %>% 
   select(Respondant, Tot_agreed, CRISIS_both_completed:CRISIS_both5_percent) %>% 
-  kable(., col.names = c("Respondant", "Total agreed", "Completed CRISIS: baseline & follow up 1", "%", "Completed CRISIS: baseline & follow ups 1 & 2", "%",
-    "Completed CRISIS: baseline & follow ups 1-3", "%", "Completed CRISIS: baseline & follow ups 1-4", "%", "Completed CRISIS: baseline & follow ups 1-5", "%")) %>% 
+  kable(., col.names = c("Respondant", "Total agreed", "Completed CRISIS: baseline & 1 follow up", "%", "Completed CRISIS: baseline & 2 follow ups", "%",
+    "Completed CRISIS: baseline & 3 follow ups", "%", "Completed CRISIS: baseline & 4 follow ups", "%", "Completed CRISIS: baseline & 5 follow ups", "%")) %>% 
   kable_styling(position = "left", bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
