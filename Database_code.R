@@ -202,9 +202,7 @@
   
   # LE adding check for manual entry database file size, accessibility, and readability, print warning message if not downloaded correctly 
   
-  manual_entry_database_file_size <- file.size(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"))
-  
-  if(manual_entry_database_file_size == 0){
+  if(file.size(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx")) == 0){
     warning("The manual entry database was not downloaded correctly, issue with file size")
   }
   
