@@ -81,10 +81,10 @@
     if(file.size(paste0(never_delete_location, filename)) == 0){
       warning("At least one file in the other_data_never_delete directory was not downloaded correctly, issue with file size")
     }
-    if(file.access(paste0(imputed_location, filename), mode = 0) != 0){
+    if(file.access(paste0(never_delete_location, filename), mode = 0) != 0){
       warning("At least one file in the other_data_never_delete directory was not downloaded correctly, issue with file accessibility")
     }
-    if(file.access(paste0(imputed_location, filename), mode = 4) != 0){
+    if(file.access(paste0(never_delete_location, filename), mode = 4) != 0){
       warning("At least one file in the other_data_never_delete directory was not downloaded correctly, issue with reading file")
     }
   }
