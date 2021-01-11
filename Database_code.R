@@ -3612,7 +3612,7 @@ measures_dataset_tminus2_long$MFQ_flag <- gsub("NA; ", "", measures_dataset_tmin
 measures_dataset_tminus2_long$MFQ_flag <- na_if(measures_dataset_tminus2_long$MFQ_flag, "NA")
 
 # comparing to previous day's sheet: 
-prev_crisis_file <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^CRISIS_subset_2020", all.files = FALSE,
+prev_crisis_file <- list.files(path = paste0(database_location, "COVID19/"), pattern = "^CRISIS_subset_20", all.files = FALSE,
                                full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
 prev_crisis_file_time <- file.mtime(paste0(database_location, "COVID19/", prev_crisis_file)) %>% as.Date()
 prev_crisis_combined <- tibble(File=c(prev_crisis_file), Date=c(prev_crisis_file_time))
