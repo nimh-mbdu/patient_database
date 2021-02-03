@@ -177,7 +177,7 @@ if (nrow(current_inpatients)==0) {
     
     Participant <- inpatient_list[iter]
     temp_demo <- current_inpatients %>% filter(Initials==Participant)
-    temp_psych <- psychometric_data_i %>% filter(Initials==Participant) %>% arrange(as.numeric(Clinical_Visit_Number))
+    temp_psych <- psychometric_data_i %>% filter(Initials==Participant) %>% arrange(Clinical_Visit_Date)
   
     cat("  \n",  "  \n###",  iter, "->", as.character(temp_demo[1,3]), "-> SDAN:", as.character(temp_demo[1,4]), 
         "-> Age:", as.character(temp_demo[1,5]), "-> Sex:", as.character(temp_demo[1,6]), "-> Diagnosis:", as.character(temp_demo[1,7]), 
@@ -230,7 +230,7 @@ if (nrow(current_outpatients)==0) {
     
     Participant <- outpatient_list[iter]
     temp_demo <- current_outpatients %>% filter(Initials==Participant)
-    temp_psych <- psychometric_data_o %>% filter(Initials==Participant) %>% arrange(as.numeric(Clinical_Visit_Number))
+    temp_psych <- psychometric_data_o %>% filter(Initials==Participant) %>% arrange(Clinical_Visit_Date)
   
     cat("  \n",  "  \n###",  iter, "->", as.character(temp_demo[1,3]), "-> SDAN:", as.character(temp_demo[1,4]), 
         "-> Age:", as.character(temp_demo[1,5]), "-> Sex:", as.character(temp_demo[1,6]), "-> Diagnosis:", as.character(temp_demo[1,7]), 
