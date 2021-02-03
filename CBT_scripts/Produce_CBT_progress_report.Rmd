@@ -412,7 +412,7 @@ ARI (Affective Reactivity Index): 7 items rated 0-2, clinical cutoff = 2.
 #   theme_minimal() +
 #   guides(color=guide_legend("Person reporting:"))
 
-data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '0')) %>%
+data %>% filter(!is.na(s_ari1w_tot) | !is.na(p_f_ari1w_tot) | !is.na(p_m_ari1w_tot)) %>% filter(!str_detect(Clinical_Visit_Number, '^0.?')) %>%
   gather(Measure, value, s_ari1w_tot, p_f_ari1w_tot, p_m_ari1w_tot) %>%
   ggplot(aes(x=as.numeric(Clinical_Visit_Number), y=value, group=Measure), na.rm = TRUE) +
   geom_point(aes(shape=Measure, group=Measure), size=3) +
