@@ -3436,6 +3436,8 @@ if (file_save_check_combined$date_diff[1]==0) {
   Psychometrics_treatment %>% write_xlsx(paste0(database_location,"MASTER_DATABASE_CLINICAL_updated.xlsx"))
 }
 
+#Chana requested only the ones that have scheduling set to 3 to show up on the supervision report
+CBT_report = CBT_report %>% filter(Scheduling_status == 3)
 CBT_report %>% write_xlsx(paste0(CBT_location, "MASTER_DATABASE_CBT.xlsx"))
 CBT_report %>% write_xlsx(paste0(CBT_backup, "MASTER_DATABASE_CBT_", todays_date_formatted, ".xlsx"))
 

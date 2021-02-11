@@ -147,12 +147,12 @@ if (head(data$SEX,1)=="FEMALE") {
   }
 
 # Setting Clinician ------------------------------------------------------------
-
+labinfo = "Section of Clinical and Computational Psychiatry"
 if (Clinician=="Brenda") {
   treating_clinician = "Brenda Richesson"
   clinician_cred = "LCSW-C"
   clinician_position = "Treating Clinician"
-  clinician_location = "Mood Brain & Development Unit"
+  clinician_location = labinfo
   clinician_contact = "301-204-9673"
 } else if (Clinician=="Ken") {
   treating_clinician = "Kenneth E. Towbin"
@@ -164,25 +164,25 @@ if (Clinician=="Brenda") {
   treating_clinician = "Argyris Stringaris"
   clinician_cred = "MD, PhD, FRCPsych"
   clinician_position = "Chief and Principal Investigator"
-  clinician_location = "Mood Brain & Development Unit"
+  clinician_location = labinfo
   clinician_contact = "301-443-8019"
 } else if (Clinician=="Chana") {
   treating_clinician = "Chana Engel"
   clinician_cred = "CRNP"
   clinician_position = "Treating Clinician"
-  clinician_location = "Mood Brain & Development Unit"
+  clinician_location = labinfo
   clinician_contact = "301-435-1553"
 } else if (Clinician=="Mollie") {
   treating_clinician = "Mollie Davis"
   clinician_cred = "MSW, LCSW-C"
   clinician_position = "Treating Clinician"
-  clinician_location = "Mood Brain & Development Unit"
+  clinician_location = labinfo
   clinician_contact = "301-496-0650" 
 } else {
   treating_clinician = "Jeasmine Aizvera"
   clinician_cred = "LCSW-C"
   clinician_position = "Treating Clinician"
-  clinician_location = "Mood Brain & Development Unit"
+  clinician_location = labinfo
   clinician_contact = "301-496-5968"
 }
 
