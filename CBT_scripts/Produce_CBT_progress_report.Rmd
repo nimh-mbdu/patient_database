@@ -1,5 +1,5 @@
 ---
-title: "MOOD BRAIN & DEVELOPMENT UNIT"
+title: "Section of Clinical and Computational Psychiatry: Comp-Ψ"
 output:
   html_document:
     df_print: paged

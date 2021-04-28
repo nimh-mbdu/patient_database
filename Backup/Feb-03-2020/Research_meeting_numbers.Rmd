@@ -390,7 +390,7 @@ screens_table1 <- na_if(screens_table1, "<NA>")
 ######## Combined table
 screens_table1 <- merge.default(screens_table1, screens_dummy, all=TRUE) %>%
  group_by(Participant_Type2, Eligible) %>% arrange(desc(Freq)) %>% slice(1) %>% ungroup() %>% mutate(Eligible=as.character(Eligible))
-screens_table1$Eligible <- replace_na(screens_table1$Eligible, "In progress")
+screens_table1$Eligible <- replace_na(screens_table1$Eligible, "Missing")
 
 ######## Table to print
 screens_table2 <- pivot_wider(screens_table1, id_cols = "Eligible", names_from = "Participant_Type2", values_from = "Freq") %>% 
@@ -1429,7 +1429,7 @@ Child CRISIS Summary Data:
 #this has covid data too
 # covidAndCrisis=read.csv(paste0(database_location, "/COVID19/Summary Numbers/2021-01-06/crisisAndCovid_numbers_basedOn_CrisisTminus1_precovidPlusIds_2021-01-06.csv"))
 # covidAndCrisis=covidAndCrisis[3:10,]
-crisisChildFilename=paste0(database_location, "/COVID19/Summary Numbers/2021-03-11_just_crisis/crisisAndCovid_numbers_basedOn_CrisisTminus1_precovidPlusIds_2021-03-11.csv")
+crisisChildFilename=paste0(database_location, "/COVID19/Summary Numbers/2021-01-28_just_crisis/crisisAndCovid_numbers_basedOn_CrisisTminus1_precovidPlusIds_2021-01-28.csv")
  if(file.access(crisisChildFilename, mode=0) != 0 ){
       warning(paste("can't access ",crisisChildFilename))
     }
@@ -1448,7 +1448,7 @@ summaryOfCovidAndCrisis %>% kable(., col.names = c("Dates", "Total CRISIS comple
 Parent CRISIS Summary Data:
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
-covidAndCrisis=read.csv(paste0(database_location, "/COVID19/Summary Numbers/2021-03-11_just_crisis/parent_crisisAndCovid_numbers_basedOn_CrisisTminus1_precovidPlusIds_2021-03-11.csv"))
+covidAndCrisis=read.csv(paste0(database_location, "/COVID19/Summary Numbers/2021-01-28_just_crisis/parent_crisisAndCovid_numbers_basedOn_CrisisTminus1_precovidPlusIds_2021-01-28.csv"))
 summaryOfCovidAndCrisis=cbind(as.character(covidAndCrisis[,1]), covidAndCrisis[,2],covidAndCrisis[,4]+ covidAndCrisis[,7],covidAndCrisis[,5]+ covidAndCrisis[,8])
 #colnames(summaryOfCovidAndCrisis)=c("Dates", "Completed CRISIS", "and have PreCovid Data", "and Completed MFQ+Scared")
 summaryOfCovidAndCrisis %>% kable(., col.names = c("Dates", "Total CRISIS completed","and MFQ/Scared before 03/17/2019", "and completed MFQ and SCARED")) %>%
