@@ -236,6 +236,10 @@
     select(-starts_with("x"), -Entry_date, -matches("c_medsclin1yr_")) %>% rename(Overall_date = "Measure_date")  %>% mutate_all(as.character)
   manual_ascq <- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "ASCQ", skip=2) %>% 
     select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
+  manual_gen_iden<- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "Gender Identity Questionnaire", skip=2) %>% 
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
+  manual_storms<- read_excel(paste0(database_location, "Manual data entry/MANUAL_ENTRY_DATABASE.xlsx"), sheet = "STORMS", skip=2) %>% 
+    select(-starts_with("x"), -Entry_date) %>% rename(Overall_date = "Measure_date") %>% mutate_all(as.character)
   
   manual_ethnicity <- read_excel(paste0(database_location, "other_data_never_delete/ethnicity_list_KCs_CR_tracker.xlsx")) %>% mutate_all(as.character)
   
@@ -2877,12 +2881,15 @@
   
   s_mfq1d_final <- merge.default(demo_daily_mfq, s_mfq1d_subset, all=TRUE) %>% rename(s_mfq1d_source = source)
   
+
 # Measures where no scoring is necessary ----------------------------------
   
   variables_no_scoring <- c('c_family_hist_', 'p_demo_screen_background_', 'p_demo_screen_', 'c_blood_', 's_menstruation_', 
                             's_middebrief_', 's_mar_', 's_rsdebrief_', 's_mmidebrief_', 's_medsscan_', 's_after_ba_', 
                             's_before_ba_', 's_srsors_', 'c_inpatient_ratings_', 'c_cgas_', 'c_cgi_', 's_fua_', 'p_fua_', 
-                            'ksads_', 'p_dawba_bdd_', 's_dawba_bdd_', 's_medsctdb_', 'c_family_interview_', 's_suicide_')
+                            'ksads_', 'p_dawba_bdd_', 's_dawba_bdd_', 's_medsctdb_', 'c_family_interview_', 's_suicide_','s_gen_iden_',
+                            's_storms_', 's_crisissubset_', 'p_crisissubset_', 's_fds_', 'p_fds_', 's_fld_', 'p_fld_', 
+                            's_sdq_', 'p_sdq_', 's_dawbasubset_', 'p_dawbasubset_')
   
   for(i in seq_along(variables_no_scoring)) {
     iter <- as.numeric(i)
@@ -2910,7 +2917,8 @@
     }
 
     if (measure_name=="p_demo_screen_background_" | measure_name=="s_menstruation_" | measure_name=="s_middebrief_" | measure_name=="s_mar_" |
-        measure_name=="s_fua_" | measure_name=="p_fua_" | measure_name=="s_suicide_") {
+        measure_name=="s_fua_" | measure_name=="p_fua_" | measure_name=="s_suicide_" | measure_name=="s_gen_iden_" | measure_name=="s_storms_" | 
+        measure_name=="s_fds_" | measure_name=="p_fds_" | measure_name=="s_fld_" | measure_name=="p_fld_"){
       print("creating date variable for measure")
       measure_temp$date_temp <- measure_temp$Overall_date
       measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
@@ -2968,7 +2976,22 @@
       measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date)
       measure_temp <- measure_temp %>% select(PLUSID, Initials, Sibling_Init, date_temp, source, matches(measure_name))
       measure_temp[,6:ncol(measure_temp)]  <- lapply(measure_temp[,6:ncol(measure_temp)], na_if, "")
-    } else {
+    } else if (measure_name=="s_dawbasubset_"){
+      print("date variable manually entered in SDQ+")
+      measure_temp <- measure_temp %>% rename(date_temp = "s_dawbasubset_date")
+      measure_temp$date_temp <- as.Date(measure_temp$date_temp)
+      measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
+      measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+      measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
+      } else if (measure_name=="p_dawbasubset_"){
+        print("date variable manually entered in SDQ+")
+        measure_temp <- measure_temp %>% rename(date_temp = "p_dawbasubset_date")
+        measure_temp$date_temp <- as.Date(measure_temp$date_temp)
+        measure_temp$date_temp <- coalesce(measure_temp$date_temp, measure_temp$Overall_date) 
+        measure_temp <- measure_temp %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
+        measure_temp[,5:ncol(measure_temp)]  <- lapply(measure_temp[,5:ncol(measure_temp)], na_if, "")
+        }
+    else {
       print("date variable manually entered in SDQ+")
       measure_temp <- measure_temp %>% rename(date_temp = (paste0(measure_name, "date")))
       measure_temp$date_temp <- as.Date(measure_temp$date_temp)
@@ -2992,7 +3015,15 @@
       measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, matches(measure_name)) %>% 
         rename(date_temp = "c_ksads_date") %>% filter(!is.na(date_temp))
       measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE) %>% select(PLUSID, Initials, date_temp, source, matches(measure_name))
-    }
+    } else if(measure_name=="s_gen_iden_"){
+      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
+        rename(date_temp="Overall_date")
+      measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
+    } else if(measure_name=="s_storms_"){
+      measure_temp_manual <- manual_db_w_names %>% select(PLUSID, Initials, source, Overall_date, matches(measure_name)) %>% 
+        rename(date_temp="Overall_date")
+      measure_temp <- merge.default(measure_temp, measure_temp_manual, all=TRUE)
+    } 
       
     if (measure_name=="s_medsctdb_") {
       
@@ -3002,7 +3033,21 @@
       measure_temp$s_medsctdb_list <- gsub("none", "None", measure_temp$s_medsctdb_list)
       measure_temp$s_medsctdb_list <- gsub("non", "None", measure_temp$s_medsctdb_list)
       
-    } else {
+    } else if(measure_name=="s_gen_iden_"){
+      
+      print("SDQ+ meausure - excluding incomplete cases")
+      
+      measure_temp$no_columns <- measure_temp %>% select(matches(measure_name)) %>% select(-matches("date")) %>% ncol() %>% as.numeric()
+      measure_temp$NA_count <- measure_temp %>% select(matches(measure_name)) %>% select(-matches("date")) %>% apply(., 1, count_na)
+      measure_temp$diff <- c(measure_temp$no_columns - measure_temp$NA_count)
+      measure_temp <- measure_temp %>% filter(diff>0) %>% select(-no_columns, -NA_count, -diff)
+      
+      #exclude other text boxes in determining whether it's a complete case or not
+      measure_temp$tempcomplete <- measure_temp %>% select(matches(measure_name)) %>% select(-matches("_other")) %>% complete.cases(.)
+      measure_temp$tempcomplete[measure_temp$tempcomplete=="FALSE"] <- "0"
+      measure_temp$tempcomplete[measure_temp$tempcomplete=="TRUE"] <- "1"
+      
+      }else {
       
       print("SDQ+ meausure - excluding incomplete cases")
   
@@ -3014,8 +3059,8 @@
       measure_temp$tempcomplete <- measure_temp %>% select(matches(measure_name)) %>% complete.cases(.)
       measure_temp$tempcomplete[measure_temp$tempcomplete=="FALSE"] <- "0"
       measure_temp$tempcomplete[measure_temp$tempcomplete=="TRUE"] <- "1"
+      }
       
-    }
     
     if (measure_name=="c_family_interview_") {
       sibling <- measure_temp %>% filter(!is.na(Sibling_Init)) %>% 
@@ -3050,7 +3095,10 @@
 
     if (measure_name=="s_after_ba_" | measure_name=="s_before_ba_" | measure_name=="s_srsors_" | 
         measure_name=="c_inpatient_" | measure_name=="c_cgi_" | measure_name=="s_fua_" | measure_name=="p_fua_" |
-        measure_name=="p_dawba_bdd_" | measure_name=="s_dawba_bdd_" | measure_name=="c_family_interview_" | measure_name=="s_suicide_") {
+        measure_name=="p_dawba_bdd_" | measure_name=="s_dawba_bdd_" | measure_name=="c_family_interview_" | 
+        measure_name=="s_suicide_" | measure_name=="s_gen_iden_" | measure_name=="s_storms_" | measure_name=="s_crisissubset_" |
+        measure_name=="p_crisissubset_" | measure_name=="s_fds_" | measure_name=="p_fds_" | measure_name=="s_fld_" | 
+        measure_name=="p_fld_" | measure_name=="s_sdq_" | measure_name=="p_sdq_" | measure_name=="s_dawbasubset_" | measure_name=="p_dawbasubset_") {
       
       print("clinical measure only - not for tasks database")
       
